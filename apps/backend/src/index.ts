@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import fastifyCors from "@fastify/cors";
@@ -15,8 +14,6 @@ app.register(fastifyCors, {
   origin: ["http://localhost:5173"],
 });
 
-const isProd = process.env.NODE_ENV === "production";
-
 app.register(fastifyStatic, {
   root: join(__dirname, "../../frontend/dist"),
   prefix: "/",
@@ -27,7 +24,8 @@ app.get("/", (_, reply) => {
 });
 
 app.get("/api/hello", async () => {
-  return prisma.user.findUnique({where: {id: "1"}});
+  return prisma.user.findUnique({ where: { id: "1" } });
 });
 
+console.log('[BOOT] DATABASE_URL =', process.env.DATABASE_URL);
 app.listen({ port: 3000, host: "0.0.0.0" });

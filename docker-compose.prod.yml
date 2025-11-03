@@ -17,7 +17,6 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/offkai
     ports: ["3000:3000"]
     depends_on:
       - db

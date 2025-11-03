@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "predev": "prisma generate",
-    "dev": "concurrently \"tsup src/index.ts --watch --format esm\" \"node --watch dist/index.js\"",
+    "dev": "concurrently \"tsup src/index.ts --watch --format esm\" \"DOTENV_CONFIG_PATH=/workspace/.env node -r dotenv/config --watch dist/index.js\"",
     "build": "tsup src/index.ts --format esm",
-    "start": "node dist/index.js",
+    "start": "DOTENV_CONFIG_PATH=/workspace/.env NODE_ENV=production node -r dotenv/config dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
