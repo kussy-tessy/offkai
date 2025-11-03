@@ -1,9 +1,9 @@
 {
   "name": "backend",
-  "version": "1.0.0",
   "type": "module",
   "private": true,
   "scripts": {
+    "predev": "prisma generate",
     "dev": "concurrently \"tsup src/index.ts --watch --format esm\" \"node --watch dist/index.js\"",
     "build": "tsup src/index.ts --format esm",
     "start": "node dist/index.js",
@@ -21,8 +21,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "prisma": "^5.22.0",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "prisma": "^5.22.0"
   }
 }

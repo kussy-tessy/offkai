@@ -11,6 +11,9 @@
     "build": "turbo run build",
     "lint": "turbo run lint"
   },
+  "dependencies": {
+    "uuid": "^13.0.0"
+  },
   "devDependencies": {
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
@@ -18,8 +21,5 @@
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },
-  "packageManager": "pnpm@9.0.0",
-  "dependencies": {
-    "uuid": "^13.0.0"
-  }
+  "packageManager": "pnpm@9.0.0"
 }

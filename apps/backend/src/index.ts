@@ -18,9 +18,12 @@ app.register(fastifyCors, {
 const isProd = process.env.NODE_ENV === "production";
 
 app.register(fastifyStatic, {
-  root: isProd ? join(__dirname, "../../frontend/dist")
-    : join(__dirname, "../public"),
+  root: join(__dirname, "../../frontend/dist"),
   prefix: "/",
+});
+
+app.get("/", (_, reply) => {
+  reply.sendFile("index.html");
 });
 
 app.get("/api/hello", async () => {

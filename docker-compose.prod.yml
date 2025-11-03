@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+    restart: always
     environment:
       POSTGRES_DB: offkai
       POSTGRES_USER: postgres
@@ -12,14 +13,14 @@ services:
   app:
     build:
       context: .
-      dockerfile: ./apps/backend/Dockerfile.dev
+      dockerfile: ./apps/backend/Dockerfile.prod
+    restart: always
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgresql://postgres:postgres@db:5432/offkai
-    volumes:
-      - .:/workspace
-    ports: ["3000:3000", "5173:5173"]
-    depends_on: [db]
+    ports: ["3000:3000"]
+    depends_on:
+      - db
 
 volumes:
   db_data:
