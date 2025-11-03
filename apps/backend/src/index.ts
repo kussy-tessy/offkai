@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 const app = Fastify();
 
 app.register(fastifyCors, {
-  origin: ["http://localhost:5173"],
+  origin: ["http://localhost:5173", "https://off.kg-misskey.net"],
 });
 
 app.register(fastifyStatic, {
