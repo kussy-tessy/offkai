@@ -35,8 +35,7 @@ COPY --from=builder /workspace/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /workspace/apps/frontend/dist ./apps/frontend/dist
 COPY --from=builder /workspace/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /workspace/packages ./packages
-RUN pnpm add dotenv
 
 EXPOSE 3000
 
-CMD ["node", "-r", "dotenv/config", "apps/backend/dist/index.js"]
+CMD ["node", "-r", "apps/backend/dist/index.js"]
