@@ -38,4 +38,4 @@ COPY --from=builder /workspace/packages ./packages
 
 EXPOSE 3000
 
-CMD ["node", "-r", "apps/backend/dist/index.js"]
+CMD ["node", "-r", "/app/apps/backend/dist/index.js"]
