@@ -38,4 +38,5 @@ COPY --from=builder /workspace/packages ./packages
 
 EXPOSE 3000
 
-CMD ["node", "-r", "/app/apps/backend/dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/backend/prisma/schema.prisma && node /app/apps/backend/dist/index.js"]
+
