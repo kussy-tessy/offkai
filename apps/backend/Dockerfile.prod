@@ -16,6 +16,7 @@ RUN pnpm install --frozen-lockfile --recursive
 COPY . .
 
 RUN pnpm --filter backend prisma generate --schema apps/backend/prisma/schema.prisma
+RUN pnpm --filter backend prisma migrate deploy --schema apps/backend/prisma/schema.prisma
 RUN pnpm --filter backend build
 RUN pnpm --filter frontend build --mode prod
 
@@ -38,5 +39,5 @@ COPY --from=builder /workspace/packages ./packages
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/backend/prisma/schema.prisma && node /app/apps/backend/dist/index.js"]
+CMD ["node", "/app/apps/backend/dist/index.js"]
 
