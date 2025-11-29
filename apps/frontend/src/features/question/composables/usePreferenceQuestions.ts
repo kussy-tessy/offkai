@@ -1,15 +1,15 @@
 import { ref } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-export type CommitmentQuestion = {
+export type PreferenceQuestion = {
   id: string;
   question: string;
   deadline: string;
   capacity: number;
 }
 
-export const useCommitmentQuestions = () => {
-  const questions = ref<CommitmentQuestion[]>([])
+export const usePreferenceQuestions = () => {
+  const questions = ref<PreferenceQuestion[]>([])
 
   const addQuestion = () => {
     questions.value.push({
@@ -24,7 +24,7 @@ export const useCommitmentQuestions = () => {
     questions.value = questions.value.filter(q => q.id !== id)
   }
 
-  const updateQuestion = (id: string, updated: Partial<CommitmentQuestion>) => {
+  const updateQuestion = (id: string, updated: Partial<PreferenceQuestion>) => {
     const index = questions.value.findIndex(q => q.id === id)
     if (index !== -1) {
       questions.value[index] = {

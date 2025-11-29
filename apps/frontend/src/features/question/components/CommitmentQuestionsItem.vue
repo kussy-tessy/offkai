@@ -1,62 +1,46 @@
 <template>
-  <div class="question">
-    <MyInput
-      type="text"
-      :value="question.question"
-      placeholder="質問内容"
-      :on-change="v=>onUpdate(question.id, { question: v })"
-    />
-    <MyInput
-      type="date"
-      :value="question.deadline"
-      :on-change="v=>onUpdate(question.id, { deadline: v })"
-    />
-    <MyInput
-      type="text"
-      inputmode="numeric"
-      :value="question.capacity"
-      placeholder="定員"
-      :on-change="v =>onUpdate(question.id, { capacity: Number(v) })"
-    />
-    <button @click="onRemove(question.id)">削除</button>
+  <div class="bg-white rounded-lg border border-gray-300 shadow p-4">
+    <div class="flex flex-col md:flex-row gap-1">
+      <MyFormField label="質問" class="w-full md:w-[70%]">
+        <MyTextbox type="text" :value="question.question" placeholder="土曜日、宿に宿泊しますか？、日曜日、ロケに参加しますか？"
+          :on-change="v => onUpdate(question.id, { question: v })" />
+      </MyFormField>
+      <MyFormField label="質問(略)" class="w-full md:w-[30%]">
+        <MyTextbox type="text" :value="question.question" placeholder="土泊、日ロケ"
+          :on-change="v => onUpdate(question.id, { question: v })" />
+      </MyFormField>
+    </div>
+    <MyFormField label="説明">
+      <MyTextarea type="text" :value="question.question" placeholder="更衣室のキャパシティ判断に使用します。"
+        :on-change="v => onUpdate(question.id, { question: v })" />
+    </MyFormField>
+    <div class="flex flex-col md:flex-row gap-1">
+      <MyFormField label="締切" class="w-full md:w-[50%]">
+        <MyTextbox type="date" :value="question.deadline" :on-change="v => onUpdate(question.id, { deadline: v })" />
+      </MyFormField>
+      <MyFormField label="定員" class="w-full md:w-[50%]">
+        <MyTextbox type="text" inputmode="numeric" :value="question.capacity" placeholder="定員"
+          :on-change="v => onUpdate(question.id, { capacity: Number(v) })" />
+      </MyFormField>
+    </div>
+    <div class="flex justify-end"><MyButton color="red" size="sm" class="w-auto" @click="onRemove(question.id)">削除</MyButton>
+      </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import MyInput from "@/common/components/MyInput.vue";
-import type { CommitmentQuestion } from "../composables"
+  import MyTextbox from "@/common/components/MyTextbox.vue";
+  import type { CommitmentQuestion } from "../composables"
+  import MyButton from "@/common/components/MyButton.vue";
+  import MyFormField from "@/common/components/MyFormField.vue";
+  import MyTextarea from "@/common/components/MyTextarea.vue";
 
-defineProps<{
-  question: CommitmentQuestion
-  onUpdate: (id: string, patch: Partial<CommitmentQuestion>) => void
-  onRemove: (id: string) => void
-}>()
+  defineProps<{
+    question: CommitmentQuestion
+    onUpdate: (id: string, patch: Partial<CommitmentQuestion>) => void
+    onRemove: (id: string) => void
+  }>()
+
 </script>
 
-<style scoped>
-.question {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-input {
-  padding: 0.4rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-button {
-  padding: 0.4rem 0.8rem;
-  border: none;
-  background-color: #d32f2f;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #c62828;
-}
-</style>
+<style scoped></style>

@@ -7,16 +7,17 @@
 </template>
 
 <script setup lang="ts">
+import { useApi } from "@/common/composables";
 import { ref, onMounted } from "vue";
 
 const message = ref<string>("(読み込み中…)");
 
+const api = useApi();
+
 onMounted(async () => {
   try {
-    const res = await fetch("http://localhost:3000/api/hello");
-    if (!res.ok) throw new Error(res.statusText);
-    const data = await res.json();
-    message.value = JSON.stringify(data, null, 2);
+    const res = await api.get('hello');
+    message.value = JSON.stringify(res!.data);
   } catch (err) {
     message.value = `エラー: ${(err as Error).message}`;
   }

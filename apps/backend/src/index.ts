@@ -14,17 +14,17 @@ app.register(fastifyCors, {
   origin: ["http://localhost:5173", "https://off.kg-misskey.net"],
 });
 
-app.register(fastifyStatic, {
-  root: join(__dirname, "../../frontend/dist"),
-  prefix: "/",
-});
-
 app.get("/", (_, reply) => {
   reply.sendFile("index.html");
 });
 
 app.get("/api/hello", async () => {
   return prisma.user.findUnique({ where: { id: "1" } });
+});
+
+app.register(fastifyStatic, {
+  root: join(__dirname, "../../frontend/dist"),
+  prefix: "/",
 });
 
 console.log('[BOOT] DATABASE_URL =', process.env.DATABASE_URL);

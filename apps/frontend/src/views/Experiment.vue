@@ -1,11 +1,11 @@
 <template>
   <main>
-    <CommitmentQuestions />
+    <Questions />
   </main>
 </template>
 
 <script setup lang="ts">
-import CommitmentQuestions from '../features/question/components/CommitmentQuestions.vue';
+import Questions from '@/features/question/components/Questions.vue';
 </script>
 
 <style scoped>
