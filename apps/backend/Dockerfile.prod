@@ -48,8 +48,9 @@ COPY --from=builder /workspace/packages ./packages
 
 EXPOSE 3000
 
-# ★ 起動時に Prisma 5.22 の CLI で migrate → その後サーバ起動
+# ★ 起動時に migrate → その後サーバ起動
 CMD sh -c "\
-  pnpm --filter backend prisma migrate deploy --schema apps/backend/prisma/schema.prisma && \
+  cd /app/apps/backend && \
+  pnpm exec prisma migrate deploy --schema prisma/schema.prisma && \
   node /app/apps/backend/dist/index.js \
 "
