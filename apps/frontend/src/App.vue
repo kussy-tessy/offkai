@@ -1,18 +1,12 @@
 <template>
-  <router-view />
+  <div class="bg-sky-50 min-h-screen md:py-2">
+    <main class="max-w-3xl mx-auto px-4 py-8 border bg-white rounded-lg">
+      <router-view />
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
 </script>
 
-<style scoped>
-main {
-  font-family: system-ui, sans-serif;
-  padding: 2rem;
-}
-pre {
-  background: #f7f7f7;
-  padding: 1rem;
-  border-radius: 8px;
-}
-</style>
+<style></style>

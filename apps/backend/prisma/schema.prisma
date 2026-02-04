@@ -8,7 +8,96 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  seriesMembers SeriesMember[]
+  answers       OffkaiAnswer[]
+}
+
+model OffkaiSeries {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  members SeriesMember[]
+  events  OffkaiEvent[]
+}
+
+model SeriesMember {
+  id        String @id @default(uuid())
+
+  seriesId String
+  userId   String
+  role     String // "owner" | "staff"
+
+  series OffkaiSeries @relation(fields: [seriesId], references: [id])
+  user   User         @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([seriesId, userId])
+}
+
+model OffkaiEvent {
+  id String @id @default(uuid())
+
+  seriesId String
+
+  name        String
+  description String?
+
+  eventDate             DateTime
+  applicationStartDate  DateTime
+
+  commitmentQuestions Json
+  preferenceQuestions Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  series  OffkaiSeries  @relation(fields: [seriesId], references: [id])
+  answers OffkaiAnswer[]
+}
+
+model OffkaiAnswer {
+  id String @id @default(uuid())
+
+  eventId  String
+  userId   String
+
+  commitmentAnswers Json
+  preferenceAnswers Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  event  OffkaiEvent @relation(fields: [eventId], references: [id])
+  user   User        @relation(fields: [userId], references: [id])
+
+  histories OffkaiAnswerHistory[]
+
+  @@unique([eventId, userId])
+}
+
+model OffkaiAnswerHistory {
+  id String @id @default(uuid())
+
+  offkaiAnswerId String
+  eventId        String
+  seriesId       String
+  userId         String
+
+  commitmentAnswers Json
+  preferenceAnswers Json
+
+  createdAt DateTime @default(now())
+
+  answer OffkaiAnswer @relation(fields: [offkaiAnswerId], references: [id])
 }
