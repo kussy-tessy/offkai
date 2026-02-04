@@ -19,6 +19,7 @@ COPY . .
 RUN pnpm --filter backend prisma generate --schema apps/backend/prisma/schema.prisma
 
 # アプリのビルド
+RUN pnpm --filter @offkai/core build
 RUN pnpm --filter backend build
 RUN pnpm --filter frontend build --mode prod
 
