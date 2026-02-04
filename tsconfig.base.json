@@ -11,7 +11,7 @@
 		"isolatedModules": true,
 		"baseUrl": ".",
 		"paths": {
-			"@offkai/core": ["packages/domain/src"]
+			"@offkai/core": ["packages/core/src"]
 		}
 	}
 }

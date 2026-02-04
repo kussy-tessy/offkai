@@ -8,7 +8,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
-			"@offkai/core": path.resolve(__dirname, "../../packages/domain/src"),
+			"@offkai/core": path.resolve(__dirname, "../../packages/core/src"),
 		},
 	},
 	build: {
