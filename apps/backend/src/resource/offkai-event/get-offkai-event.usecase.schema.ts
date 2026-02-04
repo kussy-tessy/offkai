@@ -1,4 +1,4 @@
-import { format, GetOffkaiEventRequest, type OffkaiEventResponse, type Unbrand } from "@offkai/core";
+import { format, type GetOffkaiEventRequest, type OffkaiEventResponse, type Unbrand } from "@offkai/core";
 import { OffkaiEventRepository } from "../../repository";
 
 export async function getOffkaiEvent(input: GetOffkaiEventRequest) {

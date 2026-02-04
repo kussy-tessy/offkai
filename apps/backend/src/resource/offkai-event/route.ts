@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 
 import { createOffkaiEvent } from "./create-offkai-event.usecase";
 import { getOffkaiEvent } from "./get-offkai-event.usecase.schema";
-import { CreateOffkaiEventRequestSchema, GetOffkaiEventRequestSchema } from "packages/core/dist";
+import { CreateOffkaiEventRequestSchema, GetOffkaiEventRequestSchema } from "@offkai/core";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	// GET /offkai-event/:id

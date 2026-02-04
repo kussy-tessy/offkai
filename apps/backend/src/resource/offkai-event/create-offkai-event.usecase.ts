@@ -1,7 +1,7 @@
 import {
 	ApplicationStartDateSchema,
 	CommitmentQuestionSchema,
-	CreateOffkaiEventRequest,
+	type CreateOffkaiEventRequest,
 	EventDateSchema,
 	OffkaiEvent,
 	OffkaiSeriesIdSchema,

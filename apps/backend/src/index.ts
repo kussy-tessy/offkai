@@ -1,8 +1,8 @@
 import fastifyCors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { prisma } from "./repository/prisma";
 import { offkaiEventRoute } from "./resource";
 
@@ -33,7 +33,7 @@ app.register(fastifyStatic, {
 console.log("[BOOT] DATABASE_URL =", process.env.DATABASE_URL);
 app.listen({ port: 3000, host: "0.0.0.0" });
 
-app.setErrorHandler((err, req, reply) => {
+app.setErrorHandler((err, _req, _reply) => {
 	console.error(err);
 	throw err;
 });
