@@ -33,7 +33,6 @@ router.beforeEach(async (to) => {
 
 	if (user.value === null) {
 		await fetchMe();
-		console.log({ user: user.value })
 	}
 
 	if (to.meta.requiresAuth && !user.value) {

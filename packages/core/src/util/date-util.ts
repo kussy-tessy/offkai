@@ -4,7 +4,6 @@ export function isPassed(target: Date, reference: Date) {
 
 export function format(dateArg: Date | string, includesTime = true) {
 	const date = typeof dateArg === "string" ? new Date(dateArg) : dateArg;
-	console.log({ date })
 	const yyyy = date.getFullYear();
 	const mm = String(date.getMonth() + 1).padStart(2, "0");
 	const dd = String(date.getDate()).padStart(2, "0");

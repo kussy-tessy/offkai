@@ -52,6 +52,7 @@ EXPOSE 3000
 # ★ 起動時に migrate → その後サーバ起動
 CMD sh -c "\
   cd /app/apps/backend && \
+  pnpm exec prisma generate --schema prisma/schema.prisma && \
   pnpm exec prisma migrate deploy --schema prisma/schema.prisma && \
   node /app/apps/backend/dist/index.js \
 "

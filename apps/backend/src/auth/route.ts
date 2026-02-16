@@ -111,7 +111,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         where: { id: userId },
         select: { id: true, loginId: true, name: true, createdAt: true },
       });
-      console.log({ user })
 
       if (!user) {
         app.auth.clearAuthCookie(reply);
