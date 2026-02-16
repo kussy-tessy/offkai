@@ -1,5 +1,4 @@
 <template>
-  <!-- ヘッダ -->
   <header class="pb-4">
     <h1 class="text-4xl font-bold">{{ data.offkai.title }}</h1>
     <p class="text-sm text-gray-500">
@@ -76,20 +75,17 @@
 </template>
 
 <script setup lang="ts">
+  import { faCircle } from "@fortawesome/free-regular-svg-icons";
+  import { faXmark } from "@fortawesome/free-solid-svg-icons";
+  import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+  import type { OffkaiAnswerList, Unbrand } from "@offkai/core";
   import { ref } from "vue";
-  import { OffkaiAnswerList, Unbrand } from "@offkai/core";
-  import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-  import { faCircle } from '@fortawesome/free-regular-svg-icons';
-  import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
   const { data } = defineProps<{
     data: Unbrand<OffkaiAnswerList>;
   }>();
 
-
-  const selectedPreferenceId = ref(
-    data.preferenceQuestions[0]?.id
-  );
+  const selectedPreferenceId = ref(data.preferenceQuestions[0]?.id);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -97,8 +93,7 @@
   };
 
   const countYes = (questionId: string) => {
-    return data.answers.filter(
-      (a) => a.commitmentAnswers[questionId] === "yes"
-    ).length;
+    return data.answers.filter((a) => a.commitmentAnswers[questionId] === "yes")
+      .length;
   };
 </script>

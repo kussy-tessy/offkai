@@ -1,8 +1,10 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import fastifyCors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { authRoutes } from "./auth";
+import { authPlugin } from "./plugin";
 import { prisma } from "./repository/prisma";
 import { offkaiEventRoute } from "./resource";
 
@@ -13,12 +15,18 @@ const app = Fastify();
 
 app.register(fastifyCors, {
 	origin: ["http://localhost:5173", "https://off.kg-misskey.net"],
+	credentials: true,
 });
 
 app.get("/api/hello", async () => {
 	return prisma.user.findUnique({ where: { id: "1" } });
 });
 
+app.register(authPlugin, {
+	cookieDomain: process.env.COOKIE_DOMAIN, // 無ければundefinedでOK
+});
+
+app.register(authRoutes, { prefix: "/api" });
 app.register(offkaiEventRoute, { prefix: "/api/offkai-event" });
 
 app.register(fastifyStatic, {

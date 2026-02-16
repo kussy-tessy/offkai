@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-  import AnswerList from '@/features/answerList/AnswerList.vue';
+  import AnswerList from '@/features/answerList/components/AnswerList.vue';
   import { mockOffkaiAnswerList } from '@/mocks/offkaiAnswerList';
 </script>
 

@@ -15,6 +15,7 @@ function createClient(): AxiosInstance {
 		headers: {
 			"Content-Type": "application/json",
 		},
+		withCredentials: true,
 	});
 
 	// リクエストログ（開発時のみ）
