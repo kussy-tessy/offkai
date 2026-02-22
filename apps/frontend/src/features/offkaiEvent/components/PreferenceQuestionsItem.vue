@@ -44,13 +44,13 @@
 </template>
 
 <script setup lang="ts">
+  import { faMinus, faPlus, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+  import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
   import { computed } from "vue"
-  import MyTextbox from "@/common/components/MyTextbox.vue"
   import MyButton from "@/common/components/MyButton.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
+  import MyTextbox from "@/common/components/MyTextbox.vue"
   import type { PreferenceQuestion } from "../composables/usePreferenceQuestions"
-  import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-  import { faTrashCan, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 
   const props = defineProps<{
     question: PreferenceQuestion

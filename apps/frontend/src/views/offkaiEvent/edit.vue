@@ -4,11 +4,11 @@
 </template>
 
 <script setup lang="ts">
+  import { CreateOffkaiEventRequest, OffkaiEventResponse } from "@offkai/core";
+  import { onMounted, ref } from 'vue';
   import { useApi } from '@/common/composables';
   import OffkaiEvent from '@/features/offkaiEvent/components/OffkaiEvent.vue';
   import { CommitmentQuestion, PreferenceQuestion } from '@/features/offkaiEvent/composables';
-  import { onMounted, ref } from 'vue';
-  import { CreateOffkaiEventRequest, OffkaiEventResponse } from "@offkai/core";
 
   const { id } = defineProps<{
     id: string

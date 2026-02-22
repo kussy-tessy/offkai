@@ -10,7 +10,7 @@ import { ISODateTimeStringSchema } from "./general.js";
 
 export const CommitmentQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,
-	label: z.string(),
+	questionShort: z.string(),
 	capacity: CapacitySchema.nullable(),
 	deadline: ISODateTimeStringSchema.nullable(),
 });
@@ -20,7 +20,7 @@ export type CommitmentQuestionHeader = z.infer<
 
 export const PreferenceQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,
-	label: z.string(),
+	question: z.string(),
 });
 export type PreferenceQuestionHeader = z.infer<
 	typeof PreferenceQuestionHeaderSchema

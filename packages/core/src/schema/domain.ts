@@ -77,12 +77,13 @@ export type PreferenceQuestionAnswerForm = z.infer<
 export const PreferenceQuestionSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
+	questionShort: z.string(),
 	answer: PreferenceQuestionAnswerFormSchema,
 });
 export type PreferenceQuestion = z.infer<typeof PreferenceQuestionSchema>;
 
 export const PreferenceAnswerSchema = z.object({
-	questionId: QuestionIdSchema,
+	id: QuestionIdSchema,
 	answer: z.string(),
 });
 export type PreferenceAnswer = z.infer<typeof PreferenceAnswerSchema>;

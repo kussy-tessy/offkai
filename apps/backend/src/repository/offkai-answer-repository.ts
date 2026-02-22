@@ -1,9 +1,15 @@
 import {
 	type AnswerId,
+	type AnswerRow,
 	type CommitmentAnswer,
+	type CommitmentQuestionHeader,
 	OffkaiAnswer,
+	type OffkaiAnswerList,
+	OffkaiAnswerListSchema,
 	type OffkaiEventId,
 	type PreferenceAnswer,
+	type PreferenceQuestionHeader,
+	type Unbrand,
 	type UserId,
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
@@ -42,6 +48,52 @@ export class OffkaiAnswerRepository {
 		});
 	}
 
+	async getDetails(eventId: string): Promise<OffkaiAnswerList> {
+		const event = await prisma.offkaiEvent.findUnique({
+			where: { id: eventId },
+			include: {
+				answers: {
+					include: {
+						user: true,
+					},
+				},
+			},
+		});
+
+		if (!event) {
+			throw new Error("OffkaiEvent not found");
+		}
+
+		const commitmentQuestions =
+			event.commitmentQuestions as CommitmentQuestionHeader[];
+
+		const preferenceQuestions =
+			event.preferenceQuestions as PreferenceQuestionHeader[];
+
+		const answers: Unbrand<AnswerRow>[] = event.answers.map((a) => ({
+			user: {
+				id: a.user.id,
+				displayName: a.user.name,
+			},
+			commitmentAnswers: a.commitmentAnswers as AnswerRow["commitmentAnswers"],
+			preferenceAnswers: a.preferenceAnswers as AnswerRow["preferenceAnswers"],
+		}));
+
+		const result: Unbrand<OffkaiAnswerList> = {
+			offkai: {
+				id: event.id,
+				title: event.name,
+				description: event.description ?? "",
+				eventDate: event.eventDate.toISOString(),
+			},
+			commitmentQuestions,
+			preferenceQuestions,
+			answers,
+		};
+
+		return OffkaiAnswerListSchema.parse(result);
+	}
+
 	async save(answer: OffkaiAnswer): Promise<void> {
 		const props = {
 			id: answer.id,
@@ -62,7 +114,6 @@ export class OffkaiAnswerRepository {
 			});
 
 			if (existing) {
-				// 履歴保存（インフラ責務）
 				await tx.offkaiAnswerHistory.create({
 					data: {
 						offkaiAnswerId: existing.id,

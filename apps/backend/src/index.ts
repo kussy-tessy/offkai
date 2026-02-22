@@ -6,7 +6,7 @@ import Fastify from "fastify";
 import { authRoutes } from "./auth";
 import { authPlugin } from "./plugin";
 import { prisma } from "./repository/prisma";
-import { offkaiEventRoute } from "./resource";
+import { offkaiAnswerRoute, offkaiEventRoute } from "./usecase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,8 +26,10 @@ app.register(authPlugin, {
 	cookieDomain: process.env.COOKIE_DOMAIN, // 無ければundefinedでOK
 });
 
+// ルートの登録
 app.register(authRoutes, { prefix: "/api" });
 app.register(offkaiEventRoute, { prefix: "/api/offkai-event" });
+app.register(offkaiAnswerRoute, { prefix: "/api/offkai-answer" });
 
 app.register(fastifyStatic, {
 	root: join(__dirname, "../../frontend/dist"),

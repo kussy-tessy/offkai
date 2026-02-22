@@ -11,11 +11,12 @@
 </template>
 
 <script setup lang="ts">
+  import { faPlus } from '@fortawesome/free-solid-svg-icons';
+  import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+  import MyButton from "@/common/components/MyButton.vue";
   import { usePreferenceQuestions } from "../composables"
   import PreferenceQuestionsItem from "./PreferenceQuestionsItem.vue"
-  import MyButton from "@/common/components/MyButton.vue";
-  import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-  import { faPlus } from '@fortawesome/free-solid-svg-icons';
+
   const props = defineProps<{
     store: ReturnType<typeof usePreferenceQuestions>
   }>();

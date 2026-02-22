@@ -1,18 +1,9 @@
 {
 	"extends": "../../tsconfig.base.json",
-	// "compilerOptions": {
-	//   "module": "ESNext",
-	//   "moduleResolution": "node",
-	//   "target": "ESNext"
-	// },
-	// "include": ["src"]
 	"compilerOptions": {
-		"outDir": "dist",
-		"rootDir": "src",
-		"declaration": true,
-		"declarationMap": true,
 		"module": "ESNext",
-		"target": "ES2020",
-		"moduleResolution": "Node"
-	}
+		"moduleResolution": "Bundler",
+		"target": "ES2020"
+	},
+	"include": ["src"]
 }

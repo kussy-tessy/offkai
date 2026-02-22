@@ -20,9 +20,9 @@
 
 <script setup lang="ts">
   import { ref } from "vue"
-  import CommitmentAnswerItem from "./CommitmentAnswerItem.vue"
   import MyButton from "@/common/components/MyButton.vue"
   import { mockCommitmentQuestions } from "@/mocks/commitmentQuestions"
+  import CommitmentAnswerItem from "./CommitmentAnswerItem.vue"
 
   const questions = mockCommitmentQuestions
 

@@ -1,10 +1,12 @@
 import {
 	CreateOffkaiEventRequestSchema,
 	GetOffkaiEventRequestSchema,
+	type OffkaiEventResponse,
+	type Unbrand,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
 import { createOffkaiEvent } from "./create-offkai-event.usecase";
-import { getOffkaiEvent } from "./get-offkai-event.usecase.schema";
+import { getOffkaiEvent } from "./get-offkai-event.usecase.usecase";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	app.addHook("preHandler", app.auth.requireUser);
@@ -12,7 +14,7 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	// GET /offkai-event/:id
 	app.get("/:id", async (request) => {
 		const input = GetOffkaiEventRequestSchema.parse(request.params);
-		return getOffkaiEvent(input);
+		return getOffkaiEvent(input) as Promise<Unbrand<OffkaiEventResponse>>;
 	});
 
 	// POST /offkai-event
