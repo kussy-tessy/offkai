@@ -92,7 +92,6 @@ model OffkaiAnswerHistory {
 
   offkaiAnswerId String
   eventId        String
-  seriesId       String
   userId         String
 
   commitmentAnswers Json
