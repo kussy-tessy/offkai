@@ -1,3 +1,3 @@
-export * from "./create-offkai-event-request.js";
-export * from "./get-offkai-event-request.js";
-export * from "./get-offkai-event-response.js";
+export * from "./create-offkai-event-request";
+export * from "./get-offkai-event-request";
+export * from "./get-offkai-event-response";

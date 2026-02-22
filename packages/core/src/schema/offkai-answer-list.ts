@@ -5,8 +5,8 @@ import {
 	QuestionIdSchema,
 	UserIdSchema,
 	UserNameSchema,
-} from "./domain.js";
-import { ISODateTimeStringSchema } from "./general.js";
+} from "./domain";
+import { ISODateTimeStringSchema } from "./general";
 
 export const CommitmentQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,

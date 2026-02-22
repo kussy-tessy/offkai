@@ -7,8 +7,8 @@ import type {
 	OffkaiSeriesId,
 	PreferenceQuestion,
 	QuestionId,
-} from "../schema/index.js";
-import { isPassed } from "../util/index.js";
+} from "../schema";
+import { isPassed } from "../util";
 
 export class OffkaiEvent {
 	private constructor(
@@ -20,7 +20,7 @@ export class OffkaiEvent {
 		readonly applicationStartDate: ApplicationStartDate,
 		readonly commitmentQuestions: CommitmentQuestion[],
 		readonly preferenceQuestions: PreferenceQuestion[],
-	) {}
+	) { }
 
 	static reconstruct(params: {
 		id: OffkaiEventId;

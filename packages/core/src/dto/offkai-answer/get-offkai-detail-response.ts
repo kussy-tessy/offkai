@@ -1,7 +1,7 @@
 import {
   type OffkaiAnswerList,
   OffkaiAnswerListSchema,
-} from "../../schema/index.js";
+} from "../../schema";
 
 export const GetOffkaiDetailResponseSchema = OffkaiAnswerListSchema;
 export type GetOffkaiDetailResponse = OffkaiAnswerList;

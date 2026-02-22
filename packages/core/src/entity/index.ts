@@ -1,2 +1,2 @@
-export * from "./offkai-answer.js";
-export * from "./offkai-event.js";
+export * from "./offkai-answer";
+export * from "./offkai-event";

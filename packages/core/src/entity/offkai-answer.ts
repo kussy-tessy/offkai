@@ -7,7 +7,7 @@ import type {
 	PreferenceAnswer,
 	PreferenceQuestion,
 	UserId,
-} from "../schema/index.js";
+} from "../schema";
 
 type Params = {
 	answer: {
@@ -28,7 +28,7 @@ export class OffkaiAnswer {
 		readonly userId: UserId,
 		readonly commitmentAnswers: CommitmentAnswer[],
 		readonly preferenceAnswers: PreferenceAnswer[],
-	) {}
+	) { }
 
 	static reconstruct(params: {
 		id: AnswerId;

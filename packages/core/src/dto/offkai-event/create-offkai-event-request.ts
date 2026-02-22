@@ -1,5 +1,5 @@
 import z from "zod";
-import { preprocessDatetime } from "../../util/index.js";
+import { preprocessDatetime } from "../../util";
 
 export const CreateOffkaiEventRequestSchema = z.object({
 	title: z.string().min(1).max(100),
