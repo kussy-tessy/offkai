@@ -17,7 +17,7 @@
   const answerListData = ref<OffkaiAnswerList | null>(null);
 
   onMounted(async () => {
-    const data = await get<OffkaiAnswerList>(`/offkai-answer/${id}`);
+    const data = await get<OffkaiAnswerList>(`/offkai-event/${id}/answers`);
     if (data) {
       answerListData.value = data;
     }

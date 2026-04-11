@@ -6,7 +6,7 @@
   import { useApi } from '@/common/composables';
   import OffkaiEvent from '@/features/offkaiEvent/components/OffkaiEvent.vue';
 
-  const { get, post, loading } = useApi();
+  const { post } = useApi();
 
   const initialValue = {
     title: "aa",

@@ -4,13 +4,13 @@ import { ref } from "vue";
 export type PreferenceQuestion = {
 	id: string;
 	question: string;
-	answer: {
+	answerTemplate: {
 		type: "free" | "choices" | "choicesIncludingOther";
 		choices?: string[];
 	};
 };
 
-export type CommitmentQuestionInitializeProps = {
+export type PreferenceQuestionInitializeProps = {
 	questions: (Omit<PreferenceQuestion, "id"> & { id?: string })[];
 };
 
@@ -21,7 +21,7 @@ export const usePreferenceQuestions = () => {
 		questions.value.push({
 			id: uuidv4(),
 			question: "",
-			answer: { type: "free" },
+			answerTemplate: { type: "free" },
 		});
 	};
 
@@ -39,7 +39,7 @@ export const usePreferenceQuestions = () => {
 		};
 	};
 
-	const initialize = (props: CommitmentQuestionInitializeProps) => {
+	const initialize = (props: PreferenceQuestionInitializeProps) => {
 		questions.value = props.questions.map((q) => ({
 			...q,
 			id: q.id ?? uuidv4(),

@@ -1,12 +1,13 @@
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
+import type { UserId } from "@offkai/core";
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 
 declare module "fastify" {
   interface FastifyInstance {
     auth: {
-      signAccessToken: (payload: { userId: string }) => Promise<string>;
+      signAccessToken: (payload: { userId: UserId }) => Promise<string>;
       setAuthCookie: (reply: FastifyReply, token: string) => void;
       clearAuthCookie: (reply: FastifyReply) => void;
       requireUser: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
@@ -18,7 +19,7 @@ type AuthPluginOptions = {
   cookieDomain?: string;
 };
 
-export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app, opts) => {
+export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app) => {
   // Cookie
   await app.register(cookie);
 
@@ -47,7 +48,7 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app, opt
   };
 
   app.decorate("auth", {
-    signAccessToken: async (payload: { userId: string }) => {
+    signAccessToken: async (payload: { userId: UserId }) => {
       return app.jwt.sign(payload, { expiresIn: "24h" });
     },
 
@@ -65,8 +66,7 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app, opt
     requireUser: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         await request.jwtVerify();
-      } catch (e) {
-        // 401
+      } catch (_e) {
         reply.code(401).send({ ok: false, error: "UNAUTHORIZED" });
       }
     },

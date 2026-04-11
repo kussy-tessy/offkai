@@ -3,13 +3,7 @@
     <h2 class="text-xl font-bold">参加可否の回答</h2>
 
     <CommitmentAnswerItem v-for="q in questions" :key="q.id" :question="q" :value="answers[q.id] ?? ''"
-      :on-change="v => updateAnswer(q.id, v)" />
-
-    <div class="pt-4">
-      <MyButton color="primary" @click="submit">
-        送信
-      </MyButton>
-    </div>
+      :on-change="v => onChange(q.id, v)" />
 
     <!-- デバッグ -->
     <pre class="text-xs bg-gray-100 p-2 rounded">
@@ -19,20 +13,12 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from "vue"
-  import MyButton from "@/common/components/MyButton.vue"
-  import { mockCommitmentQuestions } from "@/mocks/commitmentQuestions"
+  import type { CommitmentQuestionWithAnswer } from "@offkai/core"
   import CommitmentAnswerItem from "./CommitmentAnswerItem.vue"
 
-  const questions = mockCommitmentQuestions
-
-  const answers = ref<Record<string, "yes" | "no">>({})
-
-  const updateAnswer = (questionId: string, value: "yes" | "no") => {
-    answers.value[questionId] = value
-  }
-
-  const submit = () => {
-    console.log("commitment answers:", answers.value)
-  }
+  defineProps<{
+    questions: CommitmentQuestionWithAnswer[]
+    answers: Record<string, "yes" | "no">
+    onChange: (questionId: string, value: "yes" | "no") => void
+  }>()
 </script>

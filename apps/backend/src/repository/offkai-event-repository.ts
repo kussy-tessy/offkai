@@ -4,8 +4,10 @@ import {
 	type EventDate,
 	OffkaiEvent,
 	type OffkaiEventId,
+	type OffkaiEventSummary,
 	type OffkaiSeriesId,
 	type PreferenceQuestion,
+	type UserId,
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "./prisma";
@@ -17,12 +19,12 @@ export class OffkaiEventRepository {
 		this.prisma = prisma;
 	}
 
-	async findById(id: string): Promise<OffkaiEvent | null> {
+	async findById(id: string): Promise<OffkaiEvent> {
 		const record = await this.prisma.offkaiEvent.findUnique({
 			where: { id },
 		});
 
-		if (!record) return null;
+		if (!record) throw new Error(`オフ会が見つかりません: ${id}`);
 
 		return OffkaiEvent.reconstruct({
 			id: record.id as OffkaiEventId,
@@ -36,6 +38,48 @@ export class OffkaiEventRepository {
 			preferenceQuestions:
 				record.preferenceQuestions as unknown as PreferenceQuestion[],
 		});
+	}
+
+	async findMyOffkaiEvents(userId: UserId): Promise<OffkaiEventSummary[]> {
+		const records = await this.prisma.offkaiEvent.findMany({
+			where: {
+				OR: [
+					{
+						answers: {
+							some: {
+								userId,
+							},
+						},
+					},
+					{
+						series: {
+							members: {
+								some: {
+									userId,
+									role: "owner",
+								},
+							},
+						},
+					},
+				],
+			},
+			select: {
+				id: true,
+				name: true,
+				eventDate: true,
+				description: true,
+			},
+			orderBy: {
+				eventDate: "asc",
+			},
+		});
+
+		return records.map((record) => ({
+			id: record.id as OffkaiEventId,
+			title: record.name,
+			eventDate: record.eventDate.toISOString(),
+			description: record.description ?? "",
+		}));
 	}
 
 	async save(event: OffkaiEvent): Promise<void> {
@@ -61,5 +105,16 @@ export class OffkaiEventRepository {
 		await this.prisma.offkaiEvent.delete({
 			where: { id },
 		});
+	}
+
+	async findOwnerSeriesId(userId: UserId): Promise<OffkaiSeriesId> {
+		const member = await this.prisma.seriesMember.findFirst({
+			where: { userId, role: "owner" },
+			select: { seriesId: true },
+		});
+		if (!member) {
+			throw new Error(`オーナーのシリーズが見つかりません: ${userId}`);
+		}
+		return member.seriesId as OffkaiSeriesId;
 	}
 }

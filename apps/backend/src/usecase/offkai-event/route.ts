@@ -1,25 +1,64 @@
 import {
 	CreateOffkaiEventRequestSchema,
+	GetMyAnswerFormRequestSchema,
+	GetOffkaiDetailRequestSchema,
 	GetOffkaiEventRequestSchema,
-	type OffkaiEventResponse,
-	type Unbrand,
+	SaveOffkaiAnswerRequestSchema,
+	UserIdSchema,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
-import { createOffkaiEvent } from "./create-offkai-event.usecase";
-import { getOffkaiEvent } from "./get-offkai-event.usecase.usecase";
+import { getMyAnswerForm } from "./answer-command/get-my-answer-form.usecase";
+import { saveOffkaiAnswer } from "./answer-command/save-offkai-answer.usecase";
+import { getDetail } from "./answer-query/get-answers.usecase";
+import { createOffkaiEvent } from "./event-management/create-offkai-event.usecase";
+import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.usecase";
+import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	app.addHook("preHandler", app.auth.requireUser);
 
+	// GET /offkai-event/my
+	app.get("/my", async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		return getMyOffkaiEvents(userId);
+	});
+
 	// GET /offkai-event/:id
 	app.get("/:id", async (request) => {
 		const input = GetOffkaiEventRequestSchema.parse(request.params);
-		return getOffkaiEvent(input) as Promise<Unbrand<OffkaiEventResponse>>;
+		return getOffkaiEvent(input);
+	});
+
+	// GET /offkai-event/:eventId/my-answer-form
+	app.get("/:eventId/my-answer-form", async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const input = GetMyAnswerFormRequestSchema.parse(request.params);
+		return getMyAnswerForm(input, userId);
+	});
+
+	// GET /offkai-event/:eventId/answers
+	app.get("/:eventId/answers", async (request) => {
+		const input = GetOffkaiDetailRequestSchema.parse(request.params);
+		return getDetail(input);
 	});
 
 	// POST /offkai-event
 	app.post("/", async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
 		const input = CreateOffkaiEventRequestSchema.parse(request.body);
-		return createOffkaiEvent(input);
+		return createOffkaiEvent(input, userId);
+	});
+
+	// PUT /offkai-event/:eventId/answers
+	app.put("/:eventId/answers", async (request) => {
+		const rawUserId = request.user.userId;
+		const userId = UserIdSchema.parse(rawUserId);
+		const params = request.params as Record<string, unknown>;
+		const body = request.body as Record<string, unknown>;
+		const input = SaveOffkaiAnswerRequestSchema.parse({
+			...body,
+			eventId: params.eventId,
+		});
+		return saveOffkaiAnswer(input, userId);
 	});
 };

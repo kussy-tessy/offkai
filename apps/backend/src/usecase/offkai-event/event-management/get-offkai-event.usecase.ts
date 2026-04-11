@@ -1,9 +1,15 @@
-import { format, type GetOffkaiEventRequest, type OffkaiEventResponse, type Unbrand } from "@offkai/core";
-import { OffkaiEventRepository } from "../../repository";
+import {
+  format,
+  type GetOffkaiEventRequest,
+  type OffkaiEventResponse,
+  type Unbrand,
+} from "@offkai/core";
+import { OffkaiEventRepository } from "../../../repository";
 
-export async function getOffkaiEvent(input: GetOffkaiEventRequest) {
+export async function getOffkaiEvent(
+  input: GetOffkaiEventRequest,
+): Promise<Unbrand<OffkaiEventResponse>> {
   const event = await new OffkaiEventRepository().findById(input.id);
-  if (!event) throw new Error(`OffkaiEvent not found: ${input.id}`);
   return {
     id: event.id,
     seriesId: event.seriesId,
@@ -17,7 +23,7 @@ export async function getOffkaiEvent(input: GetOffkaiEventRequest) {
     })),
     preferenceQuestions: event.preferenceQuestions.map((question) => ({
       ...question,
-      answer: {
+      answerTemplate: {
         type: question.answer.type,
         choices:
           question.answer.type === "choices"
@@ -25,5 +31,5 @@ export async function getOffkaiEvent(input: GetOffkaiEventRequest) {
             : undefined
       }
     })),
-  } as Unbrand<OffkaiEventResponse>;
+  };
 }

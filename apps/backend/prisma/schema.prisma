@@ -32,8 +32,6 @@ model OffkaiSeries {
 }
 
 model SeriesMember {
-  id        String @id @default(uuid())
-
   seriesId String
   userId   String
   role     String // "owner" | "staff"
@@ -43,7 +41,7 @@ model SeriesMember {
 
   createdAt DateTime @default(now())
 
-  @@unique([seriesId, userId])
+  @@id([seriesId, userId])
 }
 
 model OffkaiEvent {

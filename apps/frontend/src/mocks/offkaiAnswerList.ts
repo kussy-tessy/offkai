@@ -11,13 +11,13 @@ export const mockOffkaiAnswerList: Unbrand<OffkaiAnswerList> = {
 	commitmentQuestions: [
 		{
 			id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-			label: "宿泊",
+			questionShort: "宿泊",
 			capacity: 20,
 			deadline: "2026-01-31T23:59:59Z",
 		},
 		{
 			id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-			label: "1日目参加",
+			questionShort: "1日目参加",
 			capacity: null,
 			deadline: "2026-02-09T23:59:59Z",
 		},
@@ -26,11 +26,11 @@ export const mockOffkaiAnswerList: Unbrand<OffkaiAnswerList> = {
 	preferenceQuestions: [
 		{
 			id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-			label: "交通手段はどうしますか？",
+			question: "交通手段はどうしますか？",
 		},
 		{
 			id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-			label: "到着予定時刻",
+			question: "到着予定時刻",
 		},
 	],
 

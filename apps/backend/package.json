@@ -10,6 +10,7 @@
 		"prisma:generate": "prisma generate",
 		"prisma:migrate": "prisma migrate dev",
 		"lint": "biome lint .",
+		"typecheck": "tsc --noEmit",
 		"format": "biome format . --write"
 	},
 	"dependencies": {

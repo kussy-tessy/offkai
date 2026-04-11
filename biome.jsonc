@@ -15,7 +15,13 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"suspicious": {
+				"noUnknownAtRules": { "level": "off" }
+			},
+			"style": {
+				"noNonNullAssertion": { "level": "off" } // 行儀は悪いが……
+			}
 		}
 	},
 	"javascript": {

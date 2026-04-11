@@ -1,16 +1,15 @@
+import type { GetMeResponse } from "@offkai/core";
 import { ref } from "vue";
 import { useApi } from "./useApi";
 
-type User = any;
-
 const { get, post } = useApi();
-const user = ref<User | null>(null);
-const loading = ref(true);
+const user = ref<GetMeResponse | null>(null);
+const loading = ref(false);
 
 async function fetchMe() {
   try {
-    const data = await get<User>("/me");
-    user.value = data.user;
+    const data = await get<GetMeResponse>("/me");
+    user.value = data;
   } catch {
     user.value = null;
   } finally {

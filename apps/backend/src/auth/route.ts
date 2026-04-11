@@ -1,6 +1,8 @@
+import type { UserId } from "@offkai/core";
 import bcrypt from "bcryptjs";
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../repository/prisma";
+import { getMe } from "../usecase";
 
 type RegisterBody = {
   loginId: string;
@@ -49,7 +51,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       select: { id: true, loginId: true, name: true, createdAt: true },
     });
 
-    const token = await app.auth.signAccessToken({ userId: user.id });
+    const token = await app.auth.signAccessToken({ userId: user.id as UserId });
     app.auth.setAuthCookie(reply, token);
 
     reply.send({ ok: true, user });
@@ -84,7 +86,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return;
     }
 
-    const token = await app.auth.signAccessToken({ userId: user.id });
+    const token = await app.auth.signAccessToken({ userId: user.id as UserId });
     app.auth.setAuthCookie(reply, token);
 
     reply.send({
@@ -107,18 +109,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const userId = request.user.userId;
       if (!userId) return; // requireUserが401を返している
 
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, loginId: true, name: true, createdAt: true },
-      });
+      const me = await getMe(userId);
 
-      if (!user) {
+      if (!me) {
         app.auth.clearAuthCookie(reply);
         reply.code(401).send({ ok: false, error: "UNAUTHORIZED" });
         return;
       }
 
-      reply.send({ ok: true, user });
+      reply.send(me);
     },
   );
 };

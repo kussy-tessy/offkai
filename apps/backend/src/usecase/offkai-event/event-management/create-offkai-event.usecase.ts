@@ -4,16 +4,17 @@ import {
 	type CreateOffkaiEventRequest,
 	EventDateSchema,
 	OffkaiEvent,
-	OffkaiSeriesIdSchema,
 	PreferenceQuestionSchema,
+	type UserId,
 } from "@offkai/core";
-import { OffkaiEventRepository } from "../../repository";
+import { OffkaiEventRepository } from "../../../repository";
 
-export async function createOffkaiEvent(input: CreateOffkaiEventRequest) {
+export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId: UserId) {
+	const repository = new OffkaiEventRepository();
+	const seriesId = await repository.findOwnerSeriesId(userId);
+
 	const offkaiEvent = OffkaiEvent.create({
-		seriesId: OffkaiSeriesIdSchema.parse(
-			"c6b69aec-1562-9298-6d9e-ac504d32f5fb",
-		),
+		seriesId,
 		name: input.title,
 		eventDate: EventDateSchema.parse(new Date(input.eventDate)),
 		applicationStartDate: ApplicationStartDateSchema.parse(
@@ -31,6 +32,6 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest) {
 			PreferenceQuestionSchema.omit({ id: true }).array().parse(
 				input.preferenceQuestions),
 	});
-	await new OffkaiEventRepository().save(offkaiEvent);
+	await repository.save(offkaiEvent);
 	return offkaiEvent;
 }

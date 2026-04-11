@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuth } from "@/common/composables";
-import Answers from "../views/Answers.vue";
+import CreateAnswer from "../views/answer/form.vue";
 import AnswerList from "../views/answerList/details.vue";
 import HomeView from "../views/HomeView.vue";
 import Login from "../views/LoginPage.vue";
@@ -18,7 +18,7 @@ const routes = [
 		props: true,
 		...requiresAuth,
 	},
-	{ path: "/offkai/join", component: Answers, ...requiresAuth },
+	{ path: "/offkai/:id/join", component: CreateAnswer, ...requiresAuth },
 	{
 		path: "/offkai/:id/details",
 		component: AnswerList,

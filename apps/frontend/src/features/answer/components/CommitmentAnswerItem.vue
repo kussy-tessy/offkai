@@ -36,11 +36,11 @@
 </template>
 
 <script setup lang="ts">
+  import type { CommitmentQuestionWithAnswer } from "@offkai/core"
   import MyRadioButton from "@/common/components/MyRadioButton.vue"
-  import type { CommitmentQuestionForAnswer } from "@/mocks/commitmentQuestions"
 
   defineProps<{
-    question: CommitmentQuestionForAnswer
+    question: CommitmentQuestionWithAnswer
     value: "yes" | "no" | ""
     onChange: (value: "yes" | "no") => void
   }>()

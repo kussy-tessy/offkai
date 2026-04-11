@@ -34,13 +34,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { PreferenceQuestionWithAnswer } from "@offkai/core"
   import { computed } from "vue"
-  import MyTextbox from "@/common/components/MyTextbox.vue"
   import MyRadioButton from "@/common/components/MyRadioButton.vue"
-  import type { PreferenceQuestion } from "@/features/offkaiEvent/composables/usePreferenceQuestions"
+  import MyTextbox from "@/common/components/MyTextbox.vue"
 
   const props = defineProps<{
-    question: PreferenceQuestion
+    question: PreferenceQuestionWithAnswer
     value: string
     onChange: (value: string) => void
   }>()

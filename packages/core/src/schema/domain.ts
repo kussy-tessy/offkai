@@ -83,7 +83,7 @@ export const PreferenceQuestionSchema = z.object({
 export type PreferenceQuestion = z.infer<typeof PreferenceQuestionSchema>;
 
 export const PreferenceAnswerSchema = z.object({
-	id: QuestionIdSchema,
+	questionId: QuestionIdSchema,
 	answer: z.string(),
 });
 export type PreferenceAnswer = z.infer<typeof PreferenceAnswerSchema>;

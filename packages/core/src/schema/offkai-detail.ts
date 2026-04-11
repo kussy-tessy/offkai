@@ -1,12 +1,12 @@
 import { z } from "zod";
 import {
 	CapacitySchema,
+	ISODateTimeStringSchema,
 	OffkaiEventIdSchema,
 	QuestionIdSchema,
 	UserIdSchema,
 	UserNameSchema,
-} from "./domain";
-import { ISODateTimeStringSchema } from "./general";
+} from ".";
 
 export const CommitmentQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,
@@ -39,7 +39,7 @@ export const AnswerRowSchema = z.object({
 });
 export type AnswerRow = z.infer<typeof AnswerRowSchema>;
 
-export const OffkaiAnswerListSchema = z.object({
+export const OffkaiDetailSchema = z.object({
 	offkai: z.object({
 		id: OffkaiEventIdSchema,
 		title: z.string(),
@@ -52,4 +52,4 @@ export const OffkaiAnswerListSchema = z.object({
 
 	answers: z.array(AnswerRowSchema),
 });
-export type OffkaiAnswerList = z.infer<typeof OffkaiAnswerListSchema>;
+export type OffkaiDetail = z.infer<typeof OffkaiDetailSchema>;

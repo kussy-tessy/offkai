@@ -5,5 +5,5 @@
 		"moduleResolution": "Bundler",
 		"target": "ES2020"
 	},
-	"include": ["src"]
+	"include": ["src", "src/dto/offkai-detail/.offkai-answer-list.ts"]
 }

@@ -4,8 +4,8 @@ import {
 	type CommitmentAnswer,
 	type CommitmentQuestionHeader,
 	OffkaiAnswer,
-	type OffkaiAnswerList,
-	OffkaiAnswerListSchema,
+	type OffkaiDetail,
+	OffkaiDetailSchema,
 	type OffkaiEventId,
 	type PreferenceAnswer,
 	type PreferenceQuestionHeader,
@@ -20,6 +20,19 @@ export class OffkaiAnswerRepository {
 
 	constructor() {
 		this.prisma = prisma;
+	}
+
+	async findManyByEventId(
+		eventId: OffkaiEventId,
+	): Promise<Array<{ id: string; userId: string; commitmentAnswers: unknown }>> {
+		return this.prisma.offkaiAnswer.findMany({
+			where: { eventId },
+			select: {
+				id: true,
+				userId: true,
+				commitmentAnswers: true,
+			},
+		});
 	}
 
 	async findByEventAndUser(
@@ -48,7 +61,7 @@ export class OffkaiAnswerRepository {
 		});
 	}
 
-	async getDetails(eventId: string): Promise<OffkaiAnswerList> {
+	async getDetail(eventId: OffkaiEventId): Promise<OffkaiDetail> {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			include: {
@@ -61,7 +74,7 @@ export class OffkaiAnswerRepository {
 		});
 
 		if (!event) {
-			throw new Error("OffkaiEvent not found");
+			throw new Error(`オフ会が見つかりません: ${eventId}`);
 		}
 
 		const commitmentQuestions =
@@ -79,7 +92,7 @@ export class OffkaiAnswerRepository {
 			preferenceAnswers: a.preferenceAnswers as AnswerRow["preferenceAnswers"],
 		}));
 
-		const result: Unbrand<OffkaiAnswerList> = {
+		const result: Unbrand<OffkaiDetail> = {
 			offkai: {
 				id: event.id,
 				title: event.name,
@@ -91,7 +104,7 @@ export class OffkaiAnswerRepository {
 			answers,
 		};
 
-		return OffkaiAnswerListSchema.parse(result);
+		return OffkaiDetailSchema.parse(result);
 	}
 
 	async save(answer: OffkaiAnswer): Promise<void> {
@@ -135,7 +148,7 @@ export class OffkaiAnswerRepository {
 		});
 	}
 
-	async delete(id: string): Promise<void> {
+	async delete(id: AnswerId): Promise<void> {
 		await this.prisma.offkaiAnswer.delete({
 			where: { id },
 		});
