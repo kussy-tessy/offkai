@@ -31,7 +31,6 @@
 
     <MyButton class="w-full" color="primary" @click="submit">オフ会を作成する</MyButton>
 
-    <pre>{{ toPayload() }}</pre>
   </main>
 </template>
 

@@ -2,11 +2,11 @@ import type { GetMeResponse } from "@offkai/core";
 import { ref } from "vue";
 import { useApi } from "./useApi";
 
-const { get, post } = useApi();
 const user = ref<GetMeResponse | null>(null);
 const loading = ref(false);
 
 async function fetchMe() {
+  const { get } = useApi();
   try {
     const data = await get<GetMeResponse>("/me");
     user.value = data;
@@ -18,11 +18,13 @@ async function fetchMe() {
 }
 
 async function login(loginId: string, password: string) {
+  const { post } = useApi();
   await post("/auth/login", { loginId, password });
   await fetchMe();
 }
 
 async function logout() {
+  const { post } = useApi();
   await post("/auth/logout");
   user.value = null;
 }

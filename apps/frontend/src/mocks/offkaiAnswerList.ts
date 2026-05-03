@@ -1,6 +1,6 @@
-import type { OffkaiAnswerList, Unbrand } from "@offkai/core";
+import type { OffkaiDetail, Unbrand } from "@offkai/core";
 
-export const mockOffkaiAnswerList: Unbrand<OffkaiAnswerList> = {
+export const mockOffkaiAnswerList: Unbrand<OffkaiDetail> = {
 	offkai: {
 		id: "11111111-1111-1111-1111-111111111111",
 		title: "静岡オフ",

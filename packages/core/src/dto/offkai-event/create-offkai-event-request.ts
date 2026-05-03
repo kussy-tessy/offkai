@@ -18,7 +18,7 @@ export const CreateOffkaiEventRequestSchema = z.object({
 	preferenceQuestions: z.array(
 		z.object({
 			question: z.string().min(1).max(100),
-			answer: z.object({
+			answerTemplate: z.object({
 				type: z.enum(["free", "choices", "choicesIncludingOther"]),
 				choices: z.array(z.string().min(1).max(100)).optional(),
 			})

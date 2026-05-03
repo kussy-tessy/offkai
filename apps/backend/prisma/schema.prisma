@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid(7))
   loginId   String   @unique
   name      String
   passwordHash String
@@ -20,8 +20,8 @@ model User {
   answers       OffkaiAnswer[]
 }
 
-model OffkaiSeries {
-  id          String   @id @default(uuid())
+model Series {
+  id          String   @id @default(uuid(7))
   name        String
 
   createdAt   DateTime @default(now())
@@ -36,7 +36,7 @@ model SeriesMember {
   userId   String
   role     String // "owner" | "staff"
 
-  series OffkaiSeries @relation(fields: [seriesId], references: [id])
+  series Series @relation(fields: [seriesId], references: [id])
   user   User         @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
@@ -45,7 +45,7 @@ model SeriesMember {
 }
 
 model OffkaiEvent {
-  id String @id @default(uuid())
+  id String @id @default(uuid(7))
 
   seriesId String
 
@@ -61,12 +61,12 @@ model OffkaiEvent {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  series  OffkaiSeries  @relation(fields: [seriesId], references: [id])
+  series  Series  @relation(fields: [seriesId], references: [id])
   answers OffkaiAnswer[]
 }
 
 model OffkaiAnswer {
-  id String @id @default(uuid())
+  id String @id @default(uuid(7))
 
   eventId  String
   userId   String
@@ -86,7 +86,7 @@ model OffkaiAnswer {
 }
 
 model OffkaiAnswerHistory {
-  id String @id @default(uuid())
+  id String @id @default(uuid(7))
 
   offkaiAnswerId String
   eventId        String

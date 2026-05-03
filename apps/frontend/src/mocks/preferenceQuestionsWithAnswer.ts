@@ -1,17 +1,17 @@
-import type { PreferenceQuestionWithAnswer } from "@offkai/core";
+import type { PreferenceQuestionWithAnswer, Unbrand } from "@offkai/core";
 
-export const mockPreferenceQuestionsWithAnswer: PreferenceQuestionWithAnswer[] =
+export const mockPreferenceQuestionsWithAnswer: Unbrand<PreferenceQuestionWithAnswer>[] =
   [
     {
       id: "q1",
       question: "参加日はいつが都合いいですか？",
-      answer: { type: "free" },
+      answerTemplate: { type: "free" },
       userAnswer: "2025年10月15日", // 既存回答あり
     },
     {
       id: "q2",
       question: "参加区分を選んでください",
-      answer: {
+      answerTemplate: {
         type: "choices",
         choices: ["昼のみ", "夜のみ", "両方"],
       },
@@ -20,7 +20,7 @@ export const mockPreferenceQuestionsWithAnswer: PreferenceQuestionWithAnswer[] =
     {
       id: "q3",
       question: "アレルギーはありますか？",
-      answer: {
+      answerTemplate: {
         type: "choicesIncludingOther",
         choices: ["なし", "卵", "乳"],
       },

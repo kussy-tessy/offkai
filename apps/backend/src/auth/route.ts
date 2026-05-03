@@ -1,4 +1,4 @@
-import type { UserId } from "@offkai/core";
+import { type UserId, UserLoginIdSchema } from "@offkai/core";
 import bcrypt from "bcryptjs";
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../repository/prisma";
@@ -23,8 +23,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const loginId = (body.loginId ?? "").trim();
     const password = body.password ?? "";
     const name = (body.name ?? "").trim();
+    const loginIdValidation = UserLoginIdSchema.safeParse(loginId);
 
-    if (!loginId || !password || !name) {
+    if (!loginIdValidation.success || !password || !name) {
       reply.code(400).send({ ok: false, error: "VALIDATION_ERROR" });
       return;
     }

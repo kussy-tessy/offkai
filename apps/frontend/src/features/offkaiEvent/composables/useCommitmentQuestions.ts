@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { ref } from "vue";
 
 export type CommitmentQuestion = {
@@ -19,7 +19,7 @@ export const useCommitmentQuestions = () => {
 
 	const addQuestion = () => {
 		questions.value.push({
-			id: uuidv4(),
+			id: uuidv7(),
 			question: "",
 			questionShort: "",
 			description: "",
@@ -45,7 +45,7 @@ export const useCommitmentQuestions = () => {
 	const initialize = (props: CommitmentQuestionInitializeProps) => {
 		questions.value = props.questions.map((q) => ({
 			...q,
-			id: q.id ?? uuidv4(),
+			id: q.id ?? uuidv7(),
 		}));
 	};
 

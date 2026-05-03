@@ -19,7 +19,7 @@ export type CommitmentQuestionWithAnswer = z.infer<
 export const PreferenceQuestionWithAnswerSchema = z.object({
   id: QuestionIdSchema,
   question: z.string(),
-  answer: z.object({
+  answerTemplate: z.object({
     type: z.enum(["free", "choices", "choicesIncludingOther"]),
     choices: z.array(z.string()).optional(),
   }),

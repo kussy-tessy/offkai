@@ -18,7 +18,8 @@
         はい
       </MyRadioButton>
 
-      <MyRadioButton :name="question.id" value="no" :checked="value === 'no'" :on-change="() => onChange('no')">
+      <MyRadioButton :name="question.id" value="no" :checked="value === 'no'" :disabled="!question.canEdit"
+        :on-change="() => onChange('no')">
         いいえ
       </MyRadioButton>
     </div>
@@ -36,11 +37,11 @@
 </template>
 
 <script setup lang="ts">
-  import type { CommitmentQuestionWithAnswer } from "@offkai/core"
+  import type { CommitmentQuestionWithAnswer, Unbrand } from "@offkai/core"
   import MyRadioButton from "@/common/components/MyRadioButton.vue"
 
   defineProps<{
-    question: CommitmentQuestionWithAnswer
+    question: Unbrand<CommitmentQuestionWithAnswer>
     value: "yes" | "no" | ""
     onChange: (value: "yes" | "no") => void
   }>()

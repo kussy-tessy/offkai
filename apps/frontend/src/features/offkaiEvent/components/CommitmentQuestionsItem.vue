@@ -20,7 +20,8 @@
           :includes-time="true" />
       </MyFormField>
       <MyFormField label="定員" class="w-full md:w-[50%]">
-        <MyTextbox type="text" inputmode="numeric" :value="question.capacity ?? ''" placeholder="定員" :on-change="v => {
+        <MyTextbox type="text" inputmode="numeric" :value="question.capacity ?? ''" placeholder="定員"
+          :normalize-input="normalizeCapacityInput" :on-change="v => {
           const trimmed = v.trim()
           if (trimmed === '') {
             onUpdate(question.id, { capacity: null })
@@ -54,6 +55,14 @@
     onUpdate: (id: string, patch: Partial<CommitmentQuestion>) => void
     onRemove: (id: string) => void
   }>()
+
+  const normalizeCapacityInput = (value: string) => {
+    const halfWidth = value.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (char) =>
+      String.fromCharCode(char.charCodeAt(0) - 0xFEE0),
+    );
+
+    return halfWidth.replace(/[^0-9]/g, "");
+  }
 
 </script>
 

@@ -30,7 +30,11 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId:
 				}))),
 		preferenceQuestions:
 			PreferenceQuestionSchema.omit({ id: true }).array().parse(
-				input.preferenceQuestions),
+				input.preferenceQuestions.map((question) => ({
+					question: question.question,
+					questionShort: question.question,
+					answerTemplate: question.answerTemplate,
+				}))),
 	});
 	await repository.save(offkaiEvent);
 	return offkaiEvent;

@@ -2,12 +2,14 @@ import {
 	type AnswerId,
 	type AnswerRow,
 	type CommitmentAnswer,
+	CommitmentAnswerSchema,
 	type CommitmentQuestionHeader,
 	OffkaiAnswer,
 	type OffkaiDetail,
 	OffkaiDetailSchema,
 	type OffkaiEventId,
 	type PreferenceAnswer,
+	PreferenceAnswerSchema,
 	type PreferenceQuestionHeader,
 	type Unbrand,
 	type UserId,
@@ -61,11 +63,12 @@ export class OffkaiAnswerRepository {
 		});
 	}
 
-	async getDetail(eventId: OffkaiEventId): Promise<OffkaiDetail> {
+	async getOffkaiDetail(eventId: OffkaiEventId): Promise<OffkaiDetail> {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			include: {
 				answers: {
+					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					include: {
 						user: true,
 					},
@@ -88,8 +91,8 @@ export class OffkaiAnswerRepository {
 				id: a.user.id,
 				displayName: a.user.name,
 			},
-			commitmentAnswers: a.commitmentAnswers as AnswerRow["commitmentAnswers"],
-			preferenceAnswers: a.preferenceAnswers as AnswerRow["preferenceAnswers"],
+			commitmentAnswers: this.toCommitmentAnswerRecord(a.commitmentAnswers),
+			preferenceAnswers: this.toPreferenceAnswerRecord(a.preferenceAnswers),
 		}));
 
 		const result: Unbrand<OffkaiDetail> = {
@@ -152,5 +155,19 @@ export class OffkaiAnswerRepository {
 		await this.prisma.offkaiAnswer.delete({
 			where: { id },
 		});
+	}
+
+	private toCommitmentAnswerRecord(
+		value: unknown,
+	): AnswerRow["commitmentAnswers"] {
+		const items = CommitmentAnswerSchema.array().parse(value);
+		return Object.fromEntries(items.map((i) => [i.questionId, i.answer]));
+	}
+
+	private toPreferenceAnswerRecord(
+		value: unknown,
+	): AnswerRow["preferenceAnswers"] {
+		const items = PreferenceAnswerSchema.array().parse(value);
+		return Object.fromEntries(items.map((i) => [i.questionId, i.answer]));
 	}
 }

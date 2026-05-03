@@ -1,6 +1,6 @@
-import type { CommitmentQuestionWithAnswer } from "@offkai/core";
+import type { CommitmentQuestionWithAnswer, Unbrand } from "@offkai/core";
 
-export const mockCommitmentQuestionsWithAnswer: CommitmentQuestionWithAnswer[] =
+export const mockCommitmentQuestionsWithAnswer: Unbrand<CommitmentQuestionWithAnswer>[] =
   [
     {
       id: "q1",

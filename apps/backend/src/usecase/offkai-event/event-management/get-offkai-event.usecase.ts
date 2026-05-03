@@ -23,13 +23,7 @@ export async function getOffkaiEvent(
     })),
     preferenceQuestions: event.preferenceQuestions.map((question) => ({
       ...question,
-      answerTemplate: {
-        type: question.answer.type,
-        choices:
-          question.answer.type === "choices"
-            ? question.answer.choices
-            : undefined
-      }
+      answerTemplate: question.answerTemplate,
     })),
   };
 }

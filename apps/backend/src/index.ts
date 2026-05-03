@@ -15,6 +15,7 @@ const app = Fastify();
 
 app.register(fastifyCors, {
 	origin: ["http://localhost:5173", "https://off.kg-misskey.net"],
+	methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	credentials: true,
 });
 

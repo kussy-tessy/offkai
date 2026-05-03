@@ -3,6 +3,12 @@ import { z } from "zod";
 export const UserIdSchema = z.string().uuid().brand("UserId");
 export type UserId = z.infer<typeof UserIdSchema>;
 
+export const UserLoginIdSchema = z
+	.string()
+	.regex(/^[A-Za-z0-9_]+$/)
+	.brand("UserLoginId");
+export type UserLoginId = z.infer<typeof UserLoginIdSchema>;
+
 export const UserNameSchema = z.string().brand("UserName");
 export type UserName = z.infer<typeof UserNameSchema>;
 
@@ -78,7 +84,7 @@ export const PreferenceQuestionSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
 	questionShort: z.string(),
-	answer: PreferenceQuestionAnswerFormSchema,
+	answerTemplate: PreferenceQuestionAnswerFormSchema,
 });
 export type PreferenceQuestion = z.infer<typeof PreferenceQuestionSchema>;
 

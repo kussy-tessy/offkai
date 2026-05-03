@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { OffkaiAnswerList } from "@offkai/core";
+  import type { OffkaiDetail } from "@offkai/core";
   import { onMounted, ref } from 'vue';
   import { useApi } from '@/common/composables';
   import AnswerList from '@/features/answerList/components/AnswerList.vue';
@@ -14,10 +14,10 @@
 
   const { get } = useApi();
 
-  const answerListData = ref<OffkaiAnswerList | null>(null);
+  const answerListData = ref<OffkaiDetail | null>(null);
 
   onMounted(async () => {
-    const data = await get<OffkaiAnswerList>(`/offkai-event/${id}/answers`);
+    const data = await get<OffkaiDetail>(`/offkai-event/${id}/detail`);
     if (data) {
       answerListData.value = data;
     }

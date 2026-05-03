@@ -6,6 +6,7 @@ export const OffkaiEventSummarySchema = z.object({
   title: z.string(),
   eventDate: ISODateTimeStringSchema,
   description: z.string(),
+  canEdit: z.boolean(),
 });
 export type OffkaiEventSummary = z.infer<typeof OffkaiEventSummarySchema>;
 

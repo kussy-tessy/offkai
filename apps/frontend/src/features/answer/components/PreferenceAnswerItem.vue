@@ -6,19 +6,19 @@
     </div>
 
     <!-- free -->
-    <div v-if="question.answer.type === 'free'">
+    <div v-if="question.answerTemplate.type === 'free'">
       <MyTextbox type="text" :value="value" :on-change="v => onChange(v)" />
     </div>
 
     <!-- choices / choicesIncludingOther -->
     <div v-else class="space-y-2">
-      <MyRadioButton v-for="choice in question.answer.choices" :key="choice" :name="question.id" :value="choice"
+      <MyRadioButton v-for="choice in question.answerTemplate.choices" :key="choice" :name="question.id" :value="choice"
         :checked="value === choice" :on-change="v => onChange(v)">
         {{ choice }}
       </MyRadioButton>
 
       <!-- その他 -->
-      <div v-if="question.answer.type === 'choicesIncludingOther'" class="space-y-1">
+      <div v-if="question.answerTemplate.type === 'choicesIncludingOther'" class="space-y-1">
         <MyRadioButton :name="question.id" value="__other__" :checked="isOtherSelected"
           :on-change="() => onChange(otherPrefix)">
           その他
@@ -34,13 +34,13 @@
 </template>
 
 <script setup lang="ts">
-  import type { PreferenceQuestionWithAnswer } from "@offkai/core"
+  import type { PreferenceQuestionWithAnswer, Unbrand } from "@offkai/core"
   import { computed } from "vue"
   import MyRadioButton from "@/common/components/MyRadioButton.vue"
   import MyTextbox from "@/common/components/MyTextbox.vue"
 
   const props = defineProps<{
-    question: PreferenceQuestionWithAnswer
+    question: Unbrand<PreferenceQuestionWithAnswer>
     value: string
     onChange: (value: string) => void
   }>()

@@ -73,7 +73,7 @@ export async function getMyAnswerForm(
     return {
       id: q.id,
       question: q.question,
-      answer: q.answer,
+      answerTemplate: q.answerTemplate,
       userAnswer,
     };
   });

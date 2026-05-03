@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuth } from "@/common/composables";
 import CreateAnswer from "../views/answer/form.vue";
-import AnswerList from "../views/answerList/details.vue";
-import HomeView from "../views/HomeView.vue";
+import AnswerList from "../views/answerList/detail.vue";
+import Dashboard from "../views/dashboard/Dashboard.vue";
 import Login from "../views/LoginPage.vue";
 import CreateOffkaiEvent from "../views/offkaiEvent/create.vue";
 import EditOffkaiEvent from "../views/offkaiEvent/edit.vue";
@@ -10,7 +10,7 @@ import Signup from "../views/SignupPage.vue";
 
 const requiresAuth = { meta: { requiresAuth: true } };
 const routes = [
-	{ path: "/", component: HomeView },
+	{ path: "/dashboard", component: Dashboard, ...requiresAuth },
 	{ path: "/offkai/create", component: CreateOffkaiEvent, ...requiresAuth },
 	{
 		path: "/offkai/:id/edit",
@@ -18,15 +18,21 @@ const routes = [
 		props: true,
 		...requiresAuth,
 	},
-	{ path: "/offkai/:id/join", component: CreateAnswer, ...requiresAuth },
 	{
-		path: "/offkai/:id/details",
+		path: "/offkai/:id/join",
+		component: CreateAnswer,
+		props: true,
+		...requiresAuth,
+	},
+	{
+		path: "/offkai/:id/detail",
 		component: AnswerList,
 		props: true,
 		...requiresAuth,
 	},
 	{ path: "/login", component: Login },
 	{ path: "/signup", component: Signup },
+	{ path: "/", redirect: () => "/dashboard" },
 ];
 
 export const router = createRouter({
@@ -37,7 +43,21 @@ router.beforeEach(async (to) => {
 	const { user, fetchMe } = useAuth();
 
 	if (user.value === null) {
-		await fetchMe();
+		try {
+			await fetchMe();
+		} catch (error: unknown) {
+			const status =
+				typeof error === "object" && error !== null && "response" in error
+					? (error as { response?: { status?: number } }).response?.status
+					: undefined;
+			// 401エラーはセッション切れ
+			if (status === 401) {
+				user.value = null;
+				if (to.meta.requiresAuth) {
+					return "/login";
+				}
+			}
+		}
 	}
 
 	if (to.meta.requiresAuth && !user.value) {
@@ -45,6 +65,6 @@ router.beforeEach(async (to) => {
 	}
 
 	if ((to.path === "/login" || to.path === "/signup") && user.value) {
-		return "/";
+		return "/dashboard";
 	}
 });

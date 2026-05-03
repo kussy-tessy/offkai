@@ -5,9 +5,9 @@ import type {
 } from "@offkai/core";
 import { OffkaiAnswerRepository } from "../../../repository";
 
-export async function getDetail(
+export async function getOffkaiDetail(
   input: GetOffkaiDetailRequest,
 ): Promise<Unbrand<GetOffkaiDetailResponse>> {
-  const result = await new OffkaiAnswerRepository().getDetail(input.id);
+  const result = await new OffkaiAnswerRepository().getOffkaiDetail(input.eventId);
   return result;
 }

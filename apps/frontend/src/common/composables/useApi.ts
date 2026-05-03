@@ -41,6 +41,7 @@ function createClient(): AxiosInstance {
 		},
 		(error) => {
 			console.error("[API Error]", error);
+			// エラーを素通しにしてコール元で処理
 			return Promise.reject(error);
 		},
 	);

@@ -3,10 +3,13 @@
 </template>
 
 <script setup lang="ts">
-  import { useApi } from '@/common/composables';
+  import { useRouter } from 'vue-router';
+  import { useApi, useToast } from '@/common/composables';
   import OffkaiEvent from '@/features/offkaiEvent/components/OffkaiEvent.vue';
 
   const { post } = useApi();
+  const { success, error } = useToast();
+  const router = useRouter();
 
   const initialValue = {
     title: "aa",
@@ -18,7 +21,13 @@
   }
 
   const create = async (payload: unknown) => {
-    await post("/offkai-event", payload)
+    try {
+      await post("/offkai-event", payload)
+      success("オフ会を作成しました。")
+      await router.push('/dashboard')
+    } catch {
+      error("オフ会の作成に失敗しました。")
+    }
   }
 </script>
 

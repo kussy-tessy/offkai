@@ -3,11 +3,13 @@
     <h1 class="text-3xl">ユーザー登録</h1>
 
     <MyFormField label="ログインID">
-      <MyTextBox :value="loginId" :on-change="v => loginId = v" :error="errors.loginId" />
+      <MyTextBox :value="loginId" :on-change="v => loginId = v" :error="errors.loginId"
+        :normalize-input="normalizeLoginIdInput"
+        placeholder="例: kussy_tessy (DiscordのIDと同じにすることを推奨)" />
     </MyFormField>
 
     <MyFormField label="表示名">
-      <MyTextBox :value="name" :on-change="v => name = v" :error="errors.name" />
+      <MyTextBox :value="name" :on-change="v => name = v" :error="errors.name" placeholder="例: くっしー" />
     </MyFormField>
 
     <MyFormField label="パスワード">
@@ -21,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+  import { UserLoginIdSchema } from "@offkai/core"
   import { ref } from "vue"
   import MyButton from "@/common/components/MyButton.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
@@ -40,10 +43,20 @@
 
   const errors = ref<Record<string, string | undefined>>({})
 
+  const normalizeLoginIdInput = (value: string) => {
+    return value.replace(/[^A-Za-z0-9_]/g, "")
+  }
+
   const validate = () => {
     errors.value = {}
 
-    if (!loginId.value) errors.value.loginId = "必須です"
+    const normalizedLoginId = loginId.value.trim()
+
+    if (!normalizedLoginId) {
+      errors.value.loginId = "必須です"
+    } else if (!UserLoginIdSchema.safeParse(normalizedLoginId).success) {
+      errors.value.loginId = "半角英数字と_のみ使用できます"
+    }
     if (!name.value) errors.value.name = "必須です"
     if (!password.value) errors.value.password = "必須です"
 
@@ -53,7 +66,7 @@
   const submit = async () => {
     if (!validate()) return
     await handleSubmit({
-      loginId: loginId.value,
+      loginId: loginId.value.trim(),
       name: name.value,
       password: password.value,
     })

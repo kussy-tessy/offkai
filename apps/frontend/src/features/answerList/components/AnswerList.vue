@@ -2,7 +2,7 @@
   <header class="pb-4">
     <h1 class="text-4xl font-bold">{{ data.offkai.title }}</h1>
     <p class="text-sm text-gray-500">
-      開催日：{{ formatDate(data.offkai.eventDate) }}
+      開催日：{{ format(data.offkai.eventDate, false) }}
     </p>
     <p class="text-gray-600">{{ data.offkai.description }}</p>
   </header>
@@ -16,13 +16,13 @@
         <tr>
           <th class="border-t border-b p-2 text-left w-32">名前</th>
           <th v-for="q in data.commitmentQuestions" :key="q.id" class="border-t border-b p-2 w-36">
-            <div>{{ q.label }}</div>
+            <div>{{ q.questionShort }}</div>
             <div class="text-xs text-gray-500">
               <span v-if="q.capacity !== null">
                 {{ countYes(q.id) }}/{{ q.capacity }}
               </span>
               <span v-if="q.deadline">
-                （{{ formatDate(q.deadline) }}締切）
+                （{{ format(q.deadline, false) }}締切）
               </span>
             </div>
           </th>
@@ -52,7 +52,7 @@
 
   <select v-model="selectedPreferenceId" class="border border-sky-500 rounded px-2 py-1 mb-3 bg-white text-gray-600">
     <option v-for="q in data.preferenceQuestions" :key="q.id" :value="q.id">
-      {{ q.label }}
+      {{ q.question }}
     </option>
   </select>
 
@@ -78,22 +78,17 @@
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
   import { faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-  import type { OffkaiAnswerList, Unbrand } from "@offkai/core";
+  import { format, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { ref } from "vue";
 
   const { data } = defineProps<{
-    data: Unbrand<OffkaiAnswerList>;
+    data: Unbrand<OffkaiDetail>;
   }>();
 
-  const selectedPreferenceId = ref(data.preferenceQuestions[0]?.id);
-
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  };
+  const selectedPreferenceId = ref<string>(data.preferenceQuestions[0]?.id ?? "");
 
   const countYes = (questionId: string) => {
-    return data.answers.filter((a) => a.commitmentAnswers[questionId] === "yes")
+    return data.answers.filter((a: Unbrand<OffkaiDetail>["answers"][number]) => a.commitmentAnswers[questionId] === "yes")
       .length;
   };
 </script>

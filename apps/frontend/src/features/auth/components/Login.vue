@@ -13,11 +13,16 @@
     <MyButton class="w-full" color="primary" @click="submit">
       ログイン
     </MyButton>
+
+    <MyButton class="w-full" color="secondary" variant="ghost" @click="goToSignup">
+      新規登録
+    </MyButton>
   </main>
 </template>
 
 <script setup lang="ts">
   import { ref } from "vue"
+  import { useRouter } from "vue-router"
   import MyButton from "@/common/components/MyButton.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
   import MyTextBox from "@/common/components/MyTextbox.vue"
@@ -31,6 +36,7 @@
 
   const loginId = ref("")
   const password = ref("")
+  const router = useRouter()
 
   const errors = ref<Record<string, string | undefined>>({})
 
@@ -49,5 +55,9 @@
       loginId: loginId.value,
       password: password.value,
     })
+  }
+
+  const goToSignup = () => {
+    router.push("/signup")
   }
 </script>

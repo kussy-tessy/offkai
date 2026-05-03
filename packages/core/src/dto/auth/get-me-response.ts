@@ -1,9 +1,14 @@
 import { z } from "zod";
-import { ISODateTimeStringSchema, UserIdSchema, UserNameSchema } from "../../schema";
+import {
+  ISODateTimeStringSchema,
+  UserIdSchema,
+  UserLoginIdSchema,
+  UserNameSchema,
+} from "../../schema";
 
 export const GetMeResponseSchema = z.object({
   id: UserIdSchema,
-  loginId: z.string(),
+  loginId: UserLoginIdSchema,
   name: UserNameSchema,
   createdAt: ISODateTimeStringSchema,
 });

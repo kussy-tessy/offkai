@@ -9,10 +9,11 @@ import {
 import type { FastifyPluginAsync } from "fastify";
 import { getMyAnswerForm } from "./answer-command/get-my-answer-form.usecase";
 import { saveOffkaiAnswer } from "./answer-command/save-offkai-answer.usecase";
-import { getDetail } from "./answer-query/get-answers.usecase";
+import { getOffkaiDetail } from "./detail-query/get-offkai-detail.usecase";
 import { createOffkaiEvent } from "./event-management/create-offkai-event.usecase";
 import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.usecase";
 import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
+import { updateOffkaiEvent } from "./event-management/update-offkai-event.usecase";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	app.addHook("preHandler", app.auth.requireUser);
@@ -36,10 +37,10 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return getMyAnswerForm(input, userId);
 	});
 
-	// GET /offkai-event/:eventId/answers
-	app.get("/:eventId/answers", async (request) => {
+	// GET /offkai-event/:eventId/detail
+	app.get("/:eventId/detail", async (request) => {
 		const input = GetOffkaiDetailRequestSchema.parse(request.params);
-		return getDetail(input);
+		return getOffkaiDetail(input);
 	});
 
 	// POST /offkai-event
@@ -47,6 +48,14 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = CreateOffkaiEventRequestSchema.parse(request.body);
 		return createOffkaiEvent(input, userId);
+	});
+
+	// PUT /offkai-event/:id
+	app.put("/:id", async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const params = GetOffkaiEventRequestSchema.parse(request.params);
+		const input = CreateOffkaiEventRequestSchema.parse(request.body);
+		return updateOffkaiEvent(params, input, userId);
 	});
 
 	// PUT /offkai-event/:eventId/answers

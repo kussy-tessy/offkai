@@ -14,7 +14,7 @@
     id: string
   }>()
 
-  const { get, post } = useApi();
+  const { get, put } = useApi();
 
   const initialValue = ref({
     title: "",
@@ -33,6 +33,6 @@
   });
 
   const update = async (payload: unknown) => {
-    await post("/offkai-event", payload as CreateOffkaiEventRequest)
+    await put(`/offkai-event/${id}`, payload as CreateOffkaiEventRequest)
   }
 </script>
