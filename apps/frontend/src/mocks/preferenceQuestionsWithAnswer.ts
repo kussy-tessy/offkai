@@ -5,12 +5,14 @@ export const mockPreferenceQuestionsWithAnswer: Unbrand<PreferenceQuestionWithAn
     {
       id: "q1",
       question: "参加日はいつが都合いいですか？",
+      required: true,
       answerTemplate: { type: "free" },
       userAnswer: "2025年10月15日", // 既存回答あり
     },
     {
       id: "q2",
       question: "参加区分を選んでください",
+      required: false,
       answerTemplate: {
         type: "choices",
         choices: ["昼のみ", "夜のみ", "両方"],
@@ -20,6 +22,7 @@ export const mockPreferenceQuestionsWithAnswer: Unbrand<PreferenceQuestionWithAn
     {
       id: "q3",
       question: "アレルギーはありますか？",
+      required: true,
       answerTemplate: {
         type: "choicesIncludingOther",
         choices: ["なし", "卵", "乳"],

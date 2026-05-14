@@ -22,9 +22,9 @@
 
   const create = async (payload: unknown) => {
     try {
-      await post("/offkai-event", payload)
+      const result = await post<{ id: string }>("/offkai-event", payload)
       success("オフ会を作成しました。")
-      await router.push('/dashboard')
+      await router.push(`/offkai/${result!.id}/detail`)
     } catch {
       error("オフ会の作成に失敗しました。")
     }

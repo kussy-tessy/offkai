@@ -45,12 +45,13 @@ export const CommitmentQuestionSchema = z.object({
 	deadline: DeadlineSchema,
 	description: z.string(),
 	capacity: CapacitySchema,
+	required: z.boolean().default(false),
 });
 export type CommitmentQuestion = z.infer<typeof CommitmentQuestionSchema>;
 
 export const CommitmentAnswerSchema = z.object({
 	questionId: QuestionIdSchema,
-	answer: z.enum(["yes", "no"]),
+	answer: z.enum(["yes", "no"]).nullable(),
 });
 export type CommitmentAnswer = z.infer<typeof CommitmentAnswerSchema>;
 
@@ -85,11 +86,12 @@ export const PreferenceQuestionSchema = z.object({
 	question: z.string(),
 	questionShort: z.string(),
 	answerTemplate: PreferenceQuestionAnswerFormSchema,
+	required: z.boolean().default(false),
 });
 export type PreferenceQuestion = z.infer<typeof PreferenceQuestionSchema>;
 
 export const PreferenceAnswerSchema = z.object({
 	questionId: QuestionIdSchema,
-	answer: z.string(),
+	answer: z.string().nullable(),
 });
 export type PreferenceAnswer = z.infer<typeof PreferenceAnswerSchema>;

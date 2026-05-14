@@ -1,12 +1,13 @@
 <template>
-  <OffkaiEvent :initial-value="initialValue" :handle-submit="update" />
+  <OffkaiEvent :initial-value="initialValue" :handle-submit="update" :is-edit="true" />
 
 </template>
 
 <script setup lang="ts">
   import { CreateOffkaiEventRequest, OffkaiEventResponse } from "@offkai/core";
   import { onMounted, ref } from 'vue';
-  import { useApi } from '@/common/composables';
+  import { useRouter } from 'vue-router';
+  import { useApi, useToast } from '@/common/composables';
   import OffkaiEvent from '@/features/offkaiEvent/components/OffkaiEvent.vue';
   import { CommitmentQuestion, PreferenceQuestion } from '@/features/offkaiEvent/composables';
 
@@ -15,6 +16,8 @@
   }>()
 
   const { get, put } = useApi();
+  const { success, error } = useToast();
+  const router = useRouter();
 
   const initialValue = ref({
     title: "",
@@ -33,6 +36,12 @@
   });
 
   const update = async (payload: unknown) => {
-    await put(`/offkai-event/${id}`, payload as CreateOffkaiEventRequest)
+    try {
+      await put(`/offkai-event/${id}`, payload as CreateOffkaiEventRequest)
+      success("オフ会を更新しました。")
+      await router.push(`/offkai/${id}/detail`)
+    } catch {
+      error("オフ会の更新に失敗しました。")
+    }
   }
 </script>

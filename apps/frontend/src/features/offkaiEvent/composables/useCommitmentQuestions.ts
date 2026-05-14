@@ -8,6 +8,7 @@ export type CommitmentQuestion = {
 	description: string;
 	deadline: string;
 	capacity: number | null;
+	required: boolean;
 };
 
 export type CommitmentQuestionInitializeProps = {
@@ -25,6 +26,7 @@ export const useCommitmentQuestions = () => {
 			description: "",
 			deadline: "",
 			capacity: null,
+			required: false,
 		});
 	};
 
@@ -46,6 +48,7 @@ export const useCommitmentQuestions = () => {
 		questions.value = props.questions.map((q) => ({
 			...q,
 			id: q.id ?? uuidv7(),
+			required: q.required ?? false,
 		}));
 	};
 

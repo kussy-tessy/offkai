@@ -18,9 +18,9 @@ export async function updateOffkaiEvent(
 ) {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(params.id);
-	const ownerSeriesId = await repository.findOwnerSeriesId(userId);
+	const seriesRole = await repository.findSeriesMemberRole(userId, event.seriesId);
 
-	if (event.seriesId !== ownerSeriesId) {
+	if (seriesRole !== "owner") {
 		throw new Error("このオフ会を編集する権限がありません");
 	}
 
@@ -39,9 +39,20 @@ export async function updateOffkaiEvent(
 			input.preferenceQuestions.map((question) => ({
 				question: question.question,
 				questionShort: question.question,
+				required: question.required,
 				answerTemplate: question.answerTemplate,
 			})),
 		);
+
+	const nextCommitmentQuestions = commitmentWithoutId.map((question, index) => ({
+		...question,
+		id: event.commitmentQuestions[index]?.id ?? (uuidv7() as QuestionId),
+	}));
+
+	const nextPreferenceQuestions = preferenceWithoutId.map((question, index) => ({
+		...question,
+		id: event.preferenceQuestions[index]?.id ?? (uuidv7() as QuestionId),
+	}));
 
 	const updated = event.edit({
 		name: input.title,
@@ -50,14 +61,8 @@ export async function updateOffkaiEvent(
 			new Date(input.applicationStartDate),
 		),
 		description: input.description,
-		commitmentQuestions: commitmentWithoutId.map((question, index) => ({
-			...question,
-			id: event.commitmentQuestions[index]?.id ?? (uuidv7() as QuestionId),
-		})),
-		preferenceQuestions: preferenceWithoutId.map((question, index) => ({
-			...question,
-			id: event.preferenceQuestions[index]?.id ?? (uuidv7() as QuestionId),
-		})),
+		commitmentQuestions: nextCommitmentQuestions,
+		preferenceQuestions: nextPreferenceQuestions,
 	});
 
 	await repository.save(updated);

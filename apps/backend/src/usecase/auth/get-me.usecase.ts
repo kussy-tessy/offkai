@@ -4,10 +4,16 @@ import { prisma } from "../../repository/prisma";
 export async function getMe(
   userId: UserId,
 ): Promise<Unbrand<GetMeResponse> | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, loginId: true, name: true, createdAt: true },
-  });
+  const [user, ownerSeriesMember] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, loginId: true, name: true, createdAt: true },
+    }),
+    prisma.seriesMember.findFirst({
+      where: { userId, role: "owner" },
+      select: { userId: true },
+    }),
+  ]);
 
   if (!user) {
     return null;
@@ -18,5 +24,6 @@ export async function getMe(
     loginId: user.loginId,
     name: user.name,
     createdAt: user.createdAt.toISOString(),
+    isSeriesOwner: ownerSeriesMember !== null,
   };
 }

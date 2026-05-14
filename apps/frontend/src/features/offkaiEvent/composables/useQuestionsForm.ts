@@ -1,6 +1,9 @@
 import type { CreateOffkaiEventRequest, Unbrand } from "@offkai/core";
-import { ref } from "vue";
-import { type FieldErrors, isEmpty, useField } from "@/common/composables";
+import {
+	isEmpty,
+	useField,
+	useFieldErrorsComposable,
+} from "@/common/composables";
 import {
 	type CommitmentQuestion,
 	useCommitmentQuestions,
@@ -29,10 +32,10 @@ export const useQuestionsForm = () => {
 	const commitment = useCommitmentQuestions();
 	const preference = usePreferenceQuestions();
 
-	const errors = ref<FieldErrors>({});
+	const { errors, reset, hasAny } = useFieldErrorsComposable();
 
 	const validate = () => {
-		errors.value = {};
+		reset();
 		if (isEmpty(title.value)) {
 			errors.value.title = "タイトルを入力してください";
 		}
@@ -44,19 +47,15 @@ export const useQuestionsForm = () => {
 		}
 
 		for (const [index, question] of commitment.questions.value.entries()) {
-			if (question.question.trim().length === 0) {
+			if (isEmpty(question.question)) {
 				errors.value[`commitmentQuestions.${index}.question`] =
 					"参加表明質問を入力してください";
 			}
-			if (question.questionShort.trim().length === 0) {
+			if (isEmpty(question.questionShort)) {
 				errors.value[`commitmentQuestions.${index}.questionShort`] =
 					"見出し用の短い質問を入力してください";
 			}
-			if (question.description.trim().length === 0) {
-				errors.value[`commitmentQuestions.${index}.description`] =
-					"説明を入力してください";
-			}
-			if (question.deadline.trim().length === 0) {
+			if (isEmpty(question.deadline)) {
 				errors.value[`commitmentQuestions.${index}.deadline`] =
 					"締切を入力してください";
 			}
@@ -67,16 +66,14 @@ export const useQuestionsForm = () => {
 		}
 
 		for (const [index, question] of preference.questions.value.entries()) {
-			if (question.question.trim().length === 0) {
+			if (isEmpty(question.question)) {
 				errors.value[`preferenceQuestions.${index}.question`] =
 					"アンケート質問を入力してください";
 			}
 
 			if (question.answerTemplate.type !== "free") {
 				const choices = question.answerTemplate.choices ?? [];
-				const hasEmptyChoice = choices.some(
-					(choice) => choice.trim().length === 0,
-				);
+				const hasEmptyChoice = choices.some(isEmpty);
 				if (hasEmptyChoice) {
 					errors.value[`preferenceQuestions.${index}.choices`] =
 						"選択肢の空欄を埋めてください";
@@ -84,7 +81,7 @@ export const useQuestionsForm = () => {
 			}
 		}
 
-		return Object.keys(errors.value).length === 0;
+		return !hasAny();
 	};
 
 	const initialize = (props: OffkaiEventInitializeProps) => {
@@ -111,9 +108,11 @@ export const useQuestionsForm = () => {
 			description: question.description,
 			deadline: question.deadline,
 			capacity: question.capacity as number,
+			required: question.required,
 		})),
 		preferenceQuestions: preference.questions.value.map((question) => ({
 			question: question.question,
+			required: question.required,
 			answerTemplate:
 				question.answerTemplate.type === "free"
 					? { type: "free" }

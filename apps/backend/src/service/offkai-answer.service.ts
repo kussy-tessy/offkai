@@ -70,7 +70,7 @@ export class OffkaiAnswerService {
 
       const answers = record.commitmentAnswers as unknown as {
         questionId: string;
-        answer: "yes" | "no";
+        answer: "yes" | "no" | null;
       }[];
 
       for (const answer of answers) {

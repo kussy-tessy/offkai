@@ -3,6 +3,7 @@
 export type CommitmentQuestionForAnswer = {
 	id: string;
 	question: string;
+	required: boolean;
 	deadline: string;
 	capacity: number;
 	currentCount: number;
@@ -15,6 +16,7 @@ export const mockCommitmentQuestions: CommitmentQuestionForAnswer[] = [
 	{
 		id: "q1",
 		question: "土曜日、宿に宿泊しますか？",
+		required: true,
 		deadline: "2025-10-01",
 		capacity: 10,
 		currentCount: 7,
@@ -24,6 +26,7 @@ export const mockCommitmentQuestions: CommitmentQuestionForAnswer[] = [
 	{
 		id: "q2",
 		question: "日曜日、ロケに参加しますか？",
+		required: false,
 		deadline: "2025-09-20",
 		capacity: 5,
 		currentCount: 5,
@@ -34,6 +37,7 @@ export const mockCommitmentQuestions: CommitmentQuestionForAnswer[] = [
 	{
 		id: "q3",
 		question: "前夜祭に参加しますか？",
+		required: true,
 		deadline: "2025-09-01",
 		capacity: 20,
 		currentCount: 12,

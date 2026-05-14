@@ -10,14 +10,16 @@ export const CreateOffkaiEventRequestSchema = z.object({
 		z.object({
 			question: z.string().min(1).max(100),
 			questionShort: z.string().min(1).max(100),
-			description: z.string().min(1).max(500),
+			description: z.string().max(500),
 			deadline: z.preprocess(preprocessDatetime, z.string().datetime()),
 			capacity: z.number().min(1).max(100),
+			required: z.boolean().default(false),
 		}),
 	),
 	preferenceQuestions: z.array(
 		z.object({
 			question: z.string().min(1).max(100),
+			required: z.boolean().default(false),
 			answerTemplate: z.object({
 				type: z.enum(["free", "choices", "choicesIncludingOther"]),
 				choices: z.array(z.string().min(1).max(100)).optional(),

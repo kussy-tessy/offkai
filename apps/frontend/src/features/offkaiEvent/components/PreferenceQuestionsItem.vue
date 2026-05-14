@@ -2,7 +2,8 @@
   <div class="bg-slate-50 rounded-lg border border-gray-300 shadow p-4">
     <!-- 質問文 -->
     <MyFormField label="質問">
-      <MyTextbox type="text" :value="question.question" :on-change="v => onUpdate(question.id, { question: v })" />
+      <MyTextbox type="text" :value="question.question" :on-change="v => onUpdate(question.id, { question: v })"
+        :error="errorQuestion" />
     </MyFormField>
 
     <!-- 回答形式 -->
@@ -14,6 +15,15 @@
         <option value="choices">選択肢</option>
         <option value="choicesIncludingOther">選択肢 + その他</option>
       </select>
+    </MyFormField>
+
+    <MyFormField label="回答必須">
+      <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+        <input type="checkbox" :checked="question.required" @change="onUpdate(question.id, {
+          required: ($event.target as HTMLInputElement).checked,
+        })" />
+        この質問を必須にする
+      </label>
     </MyFormField>
 
     <!-- 選択肢 -->
@@ -30,6 +40,7 @@
           <MyButton size="sm" color="secondary" variant="ghost" @click="addChoice">
             <FontAwesomeIcon :icon="faPlus" />選択肢を追加
           </MyButton>
+          <p v-if="errorChoices" class="text-sm text-red-600">{{ errorChoices }}</p>
         </div>
       </MyFormField>
     </div>
@@ -56,6 +67,8 @@
     question: PreferenceQuestion
     onUpdate: (id: string, patch: Partial<PreferenceQuestion>) => void
     onRemove: (id: string) => void
+    errorQuestion?: string
+    errorChoices?: string
   }>()
 
   const hasChoices = computed(() =>

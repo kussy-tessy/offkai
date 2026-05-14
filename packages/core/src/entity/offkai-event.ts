@@ -88,9 +88,6 @@ export class OffkaiEvent {
 		if (isPassed(new Date(), params.eventDate)) {
 			throw new Error("すでに開催日を過ぎています");
 		}
-		if (isPassed(new Date(), params.applicationStartDate)) {
-			throw new Error("すでに募集開始日を過ぎています");
-		}
 		return new OffkaiEvent(
 			this.id,
 			this.seriesId,

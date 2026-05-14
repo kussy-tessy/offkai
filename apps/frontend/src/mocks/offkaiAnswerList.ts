@@ -14,12 +14,14 @@ export const mockOffkaiAnswerList: Unbrand<OffkaiDetail> = {
 			questionShort: "宿泊",
 			capacity: 20,
 			deadline: "2026-01-31T23:59:59Z",
+			required: true,
 		},
 		{
 			id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 			questionShort: "1日目参加",
 			capacity: null,
 			deadline: "2026-02-09T23:59:59Z",
+			required: false,
 		},
 	],
 
@@ -27,10 +29,12 @@ export const mockOffkaiAnswerList: Unbrand<OffkaiDetail> = {
 		{
 			id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
 			question: "交通手段はどうしますか？",
+			required: true,
 		},
 		{
 			id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
 			question: "到着予定時刻",
+			required: false,
 		},
 	],
 

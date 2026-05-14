@@ -5,11 +5,13 @@ export const mockPreferenceQuestions: PreferenceQuestion[] = [
 	{
 		id: "q1",
 		question: "参加日はいつが都合いいですか？",
+		required: true,
 		answerTemplate: { type: "free" },
 	},
 	{
 		id: "q2",
 		question: "参加区分を選んでください",
+		required: false,
 		answerTemplate: {
 			type: "choices",
 			choices: ["昼のみ", "夜のみ", "両方"],
@@ -18,6 +20,7 @@ export const mockPreferenceQuestions: PreferenceQuestion[] = [
 	{
 		id: "q3",
 		question: "アレルギーはありますか？",
+		required: true,
 		answerTemplate: {
 			type: "choicesIncludingOther",
 			choices: ["なし", "卵", "乳"],

@@ -1,8 +1,11 @@
 <template>
-  <div class="bg-slate-50 rounded-lg border border-gray-300 shadow p-4">
+  <div class="rounded-lg border shadow p-4" :class="validationMessage
+    ? 'bg-yellow-50 border-yellow-300'
+    : 'bg-slate-50 border-gray-300'">
     <!-- 質問文 -->
     <div class="font-bold">
       {{ question.question }}
+      <span v-if="question.required" class="ml-2 text-xs text-red-600">必須</span>
     </div>
 
     <!-- free -->
@@ -30,6 +33,10 @@
         </div>
       </div>
     </div>
+
+    <p v-if="validationMessage" class="text-sm text-amber-700 mt-3 font-semibold">
+      {{ validationMessage }}
+    </p>
   </div>
 </template>
 
@@ -43,6 +50,7 @@
     question: Unbrand<PreferenceQuestionWithAnswer>
     value: string
     onChange: (value: string) => void
+    validationMessage?: string
   }>()
 
   const otherPrefix = "その他: "

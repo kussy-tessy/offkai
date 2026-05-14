@@ -4,6 +4,7 @@ import { ref } from "vue";
 export type PreferenceQuestion = {
 	id: string;
 	question: string;
+	required: boolean;
 	answerTemplate: {
 		type: "free" | "choices" | "choicesIncludingOther";
 		choices?: string[];
@@ -21,6 +22,7 @@ export const usePreferenceQuestions = () => {
 		questions.value.push({
 			id: uuidv7(),
 			question: "",
+			required: false,
 			answerTemplate: { type: "free" },
 		});
 	};
@@ -43,6 +45,7 @@ export const usePreferenceQuestions = () => {
 		questions.value = props.questions.map((q) => ({
 			...q,
 			id: q.id ?? uuidv7(),
+			required: q.required ?? false,
 		}));
 	};
 

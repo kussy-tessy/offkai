@@ -1,10 +1,18 @@
 import { z } from "zod";
-import { QuestionIdSchema } from "../../schema";
+import { ISODateTimeStringSchema, OffkaiEventIdSchema, QuestionIdSchema } from "../../schema";
+
+export const OffkaiEventHeaderSchema = z.object({
+  id: OffkaiEventIdSchema,
+  title: z.string(),
+  eventDate: ISODateTimeStringSchema,
+});
+export type OffkaiEventHeader = z.infer<typeof OffkaiEventHeaderSchema>;
 
 export const CommitmentQuestionWithAnswerSchema = z.object({
   id: QuestionIdSchema,
   question: z.string(),
-  deadline: z.string().date(),
+  required: z.boolean().default(false),
+  deadline: ISODateTimeStringSchema,
   capacity: z.number().nonnegative(),
   currentCount: z.number().nonnegative(),
   canSelectYes: z.boolean(),
@@ -19,6 +27,7 @@ export type CommitmentQuestionWithAnswer = z.infer<
 export const PreferenceQuestionWithAnswerSchema = z.object({
   id: QuestionIdSchema,
   question: z.string(),
+  required: z.boolean().default(false),
   answerTemplate: z.object({
     type: z.enum(["free", "choices", "choicesIncludingOther"]),
     choices: z.array(z.string()).optional(),
@@ -30,6 +39,7 @@ export type PreferenceQuestionWithAnswer = z.infer<
 >;
 
 export const GetMyAnswerFormResponseSchema = z.object({
+  event: OffkaiEventHeaderSchema,
   commitmentQuestions: z.array(CommitmentQuestionWithAnswerSchema),
   preferenceQuestions: z.array(PreferenceQuestionWithAnswerSchema),
 });

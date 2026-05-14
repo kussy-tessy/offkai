@@ -11,6 +11,7 @@ export const GetMeResponseSchema = z.object({
   loginId: UserLoginIdSchema,
   name: UserNameSchema,
   createdAt: ISODateTimeStringSchema,
+  isSeriesOwner: z.boolean(),
 });
 
 export type GetMeResponse = z.infer<typeof GetMeResponseSchema>;

@@ -1,7 +1,11 @@
 <template>
   <div class="grid gap-2">
-    <CommitmentQuestionsItem v-for="q in questions" :key="q.id" :question="q" :on-update="updateQuestion"
-      :on-remove="removeQuestion" />
+    <CommitmentQuestionsItem v-for="(q, index) in questions" :key="q.id" :question="q" :on-update="updateQuestion"
+      :on-remove="removeQuestion" :error-question="errors?.[`commitmentQuestions.${index}.question`]"
+      :error-question-short="errors?.[`commitmentQuestions.${index}.questionShort`]"
+      :error-description="errors?.[`commitmentQuestions.${index}.description`]"
+      :error-deadline="errors?.[`commitmentQuestions.${index}.deadline`]"
+      :error-capacity="errors?.[`commitmentQuestions.${index}.capacity`]" />
   </div>
   <div class="mt-2 flex justify-center">
     <MyButton color="secondary" variant="ghost" class="w-[50%]" @click="addQuestion">
@@ -13,14 +17,18 @@
 <script setup lang="ts">
   import { faPlus } from '@fortawesome/free-solid-svg-icons';
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+  import { toRef } from 'vue';
   import MyButton from "@/common/components/MyButton.vue";
+  import type { FieldErrors } from "@/common/composables";
   import { useCommitmentQuestions } from "../composables"
   import CommitmentQuestionsItem from "./CommitmentQuestionsItem.vue"
 
   const props = defineProps<{
     store: ReturnType<typeof useCommitmentQuestions>
+    errors?: FieldErrors
   }>()
   const { questions, addQuestion, removeQuestion, updateQuestion } = props.store
+  const errors = toRef(props, 'errors')
 </script>
 
 <style scoped></style>

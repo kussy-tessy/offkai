@@ -10,6 +10,7 @@ export async function getOffkaiEvent(
   input: GetOffkaiEventRequest,
 ): Promise<Unbrand<OffkaiEventResponse>> {
   const event = await new OffkaiEventRepository().findById(input.id);
+
   return {
     id: event.id,
     seriesId: event.seriesId,

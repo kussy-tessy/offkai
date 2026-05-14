@@ -11,12 +11,16 @@ import Signup from "../views/SignupPage.vue";
 const requiresAuth = { meta: { requiresAuth: true } };
 const routes = [
 	{ path: "/dashboard", component: Dashboard, ...requiresAuth },
-	{ path: "/offkai/create", component: CreateOffkaiEvent, ...requiresAuth },
+	{
+		path: "/offkai/create",
+		component: CreateOffkaiEvent,
+		meta: { requiresAuth: true, requiresSeriesOwner: true },
+	},
 	{
 		path: "/offkai/:id/edit",
 		component: EditOffkaiEvent,
 		props: true,
-		...requiresAuth,
+		meta: { requiresAuth: true, requiresSeriesOwner: true },
 	},
 	{
 		path: "/offkai/:id/join",
@@ -62,6 +66,10 @@ router.beforeEach(async (to) => {
 
 	if (to.meta.requiresAuth && !user.value) {
 		return "/login";
+	}
+
+	if (to.meta.requiresSeriesOwner && !user.value?.isSeriesOwner) {
+		return "/dashboard";
 	}
 
 	if ((to.path === "/login" || to.path === "/signup") && user.value) {

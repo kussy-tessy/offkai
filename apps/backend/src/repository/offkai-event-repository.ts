@@ -36,9 +36,19 @@ export class OffkaiEventRepository {
 			deadline: string;
 			description: string;
 			capacity: number;
+			required?: boolean;
+		};
+		type RawPreferenceQuestion = {
+			id: string;
+			question: string;
+			questionShort: string;
+			required?: boolean;
+			answerTemplate: PreferenceQuestion["answerTemplate"];
 		};
 		const rawCommitmentQuestions =
 			record.commitmentQuestions as unknown as RawCommitmentQuestion[];
+		const rawPreferenceQuestions =
+			record.preferenceQuestions as unknown as RawPreferenceQuestion[];
 
 		return OffkaiEvent.reconstruct({
 			id: record.id as OffkaiEventId,
@@ -55,49 +65,62 @@ export class OffkaiEventRepository {
 					deadline: new Date(q.deadline) as Deadline,
 					description: q.description,
 					capacity: q.capacity as Capacity,
+					required: q.required ?? false,
 				}),
 			),
-			preferenceQuestions:
-				record.preferenceQuestions as unknown as PreferenceQuestion[],
+			preferenceQuestions: rawPreferenceQuestions.map(
+				(q): PreferenceQuestion => ({
+					id: q.id as QuestionId,
+					question: q.question,
+					questionShort: q.questionShort,
+					required: q.required ?? false,
+					answerTemplate: q.answerTemplate,
+				}),
+			),
 		});
 	}
 
 	async findMyOffkaiEvents(userId: UserId): Promise<OffkaiEventSummary[]> {
-		const ownerSeriesMembers = await this.prisma.seriesMember.findMany({
-			where: { userId, role: "owner" },
-			select: { seriesId: true },
-		});
-		const ownerSeriesIds = ownerSeriesMembers.map((member) => member.seriesId);
-		const ownerSeriesIdSet = new Set(ownerSeriesIds);
-
-		const whereConditions: Array<Record<string, unknown>> = [
-			{
-				answers: {
-					some: {
-						userId,
-					},
-				},
-			},
-		];
-
-		if (ownerSeriesIds.length > 0) {
-			whereConditions.push({
-				seriesId: {
-					in: ownerSeriesIds,
-				},
-			});
-		}
-
 		const records = await this.prisma.offkaiEvent.findMany({
 			where: {
-				OR: whereConditions,
+				OR: [
+					{
+						answers: {
+							some: {
+								userId,
+							},
+						},
+					},
+					{
+						series: {
+							members: {
+								some: {
+									userId,
+									role: "owner",
+								},
+							},
+						},
+					},
+				],
 			},
 			select: {
 				id: true,
 				name: true,
 				eventDate: true,
 				description: true,
-				seriesId: true,
+				series: {
+					select: {
+						members: {
+							where: {
+								userId,
+								role: "owner",
+							},
+							select: {
+								userId: true,
+							},
+						},
+					},
+				},
 			},
 			orderBy: {
 				eventDate: "asc",
@@ -109,7 +132,7 @@ export class OffkaiEventRepository {
 			title: record.name,
 			eventDate: record.eventDate.toISOString(),
 			description: record.description ?? "",
-			canEdit: ownerSeriesIdSet.has(record.seriesId),
+			canEdit: record.series.members.length > 0,
 		}));
 	}
 
@@ -147,5 +170,22 @@ export class OffkaiEventRepository {
 			throw new Error(`オーナーのシリーズが見つかりません: ${userId}`);
 		}
 		return member.seriesId as OffkaiSeriesId;
+	}
+
+	async findSeriesMemberRole(
+		userId: UserId,
+		seriesId: OffkaiSeriesId,
+	): Promise<string | null> {
+		const member = await this.prisma.seriesMember.findUnique({
+			where: {
+				seriesId_userId: {
+					seriesId,
+					userId,
+				},
+			},
+			select: { role: true },
+		});
+
+		return member?.role ?? null;
 	}
 }

@@ -13,6 +13,7 @@ export const CommitmentQuestionHeaderSchema = z.object({
 	questionShort: z.string(),
 	capacity: CapacitySchema.nullable(),
 	deadline: ISODateTimeStringSchema.nullable(),
+	required: z.boolean().default(false),
 });
 export type CommitmentQuestionHeader = z.infer<
 	typeof CommitmentQuestionHeaderSchema
@@ -21,6 +22,7 @@ export type CommitmentQuestionHeader = z.infer<
 export const PreferenceQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
+	required: z.boolean().default(false),
 });
 export type PreferenceQuestionHeader = z.infer<
 	typeof PreferenceQuestionHeaderSchema

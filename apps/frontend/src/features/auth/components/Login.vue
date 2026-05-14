@@ -26,6 +26,7 @@
   import MyButton from "@/common/components/MyButton.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
   import MyTextBox from "@/common/components/MyTextbox.vue"
+  import { isEmpty, useFieldErrorsComposable } from "@/common/composables"
 
   const { handleSubmit } = defineProps<{
     handleSubmit: (payload: {
@@ -38,15 +39,15 @@
   const password = ref("")
   const router = useRouter()
 
-  const errors = ref<Record<string, string | undefined>>({})
+  const { errors, reset, hasAny } = useFieldErrorsComposable()
 
   const validate = () => {
-    errors.value = {}
+    reset()
 
-    if (!loginId.value) errors.value.loginId = "必須です"
-    if (!password.value) errors.value.password = "必須です"
+    if (isEmpty(loginId)) errors.value.loginId = "必須です"
+    if (isEmpty(password)) errors.value.password = "必須です"
 
-    return Object.keys(errors.value).length === 0
+    return !hasAny()
   }
 
   const submit = async () => {

@@ -21,15 +21,15 @@
     <!-- 子フォーム -->
     <section>
       <h2 class="text-xl font-semibold mb-2">参加表明に関する質問</h2>
-      <CommitmentQuestions :store="commitment" />
+      <CommitmentQuestions :store="commitment" :errors="errors" />
     </section>
 
     <section>
       <h2 class="text-xl font-semibold mb-2">アンケート</h2>
-      <PreferenceQuestions :store="preference" />
+      <PreferenceQuestions :store="preference" :errors="errors" />
     </section>
 
-    <MyButton class="w-full" color="primary" @click="submit">オフ会を作成する</MyButton>
+    <MyButton class="w-full" color="primary" @click="submit">{{ isEdit ? 'オフ会を更新する' : 'オフ会を作成する' }}</MyButton>
 
   </main>
 </template>
@@ -45,9 +45,10 @@
   import CommitmentQuestions from "./CommitmentQuestions.vue"
   import PreferenceQuestions from "./PreferenceQuestions.vue"
 
-  const { initialValue, handleSubmit } = defineProps<{
+  const { initialValue, handleSubmit, isEdit = false } = defineProps<{
     initialValue: OffkaiEventInitializeProps,
-    handleSubmit: (payload: unknown) => void
+    handleSubmit: (payload: unknown) => void,
+    isEdit?: boolean
   }>()
 
   const {

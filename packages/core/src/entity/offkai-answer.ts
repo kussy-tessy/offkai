@@ -121,6 +121,10 @@ export class OffkaiAnswer {
 				throw new Error("予期せぬエラー");
 			}
 
+			if (question.required && answer.answer === null) {
+				throw new Error("必須の参加可否を選択してください。");
+			}
+
 			// yesの場合
 			if (answer.answer === "yes") {
 				if (now > question.deadline) {
@@ -138,6 +142,23 @@ export class OffkaiAnswer {
 				if (nowAnswer.answer !== answer.answer && now > question.deadline) {
 					throw new Error("締切を過ぎてから参加可否は変更できません。");
 				}
+			}
+		}
+
+		for (const question of params.question.preferenceQuestions) {
+			const answer = params.answer.preferenceAnswers.find(
+				(a) => a.questionId === question.id,
+			);
+
+			if (!answer) {
+				throw new Error("予期せぬエラー");
+			}
+
+			if (!question.required) continue;
+
+			const value = (answer.answer ?? "").trim();
+			if (value.length === 0) {
+				throw new Error("必須のアンケートを入力してください。");
 			}
 		}
 	}

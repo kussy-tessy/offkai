@@ -16,12 +16,14 @@ export const OffkaiEventResponseSchema = z.object({
 			description: z.string(),
 			deadline: z.string().date(),
 			capacity: z.number(),
+			required: z.boolean().default(false),
 		}),
 	),
 	preferenceQuestions: z.array(
 		z.object({
 			id: QuestionIdSchema,
 			question: z.string(),
+			required: z.boolean().default(false),
 			answerTemplate: z.object({
 				type: z.enum(["free", "choices", "choicesIncludingOther"]),
 				choices: z.array(z.string()).optional(),

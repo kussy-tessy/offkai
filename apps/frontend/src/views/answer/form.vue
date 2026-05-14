@@ -4,13 +4,19 @@
     <p v-else-if="errorMessage" class="status status-error">{{ errorMessage }}</p>
 
     <form v-if="formData" class="space-y-10" @submit.prevent="submit">
-      <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
-        :on-change="updateCommitmentAnswer" />
-      <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
-        :on-change="updatePreferenceAnswer" />
+      <!-- イベント情報ヘッダー -->
+      <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
+        <h1 class="text-2xl font-bold text-blue-900">{{ formData.event.title }}</h1>
+        <p class="text-sm text-blue-700 mt-1">開催日：{{ formatWithDay(formData.event.eventDate, true) }}</p>
+      </div>
 
-      <div class="pt-4">
-        <MyButton color="primary" type="submit" :disabled="submitting">
+      <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
+        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" />
+      <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
+        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages" />
+
+      <div class="flex justify-center pt-8">
+        <MyButton color="primary" type="submit" :disabled="submitting" class="px-12 py-3 text-lg font-bold">
           {{ submitting ? "送信中..." : "送信" }}
         </MyButton>
       </div>
@@ -24,7 +30,8 @@
     SaveOffkaiAnswerRequest,
     Unbrand,
   } from "@offkai/core";
-  import { onMounted, ref } from "vue";
+  import { formatWithDay } from "@offkai/core";
+  import { computed, onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
   import { useApi, useToast } from "@/common/composables";
@@ -51,6 +58,49 @@
     useCommitmentAnswers([]);
   const { answers: preferenceAnswers, updateAnswer: updatePreferenceAnswer } =
     usePreferenceAnswers([]);
+
+  const commitmentValidationMessages = computed<Record<string, string>>(() => {
+    const data = formData.value;
+    if (!data) return {};
+
+    const messages: Record<string, string> = {};
+    for (const question of data.commitmentQuestions) {
+      if (!question.required) continue;
+      const answer = commitmentAnswers.value[question.id];
+      if (answer !== "yes" && answer !== "no") {
+        messages[question.id] = "選択してください";
+      }
+    }
+    return messages;
+  });
+
+  const preferenceValidationMessages = computed<Record<string, string>>(() => {
+    const data = formData.value;
+    if (!data) return {};
+
+    const messages: Record<string, string> = {};
+    for (const question of data.preferenceQuestions) {
+      if (!question.required) continue;
+
+      const answer = preferenceAnswers.value[question.id] ?? "";
+      const trimmed = answer.trim();
+      const isOtherWithoutText =
+        answer.startsWith("その他: ") &&
+        answer.slice("その他: ".length).trim().length === 0;
+
+      if (trimmed.length === 0 || isOtherWithoutText) {
+        messages[question.id] = "入力してください";
+      }
+    }
+
+    return messages;
+  });
+
+  const hasRequiredValidationErrors = computed(
+    () =>
+      Object.keys(commitmentValidationMessages.value).length > 0 ||
+      Object.keys(preferenceValidationMessages.value).length > 0,
+  );
 
   function hydrateAnswers(data: Unbrand<GetMyAnswerFormResponse>) {
     commitmentAnswers.value = {};
@@ -97,6 +147,11 @@
       return;
     }
 
+    if (hasRequiredValidationErrors.value) {
+      errorMessage.value = "必須項目を入力してください。";
+      return;
+    }
+
     errorMessage.value = null;
     submitting.value = true;
     try {
@@ -104,11 +159,13 @@
         eventId: props.id,
         commitmentAnswers: formData.value.commitmentQuestions.map((question) => ({
           questionId: question.id,
-          answer: commitmentAnswers.value[question.id] ?? "no",
+          answer: commitmentAnswers.value[question.id] ?? null,
         })),
         preferenceAnswers: formData.value.preferenceQuestions.map((question) => ({
           questionId: question.id,
-          answer: preferenceAnswers.value[question.id] ?? "",
+          answer: preferenceAnswers.value[question.id]?.trim()
+            ? preferenceAnswers.value[question.id]
+            : null,
         })),
       };
 

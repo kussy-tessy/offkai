@@ -3,7 +3,7 @@
     <h2 class="text-xl font-bold">アンケート回答</h2>
 
     <PreferenceAnswerItem v-for="q in questions" :key="q.id" :question="q" :value="answers[q.id] ?? ''"
-      :on-change="v => onChange(q.id, v)" />
+      :on-change="v => onChange(q.id, v)" :validation-message="validationMessages[q.id]" />
 
   </main>
 </template>
@@ -16,5 +16,6 @@
     questions: Unbrand<PreferenceQuestionWithAnswer>[]
     answers: Record<string, string>
     onChange: (questionId: string, value: string) => void
+    validationMessages: Record<string, string>
   }>()
 </script>

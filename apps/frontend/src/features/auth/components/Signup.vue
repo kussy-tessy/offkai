@@ -28,6 +28,7 @@
   import MyButton from "@/common/components/MyButton.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
   import MyTextBox from "@/common/components/MyTextbox.vue"
+  import { isEmpty, useFieldErrorsComposable } from "@/common/composables"
 
   const { handleSubmit } = defineProps<{
     handleSubmit: (payload: {
@@ -41,26 +42,26 @@
   const name = ref("")
   const password = ref("")
 
-  const errors = ref<Record<string, string | undefined>>({})
+  const { errors, reset, hasAny } = useFieldErrorsComposable()
 
   const normalizeLoginIdInput = (value: string) => {
     return value.replace(/[^A-Za-z0-9_]/g, "")
   }
 
   const validate = () => {
-    errors.value = {}
+    reset()
 
     const normalizedLoginId = loginId.value.trim()
 
-    if (!normalizedLoginId) {
+    if (isEmpty(normalizedLoginId)) {
       errors.value.loginId = "必須です"
     } else if (!UserLoginIdSchema.safeParse(normalizedLoginId).success) {
       errors.value.loginId = "半角英数字と_のみ使用できます"
     }
-    if (!name.value) errors.value.name = "必須です"
-    if (!password.value) errors.value.password = "必須です"
+    if (isEmpty(name)) errors.value.name = "必須です"
+    if (isEmpty(password)) errors.value.password = "必須です"
 
-    return Object.keys(errors.value).length === 0
+    return !hasAny()
   }
 
   const submit = async () => {

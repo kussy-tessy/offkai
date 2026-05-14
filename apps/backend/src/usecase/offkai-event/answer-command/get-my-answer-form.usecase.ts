@@ -28,7 +28,7 @@ export async function getMyAnswerForm(
     if (record.userId === userId) continue;
     const answers = record.commitmentAnswers as Array<{
       questionId: string;
-      answer: "yes" | "no";
+      answer: "yes" | "no" | null;
     }>;
     for (const answer of answers) {
       if (answer.answer !== "yes") continue;
@@ -55,7 +55,8 @@ export async function getMyAnswerForm(
     return {
       id: q.id,
       question: q.question,
-      deadline: q.deadline.toISOString().split("T")[0],
+      required: q.required,
+      deadline: q.deadline.toISOString(),
       capacity: q.capacity,
       currentCount,
       canSelectYes,
@@ -73,10 +74,19 @@ export async function getMyAnswerForm(
     return {
       id: q.id,
       question: q.question,
+      required: q.required,
       answerTemplate: q.answerTemplate,
       userAnswer,
     };
   });
 
-  return { commitmentQuestions, preferenceQuestions };
+  return {
+    event: {
+      id: event.id,
+      title: event.name,
+      eventDate: event.eventDate.toISOString(),
+    },
+    commitmentQuestions,
+    preferenceQuestions,
+  };
 }
