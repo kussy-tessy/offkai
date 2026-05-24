@@ -1,17 +1,25 @@
 import z from "zod";
+import {
+	LocalDatePeriodStringSchema,
+	LocalDateTimeMinuteStringSchema,
+} from "../../schema";
 import { preprocessDatetime } from "../../util";
+
+const LocalDateTimeToISOStringSchema = LocalDateTimeMinuteStringSchema
+	.transform((value) => preprocessDatetime(value))
+	.pipe(z.string().datetime({ offset: true }));
 
 export const CreateOffkaiEventRequestSchema = z.object({
 	title: z.string().min(1).max(100),
-	eventDate: z.string().date(),
-	applicationStartDate: z.preprocess(preprocessDatetime, z.string().datetime()),
+	eventPeriod: LocalDatePeriodStringSchema,
+	applicationStartDate: LocalDateTimeToISOStringSchema,
 	description: z.string().max(1000),
 	commitmentQuestions: z.array(
 		z.object({
 			question: z.string().min(1).max(100),
 			questionShort: z.string().min(1).max(100),
 			description: z.string().max(500),
-			deadline: z.preprocess(preprocessDatetime, z.string().datetime()),
+			deadline: LocalDateTimeToISOStringSchema,
 			capacity: z.number().min(1).max(100),
 			required: z.boolean().default(false),
 		}),

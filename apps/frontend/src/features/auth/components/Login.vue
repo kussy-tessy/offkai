@@ -2,12 +2,12 @@
   <main class="space-y-4 md:space-y-6">
     <h1 class="text-3xl">ログイン</h1>
 
-    <MyFormField label="ログインID">
-      <MyTextBox :value="loginId" :on-change="v => loginId = v" :error="errors.loginId" />
+    <MyFormField v-slot="{ id }" label="ログインID">
+      <MyTextBox :id="id" :value="loginId" :on-change="v => loginId = v" :error="errors.loginId" />
     </MyFormField>
 
-    <MyFormField label="パスワード">
-      <MyTextBox type="password" :value="password" :on-change="v => password = v" :error="errors.password" />
+    <MyFormField v-slot="{ id }" label="パスワード">
+      <MyTextBox :id="id" type="password" :value="password" :on-change="v => password = v" :error="errors.password" />
     </MyFormField>
 
     <MyButton class="w-full" color="primary" @click="submit">

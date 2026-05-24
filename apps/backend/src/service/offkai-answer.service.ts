@@ -7,6 +7,7 @@ import type {
 } from "@offkai/core";
 import { OffkaiAnswer } from "@offkai/core";
 import { OffkaiAnswerRepository, OffkaiEventRepository } from "../repository";
+import { rejectBeforeApplicationStart } from "../usecase/offkai-event/answer-command/application-start";
 
 export class OffkaiAnswerService {
   async prepareAnswerEntity(
@@ -20,6 +21,7 @@ export class OffkaiAnswerService {
     if (!event) {
       throw new Error(`オフ会が見つかりません: ${eventId}`);
     }
+    rejectBeforeApplicationStart(event);
 
     // 既存回答確認
     const answerRepository = new OffkaiAnswerRepository();

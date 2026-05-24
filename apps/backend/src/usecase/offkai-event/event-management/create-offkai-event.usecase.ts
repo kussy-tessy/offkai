@@ -2,7 +2,7 @@ import {
 	ApplicationStartDateSchema,
 	CommitmentQuestionSchema,
 	type CreateOffkaiEventRequest,
-	EventDateSchema,
+	EventPeriodSchema,
 	OffkaiEvent,
 	PreferenceQuestionSchema,
 	type UserId,
@@ -16,7 +16,10 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId:
 	const offkaiEvent = OffkaiEvent.create({
 		seriesId,
 		name: input.title,
-		eventDate: EventDateSchema.parse(new Date(input.eventDate)),
+		eventPeriod: EventPeriodSchema.parse({
+			startDate: new Date(input.eventPeriod.startDate),
+			endDate: new Date(input.eventPeriod.endDate),
+		}),
 		applicationStartDate: ApplicationStartDateSchema.parse(
 			new Date(input.applicationStartDate),
 		),

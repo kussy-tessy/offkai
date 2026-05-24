@@ -21,7 +21,10 @@
 
   const initialValue = ref({
     title: "",
-    eventDate: "",
+    eventPeriod: {
+      startDate: "",
+      endDate: "",
+    },
     applicationStartDate: "",
     description: "",
     commitmentQuestions: [] as CommitmentQuestion[],

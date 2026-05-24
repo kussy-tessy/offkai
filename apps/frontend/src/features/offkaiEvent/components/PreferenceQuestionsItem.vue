@@ -1,14 +1,15 @@
 <template>
   <div class="bg-slate-50 rounded-lg border border-gray-300 shadow p-4">
     <!-- 質問文 -->
-    <MyFormField label="質問">
-      <MyTextbox type="text" :value="question.question" :on-change="v => onUpdate(question.id, { question: v })"
+    <MyFormField v-slot="{ id }" label="質問">
+      <MyTextbox :id="id" type="text" :value="question.question" :on-change="v => onUpdate(question.id, { question: v })"
         :error="errorQuestion" />
     </MyFormField>
 
     <!-- 回答形式 -->
-    <MyFormField label="回答形式">
+    <MyFormField v-slot="{ id }" label="回答形式">
       <select
+        :id="id"
         class="w-full border border-gray-300 bg-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
         :value="question.answerTemplate.type" @change="onChangeType(($event.target as HTMLSelectElement).value)">
         <option value="free">自由記述</option>
@@ -17,13 +18,10 @@
       </select>
     </MyFormField>
 
-    <MyFormField label="回答必須">
-      <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-        <input type="checkbox" :checked="question.required" @change="onUpdate(question.id, {
-          required: ($event.target as HTMLInputElement).checked,
-        })" />
+    <MyFormField v-slot="{ id }" label="回答必須">
+      <MyCheckbox :id="id" :value="question.required" :on-change="required => onUpdate(question.id, { required })">
         この質問を必須にする
-      </label>
+      </MyCheckbox>
     </MyFormField>
 
     <!-- 選択肢 -->
@@ -59,6 +57,7 @@
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
   import { computed } from "vue"
   import MyButton from "@/common/components/MyButton.vue"
+  import MyCheckbox from "@/common/components/MyCheckbox.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
   import MyTextbox from "@/common/components/MyTextbox.vue"
   import type { PreferenceQuestion } from "../composables/usePreferenceQuestions"

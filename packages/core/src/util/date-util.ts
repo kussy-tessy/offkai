@@ -4,8 +4,18 @@ export function isPassed(target: Date, reference: Date) {
 
 const DAY_OF_WEEK = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
+function toDate(dateArg: Date | string) {
+	if (dateArg instanceof Date) return dateArg;
+
+	const match = dateArg.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (!match) return new Date(dateArg);
+
+	const [, y, m, d] = match;
+	return new Date(Number(y), Number(m) - 1, Number(d));
+}
+
 export function format(dateArg: Date | string, includesTime = true) {
-	const date = typeof dateArg === "string" ? new Date(dateArg) : dateArg;
+	const date = toDate(dateArg);
 	const yyyy = date.getFullYear();
 	const mm = String(date.getMonth() + 1).padStart(2, "0");
 	const dd = String(date.getDate()).padStart(2, "0");
@@ -21,7 +31,7 @@ export function format(dateArg: Date | string, includesTime = true) {
 }
 
 export function formatWithDay(dateArg: Date | string, includesTime = false) {
-	const date = typeof dateArg === "string" ? new Date(dateArg) : dateArg;
+	const date = toDate(dateArg);
 	const day = DAY_OF_WEEK[date.getDay()];
 
 	if (includesTime) {
@@ -33,6 +43,15 @@ export function formatWithDay(dateArg: Date | string, includesTime = false) {
 
 	const base = format(date, includesTime);
 	return `${base}（${day}）`;
+}
+
+export function formatPeriodWithDay(
+	period: { startDate: Date | string; endDate: Date | string },
+	includesTime = false,
+) {
+	const start = formatWithDay(period.startDate, includesTime);
+	const end = formatWithDay(period.endDate, includesTime);
+	return start === end ? start : `${start} - ${end}`;
 }
 
 export function preprocessDatetime(v: unknown) {

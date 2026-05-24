@@ -13,8 +13,11 @@
 
   const initialValue = {
     title: "aa",
-    eventDate: "2026/02/13",
-    applicationStartDate: "2026/02/10",
+    eventPeriod: {
+      startDate: "2026-02-13",
+      endDate: "2026-02-13",
+    },
+    applicationStartDate: "2026-02-10 00:00",
     description: "aaa",
     commitmentQuestions: [],
     preferenceQuestions: [],

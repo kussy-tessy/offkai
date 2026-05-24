@@ -21,6 +21,23 @@ export type OffkaiEventId = z.infer<typeof OffkaiEventIdSchema>;
 export const EventDateSchema = z.date().brand("OffkaiEventDate");
 export type EventDate = z.infer<typeof EventDateSchema>;
 
+export const EventPeriodSchema = z
+	.object({
+		startDate: EventDateSchema,
+		endDate: EventDateSchema,
+	})
+	.superRefine((value, ctx) => {
+		if (value.endDate < value.startDate) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["endDate"],
+				message: "終了日は開始日以降にしてください",
+			});
+		}
+	})
+	.brand("EventPeriod");
+export type EventPeriod = z.infer<typeof EventPeriodSchema>;
+
 export const ApplicationStartDateSchema = z
 	.date()
 	.brand("ApplicationStartDate");

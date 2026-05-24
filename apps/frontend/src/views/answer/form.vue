@@ -7,7 +7,7 @@
       <!-- イベント情報ヘッダー -->
       <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
         <h1 class="text-2xl font-bold text-blue-900">{{ formData.event.title }}</h1>
-        <p class="text-sm text-blue-700 mt-1">開催日：{{ formatWithDay(formData.event.eventDate, true) }}</p>
+        <p class="text-sm text-blue-700 mt-1">開催日：{{ formatPeriodWithDay(formData.event.eventPeriod) }}</p>
       </div>
 
       <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
@@ -30,7 +30,7 @@
     SaveOffkaiAnswerRequest,
     Unbrand,
   } from "@offkai/core";
-  import { formatWithDay } from "@offkai/core";
+  import { formatPeriodWithDay } from "@offkai/core";
   import { computed, onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";

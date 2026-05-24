@@ -14,7 +14,7 @@
             </div>
             <div class="flex items-center gap-1.5 mt-1.5">
               <FontAwesomeIcon :icon="faCalendar" class="text-gray-400 text-xs shrink-0" />
-              <span class="text-xs text-gray-500 font-medium">{{ format(event.eventDate, false) }}</span>
+              <span class="text-xs text-gray-500 font-medium">{{ formatPeriodWithDay(event.eventPeriod) }}</span>
             </div>
             <p v-if="event.description" class="text-sm text-gray-500 mt-2 line-clamp-2 leading-relaxed">
               {{ event.description }}
@@ -46,7 +46,7 @@
 <script setup lang="ts">
   import { faCalendar, faClipboardList, faPen, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-  import { format, type OffkaiEventSummary, type Unbrand } from "@offkai/core";
+  import { formatPeriodWithDay, type OffkaiEventSummary, type Unbrand } from "@offkai/core";
   import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
 

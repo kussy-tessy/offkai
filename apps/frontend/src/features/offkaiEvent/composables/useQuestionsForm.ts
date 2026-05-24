@@ -15,7 +15,10 @@ import {
 
 export type OffkaiEventInitializeProps = {
 	title: string;
-	eventDate: string;
+	eventPeriod: {
+		startDate: string;
+		endDate: string;
+	};
 	applicationStartDate: string;
 	description: string;
 	commitmentQuestions: CommitmentQuestion[];
@@ -24,7 +27,8 @@ export type OffkaiEventInitializeProps = {
 
 export const useQuestionsForm = () => {
 	const title = useField("");
-	const eventDate = useField("");
+	const eventStartDate = useField("");
+	const eventEndDate = useField("");
 	const applicationStartDate = useField("");
 	const description = useField("");
 
@@ -39,8 +43,18 @@ export const useQuestionsForm = () => {
 		if (isEmpty(title.value)) {
 			errors.value.title = "タイトルを入力してください";
 		}
-		if (isEmpty(eventDate.value)) {
-			errors.value.eventDate = "開催日を指定してください";
+		if (isEmpty(eventStartDate.value)) {
+			errors.value.eventStartDate = "開始日を指定してください";
+		}
+		if (isEmpty(eventEndDate.value)) {
+			errors.value.eventEndDate = "終了日を指定してください";
+		}
+		if (
+			!isEmpty(eventStartDate.value) &&
+			!isEmpty(eventEndDate.value) &&
+			eventEndDate.value.value < eventStartDate.value.value
+		) {
+			errors.value.eventEndDate = "終了日は開始日以降にしてください";
 		}
 		if (isEmpty(applicationStartDate.value)) {
 			errors.value.applicationStartDate = "募集開始日を指定してください";
@@ -86,7 +100,8 @@ export const useQuestionsForm = () => {
 
 	const initialize = (props: OffkaiEventInitializeProps) => {
 		title.set(props.title);
-		eventDate.set(props.eventDate);
+		eventStartDate.set(props.eventPeriod.startDate);
+		eventEndDate.set(props.eventPeriod.endDate);
 		applicationStartDate.set(props.applicationStartDate);
 		description.set(props.description);
 		commitment.initialize({
@@ -99,7 +114,10 @@ export const useQuestionsForm = () => {
 
 	const toPayload = (): Unbrand<CreateOffkaiEventRequest> => ({
 		title: title.value.value,
-		eventDate: eventDate.value.value,
+		eventPeriod: {
+			startDate: eventStartDate.value.value,
+			endDate: eventEndDate.value.value,
+		},
 		applicationStartDate: applicationStartDate.value.value,
 		description: description.value.value,
 		commitmentQuestions: commitment.questions.value.map((question) => ({
@@ -125,7 +143,8 @@ export const useQuestionsForm = () => {
 
 	return {
 		title,
-		eventDate,
+		eventStartDate,
+		eventEndDate,
 		applicationStartDate,
 		description,
 		commitment,

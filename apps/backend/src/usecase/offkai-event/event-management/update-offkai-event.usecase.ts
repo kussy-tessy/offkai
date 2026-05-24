@@ -2,7 +2,7 @@ import {
 	ApplicationStartDateSchema,
 	CommitmentQuestionSchema,
 	type CreateOffkaiEventRequest,
-	EventDateSchema,
+	EventPeriodSchema,
 	type GetOffkaiEventRequest,
 	PreferenceQuestionSchema,
 	type QuestionId,
@@ -56,7 +56,10 @@ export async function updateOffkaiEvent(
 
 	const updated = event.edit({
 		name: input.title,
-		eventDate: EventDateSchema.parse(new Date(input.eventDate)),
+		eventPeriod: EventPeriodSchema.parse({
+			startDate: new Date(input.eventPeriod.startDate),
+			endDate: new Date(input.eventPeriod.endDate),
+		}),
 		applicationStartDate: ApplicationStartDateSchema.parse(
 			new Date(input.applicationStartDate),
 		),

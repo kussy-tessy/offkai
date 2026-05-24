@@ -1,5 +1,5 @@
 <template>
-  <VueDatePicker :model-value="innerDate" @update:model-value="onUpdate" :formats="formats" :locale="ja"
+  <VueDatePicker v-bind="$attrs" :model-value="innerDate" @update:model-value="onUpdate" :formats="formats" :locale="ja"
     :time-config="{ enableTimePicker: includesTime, timePickerInline: includesTime }" />
   <p v-if="error" class="text-sm text-red-600">
     {{ error }}
@@ -11,6 +11,10 @@
   import { VueDatePicker } from "@vuepic/vue-datepicker"
   import "@vuepic/vue-datepicker/dist/main.css"
   import { ja } from "date-fns/locale"
+
+  defineOptions({
+    inheritAttrs: false,
+  })
 
   const props = defineProps<{
     value: MaybeRef<string>

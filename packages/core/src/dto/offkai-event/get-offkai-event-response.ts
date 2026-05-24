@@ -1,12 +1,18 @@
 import z from "zod";
-import { OffkaiEventIdSchema, OffkaiSeriesIdSchema, QuestionIdSchema } from "../../schema";
+import {
+	LocalDatePeriodStringSchema,
+	LocalDateTimeMinuteStringSchema,
+	OffkaiEventIdSchema,
+	OffkaiSeriesIdSchema,
+	QuestionIdSchema,
+} from "../../schema";
 
 export const OffkaiEventResponseSchema = z.object({
 	id: OffkaiEventIdSchema,
 	seriesId: OffkaiSeriesIdSchema,
 	title: z.string(),
-	eventDate: z.string().date(),
-	applicationStartDate: z.string().date(),
+	eventPeriod: LocalDatePeriodStringSchema,
+	applicationStartDate: LocalDateTimeMinuteStringSchema,
 	description: z.string(),
 	commitmentQuestions: z.array(
 		z.object({
@@ -14,7 +20,7 @@ export const OffkaiEventResponseSchema = z.object({
 			question: z.string(),
 			questionShort: z.string(),
 			description: z.string(),
-			deadline: z.string().date(),
+			deadline: LocalDateTimeMinuteStringSchema,
 			capacity: z.number(),
 			required: z.boolean().default(false),
 		}),

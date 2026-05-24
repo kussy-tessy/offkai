@@ -1,26 +1,26 @@
 <template>
   <div class="bg-slate-50 rounded-lg border border-gray-300 shadow p-4">
     <div class="flex flex-col md:flex-row gap-1">
-      <MyFormField label="質問" class="w-full md:w-[70%]">
-        <MyTextbox type="text" :value="question.question" placeholder="土曜日、宿に宿泊しますか？、日曜日、ロケに参加しますか？"
+      <MyFormField v-slot="{ id }" label="質問" class="w-full md:w-[70%]">
+        <MyTextbox :id="id" type="text" :value="question.question" placeholder="土曜日、宿に宿泊しますか？、日曜日、ロケに参加しますか？"
           :on-change="v => onUpdate(question.id, { question: v })" :error="errorQuestion" />
       </MyFormField>
-      <MyFormField label="質問(見出し用)" class="w-full md:w-[30%]">
-        <MyTextbox type="text" :value="question.questionShort" placeholder="土泊、日ロケ"
+      <MyFormField v-slot="{ id }" label="質問(見出し用)" class="w-full md:w-[30%]">
+        <MyTextbox :id="id" type="text" :value="question.questionShort" placeholder="土泊、日ロケ"
           :on-change="v => onUpdate(question.id, { questionShort: v })" :error="errorQuestionShort" />
       </MyFormField>
     </div>
-    <MyFormField label="説明">
-      <MyTextarea type="text" :value="question.description" placeholder="更衣室のキャパシティ判断に使用します。"
+    <MyFormField v-slot="{ id }" label="説明">
+      <MyTextarea :id="id" type="text" :value="question.description" placeholder="更衣室のキャパシティ判断に使用します。"
         :on-change="v => onUpdate(question.id, { description: v })" :error="errorDescription" />
     </MyFormField>
     <div class="flex flex-col md:flex-row gap-1">
-      <MyFormField label="締切" class="w-full md:w-[50%]">
-        <MyDatePicker type="date" :value="question.deadline" :on-change="v => onUpdate(question.id, { deadline: v })"
+      <MyFormField v-slot="{ id }" label="締切" class="w-full md:w-[50%]">
+        <MyDatePicker :id="id" type="date" :value="question.deadline" :on-change="v => onUpdate(question.id, { deadline: v })"
           :includes-time="true" :error="errorDeadline" />
       </MyFormField>
-      <MyFormField label="定員" class="w-full md:w-[50%]">
-        <MyTextbox type="text" inputmode="numeric" :value="question.capacity ?? ''" placeholder="定員"
+      <MyFormField v-slot="{ id }" label="定員" class="w-full md:w-[50%]">
+        <MyTextbox :id="id" type="text" inputmode="numeric" :value="question.capacity ?? ''" placeholder="定員"
           :normalize-input="normalizeCapacityInput" :error="errorCapacity" :on-change="v => {
             const trimmed = v.trim()
             if (trimmed === '') {
@@ -33,13 +33,10 @@
           }" />
       </MyFormField>
     </div>
-    <MyFormField label="回答必須">
-      <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-        <input type="checkbox" :checked="question.required" @change="onUpdate(question.id, {
-          required: ($event.target as HTMLInputElement).checked,
-        })" />
+    <MyFormField v-slot="{ id }" label="必須設定">
+      <MyCheckbox :id="id" :value="question.required" :on-change="required => onUpdate(question.id, { required })">
         この質問を必須にする
-      </label>
+      </MyCheckbox>
     </MyFormField>
     <div class="flex flex-col items-end">
       <MyButton color="red" size="sm" @click="onRemove(question.id)" variant="ghost">
@@ -53,6 +50,7 @@
   import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
   import MyButton from "@/common/components/MyButton.vue";
+  import MyCheckbox from "@/common/components/MyCheckbox.vue";
   import MyDatePicker from "@/common/components/MyDatePicker.vue";
   import MyFormField from "@/common/components/MyFormField.vue";
   import MyTextarea from "@/common/components/MyTextarea.vue";

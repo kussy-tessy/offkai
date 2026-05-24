@@ -1,21 +1,27 @@
 <template>
   <main class="space-y-4 md:space-y-6">
     <h1 class="text-3xl ">オフ会の作成</h1>
-    <MyFormField label="タイトル">
-      <MyTextBox :value="title.value" :on-change="title.set" :error="errors.title" />
+    <MyFormField v-slot="{ id }" label="タイトル">
+      <MyTextBox :id="id" :value="title.value" :on-change="title.set" :error="errors.title" />
     </MyFormField>
 
-    <MyFormField label="開催日">
-      <MyDatePicker :value="eventDate.value" :on-change="eventDate.set" :error="errors.eventDate" />
+    <MyFormField v-slot="{ id }" label="開催開始日">
+      <MyDatePicker :id="id" :value="eventStartDate.value" :on-change="eventStartDate.set"
+        :error="errors.eventStartDate" />
     </MyFormField>
 
-    <MyFormField label="募集開始日時">
-      <MyDatePicker type="date" :value="applicationStartDate.value" :on-change="applicationStartDate.set"
+    <MyFormField v-slot="{ id }" label="開催終了日">
+      <MyDatePicker :id="id" :value="eventEndDate.value" :on-change="eventEndDate.set"
+        :error="errors.eventEndDate" />
+    </MyFormField>
+
+    <MyFormField v-slot="{ id }" label="募集開始日時">
+      <MyDatePicker :id="id" type="date" :value="applicationStartDate.value" :on-change="applicationStartDate.set"
         :error="errors.applicationStartDate" :includes-time="true" />
     </MyFormField>
 
-    <MyFormField label="説明">
-      <MyTextarea :value="description.value" :on-change="description.set" />
+    <MyFormField v-slot="{ id }" label="説明">
+      <MyTextarea :id="id" :value="description.value" :on-change="description.set" rows="12" />
     </MyFormField>
 
     <!-- 子フォーム -->
@@ -53,7 +59,8 @@
 
   const {
     title,
-    eventDate,
+    eventStartDate,
+    eventEndDate,
     applicationStartDate,
     description,
     commitment,

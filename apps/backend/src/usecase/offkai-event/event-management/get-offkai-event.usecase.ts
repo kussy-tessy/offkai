@@ -15,7 +15,10 @@ export async function getOffkaiEvent(
     id: event.id,
     seriesId: event.seriesId,
     title: event.name,
-    eventDate: format(event.eventDate, false),
+    eventPeriod: {
+      startDate: format(event.eventPeriod.startDate, false),
+      endDate: format(event.eventPeriod.endDate, false),
+    },
     applicationStartDate: format(event.applicationStartDate),
     description: event.description,
     commitmentQuestions: event.commitmentQuestions.map((question) => ({

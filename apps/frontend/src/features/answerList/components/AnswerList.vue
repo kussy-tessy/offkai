@@ -1,15 +1,19 @@
 <template>
   <header class="pb-8 mb-8 text-center space-y-4">
     <h1 class="text-4xl font-bold tracking-tight">{{ data.offkai.title }}</h1>
-    <MyBadge :icon="faCalendar">開催日：{{ formatWithDay(data.offkai.eventDate) }}</MyBadge>
+    <MyBadge :icon="faCalendar">開催日：{{ formatPeriodWithDay(data.offkai.eventPeriod) }}</MyBadge>
     <p v-if="data.offkai.description" class="text-gray-600 whitespace-pre-line text-left">{{ data.offkai.description }}
     </p>
     <hr class="border-teal-200 border-t-2" />
-    <div class="flex justify-center pt-2">
-      <MyButton color="primary" size="lg" @click="router.push(`/offkai/${data.offkai.id}/join`)">
+    <div class="flex flex-col items-center gap-2 pt-2">
+      <MyButton :color="canAnswer ? 'primary' : 'gray'" size="lg" :disabled="!canAnswer"
+        @click="router.push(`/offkai/${data.offkai.id}/join`)">
         <FontAwesomeIcon :icon="faPen" class="mr-2" />
         {{ hasAnswered ? '参加表明を編集する' : '参加する' }}
       </MyButton>
+      <p v-if="!canAnswer" class="text-sm text-gray-500">
+        募集開始前です。{{ formatWithDay(data.offkai.applicationStartDate, true) }} から参加表明できます。
+      </p>
     </div>
   </header>
 
@@ -114,7 +118,7 @@
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
   import { faCalendar, faPen, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-  import { format, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
+  import { format, formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyBadge from "@/common/components/MyBadge.vue";
@@ -130,6 +134,10 @@
 
   const hasAnswered = computed(() =>
     user.value !== null && data.answers.some((a) => a.user.id === user.value!.id)
+  );
+
+  const canAnswer = computed(
+    () => Date.now() >= new Date(data.offkai.applicationStartDate).getTime(),
   );
 
   const selectedPreferenceId = ref<string>(data.preferenceQuestions[0]?.id ?? "");

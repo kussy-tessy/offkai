@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
 	CapacitySchema,
 	ISODateTimeStringSchema,
+	LocalDatePeriodStringSchema,
 	OffkaiEventIdSchema,
 	QuestionIdSchema,
 	UserIdSchema,
@@ -46,7 +47,8 @@ export const OffkaiDetailSchema = z.object({
 		id: OffkaiEventIdSchema,
 		title: z.string(),
 		description: z.string(),
-		eventDate: ISODateTimeStringSchema,
+		eventPeriod: LocalDatePeriodStringSchema,
+		applicationStartDate: ISODateTimeStringSchema,
 	}),
 
 	commitmentQuestions: z.array(CommitmentQuestionHeaderSchema),

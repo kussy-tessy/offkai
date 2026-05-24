@@ -1,10 +1,15 @@
 import { z } from "zod";
-import { ISODateTimeStringSchema, OffkaiEventIdSchema, QuestionIdSchema } from "../../schema";
+import {
+  ISODateTimeStringSchema,
+  LocalDatePeriodStringSchema,
+  OffkaiEventIdSchema,
+  QuestionIdSchema,
+} from "../../schema";
 
 export const OffkaiEventHeaderSchema = z.object({
   id: OffkaiEventIdSchema,
   title: z.string(),
-  eventDate: ISODateTimeStringSchema,
+  eventPeriod: LocalDatePeriodStringSchema,
 });
 export type OffkaiEventHeader = z.infer<typeof OffkaiEventHeaderSchema>;
 

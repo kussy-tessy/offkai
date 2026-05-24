@@ -2,7 +2,7 @@ import { v7 as uuidv7 } from "uuid";
 import type {
 	ApplicationStartDate,
 	CommitmentQuestion,
-	EventDate,
+	EventPeriod,
 	OffkaiEventId,
 	OffkaiSeriesId,
 	PreferenceQuestion,
@@ -15,7 +15,7 @@ export class OffkaiEvent {
 		readonly id: OffkaiEventId,
 		readonly seriesId: OffkaiSeriesId,
 		readonly name: string,
-		readonly eventDate: EventDate,
+		readonly eventPeriod: EventPeriod,
 		readonly description: string,
 		readonly applicationStartDate: ApplicationStartDate,
 		readonly commitmentQuestions: CommitmentQuestion[],
@@ -26,7 +26,7 @@ export class OffkaiEvent {
 		id: OffkaiEventId;
 		seriesId: OffkaiSeriesId;
 		name: string;
-		eventDate: EventDate;
+		eventPeriod: EventPeriod;
 		description: string;
 		applicationStartDate: ApplicationStartDate;
 		commitmentQuestions: CommitmentQuestion[];
@@ -36,7 +36,7 @@ export class OffkaiEvent {
 			params.id,
 			params.seriesId,
 			params.name,
-			params.eventDate,
+			params.eventPeriod,
 			params.description,
 			params.applicationStartDate,
 			params.commitmentQuestions,
@@ -47,13 +47,13 @@ export class OffkaiEvent {
 	static create(params: {
 		seriesId: OffkaiSeriesId;
 		name: string;
-		eventDate: EventDate;
+		eventPeriod: EventPeriod;
 		description: string;
 		applicationStartDate: ApplicationStartDate;
 		commitmentQuestions: Omit<CommitmentQuestion, "id">[];
 		preferenceQuestions: Omit<PreferenceQuestion, "id">[];
 	}): OffkaiEvent {
-		if (isPassed(new Date(), params.eventDate)) {
+		if (isPassed(new Date(), params.eventPeriod.startDate)) {
 			throw new Error("すでに開催日を過ぎています");
 		}
 		if (isPassed(new Date(), params.applicationStartDate)) {
@@ -63,7 +63,7 @@ export class OffkaiEvent {
 			uuidv7() as OffkaiEventId,
 			params.seriesId,
 			params.name,
-			params.eventDate,
+			params.eventPeriod,
 			params.description,
 			params.applicationStartDate,
 			params.commitmentQuestions.map((question) => ({
@@ -79,20 +79,20 @@ export class OffkaiEvent {
 
 	edit(params: {
 		name: string;
-		eventDate: EventDate;
+		eventPeriod: EventPeriod;
 		description: string;
 		applicationStartDate: ApplicationStartDate;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}): OffkaiEvent {
-		if (isPassed(new Date(), params.eventDate)) {
+		if (isPassed(new Date(), params.eventPeriod.startDate)) {
 			throw new Error("すでに開催日を過ぎています");
 		}
 		return new OffkaiEvent(
 			this.id,
 			this.seriesId,
 			params.name,
-			params.eventDate,
+			params.eventPeriod,
 			params.description,
 			params.applicationStartDate,
 			params.commitmentQuestions,

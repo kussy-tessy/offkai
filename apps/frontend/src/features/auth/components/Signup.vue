@@ -2,18 +2,18 @@
   <main class="space-y-4 md:space-y-6">
     <h1 class="text-3xl">ユーザー登録</h1>
 
-    <MyFormField label="ログインID">
-      <MyTextBox :value="loginId" :on-change="v => loginId = v" :error="errors.loginId"
+    <MyFormField v-slot="{ id }" label="ログインID">
+      <MyTextBox :id="id" :value="loginId" :on-change="v => loginId = v" :error="errors.loginId"
         :normalize-input="normalizeLoginIdInput"
         placeholder="例: kussy_tessy (DiscordのIDと同じにすることを推奨)" />
     </MyFormField>
 
-    <MyFormField label="表示名">
-      <MyTextBox :value="name" :on-change="v => name = v" :error="errors.name" placeholder="例: くっしー" />
+    <MyFormField v-slot="{ id }" label="表示名">
+      <MyTextBox :id="id" :value="name" :on-change="v => name = v" :error="errors.name" placeholder="例: くっしー" />
     </MyFormField>
 
-    <MyFormField label="パスワード">
-      <MyTextBox type="password" :value="password" :on-change="v => password = v" :error="errors.password" />
+    <MyFormField v-slot="{ id }" label="パスワード">
+      <MyTextBox :id="id" type="password" :value="password" :on-change="v => password = v" :error="errors.password" />
     </MyFormField>
 
     <MyButton class="w-full" color="primary" @click="submit">

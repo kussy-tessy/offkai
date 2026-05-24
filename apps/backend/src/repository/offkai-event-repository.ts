@@ -3,7 +3,7 @@ import {
 	type Capacity,
 	type CommitmentQuestion,
 	type Deadline,
-	type EventDate,
+	EventPeriodSchema,
 	OffkaiEvent,
 	type OffkaiEventId,
 	type OffkaiEventSummary,
@@ -55,7 +55,10 @@ export class OffkaiEventRepository {
 			seriesId: record.seriesId as OffkaiSeriesId,
 			name: record.name,
 			description: record.description ?? "",
-			eventDate: record.eventDate as EventDate,
+			eventPeriod: EventPeriodSchema.parse({
+				startDate: record.eventStartDate,
+				endDate: record.eventEndDate,
+			}),
 			applicationStartDate: record.applicationStartDate as ApplicationStartDate,
 			commitmentQuestions: rawCommitmentQuestions.map(
 				(q): CommitmentQuestion => ({
@@ -106,7 +109,8 @@ export class OffkaiEventRepository {
 			select: {
 				id: true,
 				name: true,
-				eventDate: true,
+				eventStartDate: true,
+				eventEndDate: true,
 				description: true,
 				series: {
 					select: {
@@ -123,14 +127,17 @@ export class OffkaiEventRepository {
 				},
 			},
 			orderBy: {
-				eventDate: "asc",
+				eventStartDate: "asc",
 			},
 		});
 
 		return records.map((record) => ({
 			id: record.id as OffkaiEventId,
 			title: record.name,
-			eventDate: record.eventDate.toISOString(),
+			eventPeriod: {
+				startDate: record.eventStartDate.toISOString().slice(0, 10),
+				endDate: record.eventEndDate.toISOString().slice(0, 10),
+			},
 			description: record.description ?? "",
 			canEdit: record.series.members.length > 0,
 		}));
@@ -142,7 +149,8 @@ export class OffkaiEventRepository {
 			seriesId: event.seriesId,
 			name: event.name,
 			description: event.description,
-			eventDate: event.eventDate,
+			eventStartDate: event.eventPeriod.startDate,
+			eventEndDate: event.eventPeriod.endDate,
 			applicationStartDate: event.applicationStartDate,
 			commitmentQuestions: event.commitmentQuestions,
 			preferenceQuestions: event.preferenceQuestions,

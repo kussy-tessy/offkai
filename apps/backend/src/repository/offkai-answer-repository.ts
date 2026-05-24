@@ -100,7 +100,11 @@ export class OffkaiAnswerRepository {
 				id: event.id,
 				title: event.name,
 				description: event.description ?? "",
-				eventDate: event.eventDate.toISOString(),
+				eventPeriod: {
+					startDate: event.eventStartDate.toISOString().slice(0, 10),
+					endDate: event.eventEndDate.toISOString().slice(0, 10),
+				},
+				applicationStartDate: event.applicationStartDate.toISOString(),
 			},
 			commitmentQuestions,
 			preferenceQuestions,

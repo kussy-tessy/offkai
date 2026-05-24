@@ -22,8 +22,8 @@
 
     <!-- 回答 -->
     <div class="space-y-2 mt-4">
-      <MyRadioButton :name="question.id" value="yes" :checked="value === 'yes'" :disabled="!question.canSelectYes"
-        :on-change="() => onChange('yes')">
+      <MyRadioButton :name="question.id" value="yes" :checked="value === 'yes'"
+        :disabled="!question.canEdit || !question.canSelectYes" :on-change="() => onChange('yes')">
         はい
       </MyRadioButton>
 
@@ -34,7 +34,7 @@
     </div>
 
     <!-- 無効理由 -->
-    <div v-if="!question.canSelectYes" class="text-sm text-red-600 mt-3">
+    <div v-if="question.disableReason" class="text-sm text-red-600 mt-3">
       <span v-if="question.disableReason === 'capacityFull'">
         定員に達しています
       </span>

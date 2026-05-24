@@ -4,14 +4,16 @@ import type {
   Unbrand,
   UserId,
 } from "@offkai/core";
-import { isPassed } from "@offkai/core";
+import { format, isPassed } from "@offkai/core";
 import { OffkaiAnswerRepository, OffkaiEventRepository } from "../../../repository";
+import { rejectBeforeApplicationStart } from "./application-start";
 
 export async function getMyAnswerForm(
   input: GetMyAnswerFormRequest,
   userId: UserId,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
   const event = await new OffkaiEventRepository().findById(input.eventId);
+  rejectBeforeApplicationStart(event);
 
   const answerRepository = new OffkaiAnswerRepository();
   const [allAnswers, myAnswer] = await Promise.all([
@@ -42,10 +44,11 @@ export async function getMyAnswerForm(
     const currentCount = counts.get(q.id) ?? 0;
     const deadlinePassed = isPassed(now, q.deadline);
     const canEdit = !deadlinePassed;
-    const canSelectYes = currentCount < q.capacity;
+    const hasCapacity = currentCount < q.capacity;
+    const canSelectYes = canEdit && hasCapacity;
     const disableReason = !canEdit
       ? ("deadlinePassed" as const)
-      : !canSelectYes
+      : !hasCapacity
         ? ("capacityFull" as const)
         : undefined;
     const userAnswer =
@@ -84,7 +87,10 @@ export async function getMyAnswerForm(
     event: {
       id: event.id,
       title: event.name,
-      eventDate: event.eventDate.toISOString(),
+      eventPeriod: {
+        startDate: format(event.eventPeriod.startDate, false),
+        endDate: format(event.eventPeriod.endDate, false),
+      },
     },
     commitmentQuestions,
     preferenceQuestions,

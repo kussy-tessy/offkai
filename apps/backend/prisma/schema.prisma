@@ -52,7 +52,8 @@ model OffkaiEvent {
   name        String
   description String?
 
-  eventDate             DateTime
+  eventStartDate        DateTime @db.Date
+  eventEndDate          DateTime @db.Date
   applicationStartDate  DateTime
 
   commitmentQuestions Json
