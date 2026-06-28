@@ -73,7 +73,7 @@
 
   watch(() => initialValue, () => {
     initialize(initialValue)
-  })
+  }, { immediate: true })
 
 
   const submit = async () => {

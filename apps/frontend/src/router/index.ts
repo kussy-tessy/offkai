@@ -6,6 +6,7 @@ import Dashboard from "../views/dashboard/Dashboard.vue";
 import Login from "../views/LoginPage.vue";
 import CreateOffkaiEvent from "../views/offkaiEvent/create.vue";
 import EditOffkaiEvent from "../views/offkaiEvent/edit.vue";
+import QuestionTemplate from "../views/series/questionTemplate.vue";
 import Signup from "../views/SignupPage.vue";
 
 const requiresAuth = { meta: { requiresAuth: true } };
@@ -14,6 +15,11 @@ const routes = [
 	{
 		path: "/offkai/create",
 		component: CreateOffkaiEvent,
+		meta: { requiresAuth: true, requiresSeriesOwner: true },
+	},
+	{
+		path: "/series/question-template",
+		component: QuestionTemplate,
 		meta: { requiresAuth: true, requiresSeriesOwner: true },
 	},
 	{

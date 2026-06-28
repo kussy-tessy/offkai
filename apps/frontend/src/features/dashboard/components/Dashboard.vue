@@ -2,9 +2,14 @@
   <main class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">ダッシュボード</h1>
-      <MyButton v-if="user?.isSeriesOwner" color="primary" @click="router.push('/offkai/create')">
-        オフ会を作成する
-      </MyButton>
+      <div v-if="user?.isSeriesOwner" class="flex gap-2">
+        <MyButton color="secondary" variant="ghost" @click="router.push('/series/question-template')">
+          テンプレート設定
+        </MyButton>
+        <MyButton color="primary" @click="router.push('/offkai/create')">
+          オフ会を作成する
+        </MyButton>
+      </div>
     </div>
 
     <section>

@@ -5,11 +5,11 @@ import {
 	useFieldErrorsComposable,
 } from "@/common/composables";
 import {
-	type CommitmentQuestion,
+	type CommitmentQuestionInitializeProps,
 	useCommitmentQuestions,
 } from "./useCommitmentQuestions";
 import {
-	type PreferenceQuestion,
+	type PreferenceQuestionInitializeProps,
 	usePreferenceQuestions,
 } from "./usePreferenceQuestions";
 
@@ -21,8 +21,8 @@ export type OffkaiEventInitializeProps = {
 	};
 	applicationStartDate: string;
 	description: string;
-	commitmentQuestions: CommitmentQuestion[];
-	preferenceQuestions: PreferenceQuestion[];
+	commitmentQuestions: CommitmentQuestionInitializeProps["questions"];
+	preferenceQuestions: PreferenceQuestionInitializeProps["questions"];
 };
 
 export const useQuestionsForm = () => {
