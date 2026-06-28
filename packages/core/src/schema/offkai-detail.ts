@@ -49,6 +49,7 @@ export const OffkaiDetailSchema = z.object({
 		description: z.string(),
 		eventPeriod: LocalDatePeriodStringSchema,
 		applicationStartDate: ISODateTimeStringSchema,
+		canEdit: z.boolean(),
 	}),
 
 	commitmentQuestions: z.array(CommitmentQuestionHeaderSchema),

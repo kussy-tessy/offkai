@@ -63,10 +63,26 @@ export class OffkaiAnswerRepository {
 		});
 	}
 
-	async getOffkaiDetail(eventId: OffkaiEventId): Promise<OffkaiDetail> {
+	async getOffkaiDetail(
+		eventId: OffkaiEventId,
+		userId: UserId,
+	): Promise<OffkaiDetail> {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			include: {
+				series: {
+					select: {
+						members: {
+							where: {
+								userId,
+								role: "owner",
+							},
+							select: {
+								userId: true,
+							},
+						},
+					},
+				},
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					include: {
@@ -105,6 +121,7 @@ export class OffkaiAnswerRepository {
 					endDate: event.eventEndDate.toISOString().slice(0, 10),
 				},
 				applicationStartDate: event.applicationStartDate.toISOString(),
+				canEdit: event.series.members.length > 0,
 			},
 			commitmentQuestions,
 			preferenceQuestions,

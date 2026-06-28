@@ -11,6 +11,7 @@ import { getMyAnswerForm } from "./answer-command/get-my-answer-form.usecase";
 import { saveOffkaiAnswer } from "./answer-command/save-offkai-answer.usecase";
 import { getOffkaiDetail } from "./detail-query/get-offkai-detail.usecase";
 import { createOffkaiEvent } from "./event-management/create-offkai-event.usecase";
+import { deleteOffkaiEvent } from "./event-management/delete-offkai-event.usecase";
 import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.usecase";
 import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
 import { updateOffkaiEvent } from "./event-management/update-offkai-event.usecase";
@@ -39,8 +40,9 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 
 	// GET /offkai-event/:eventId/detail
 	app.get("/:eventId/detail", async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
 		const input = GetOffkaiDetailRequestSchema.parse(request.params);
-		return getOffkaiDetail(input);
+		return getOffkaiDetail(input, userId);
 	});
 
 	// POST /offkai-event
@@ -56,6 +58,14 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		const params = GetOffkaiEventRequestSchema.parse(request.params);
 		const input = CreateOffkaiEventRequestSchema.parse(request.body);
 		return updateOffkaiEvent(params, input, userId);
+	});
+
+	// DELETE /offkai-event/:id
+	app.delete("/:id", async (request, reply) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const params = GetOffkaiEventRequestSchema.parse(request.params);
+		await deleteOffkaiEvent(params, userId);
+		return reply.code(204).send();
 	});
 
 	// PUT /offkai-event/:eventId/answers

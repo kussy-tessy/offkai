@@ -1,6 +1,6 @@
 <template>
   <main class="space-y-4 md:space-y-6">
-    <h1 class="text-3xl ">オフ会の作成</h1>
+    <h1 class="text-3xl ">{{ isEdit ? 'オフ会の編集' : 'オフ会の作成' }}</h1>
     <MyFormField v-slot="{ id }" label="タイトル">
       <MyTextBox :id="id" :value="title.value" :on-change="title.set" :error="errors.title" />
     </MyFormField>

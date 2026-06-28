@@ -1,21 +1,49 @@
 <template>
   <header class="pb-8 mb-8 text-center space-y-4">
-    <h1 class="text-4xl font-bold tracking-tight">{{ data.offkai.title }}</h1>
+    <div class="flex items-start justify-center gap-2">
+      <h1 class="text-4xl font-bold tracking-tight">{{ data.offkai.title }}</h1>
+      <button
+        v-if="data.offkai.canEdit"
+        type="button"
+        class="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+        aria-label="オフ会を削除する"
+        @click="confirmDeleteOpen = true"
+      >
+        <FontAwesomeIcon :icon="faTrash" class="text-sm" />
+      </button>
+    </div>
     <MyBadge :icon="faCalendar">開催日：{{ formatPeriodWithDay(data.offkai.eventPeriod) }}</MyBadge>
     <p v-if="data.offkai.description" class="text-gray-600 whitespace-pre-line text-left">{{ data.offkai.description }}
     </p>
     <hr class="border-teal-200 border-t-2" />
     <div class="flex flex-col items-center gap-2 pt-2">
-      <MyButton :color="canAnswer ? 'primary' : 'gray'" size="lg" :disabled="!canAnswer"
-        @click="router.push(`/offkai/${data.offkai.id}/join`)">
-        <FontAwesomeIcon :icon="faPen" class="mr-2" />
-        {{ hasAnswered ? '参加表明を編集する' : '参加する' }}
-      </MyButton>
+      <div class="flex flex-wrap justify-center gap-2">
+        <MyButton :color="canAnswer ? 'primary' : 'gray'" size="lg" :disabled="!canAnswer"
+          @click="router.push(`/offkai/${data.offkai.id}/join`)">
+          <FontAwesomeIcon :icon="faPen" class="mr-2" />
+          {{ hasAnswered ? '参加表明を編集する' : '参加する' }}
+        </MyButton>
+        <MyButton v-if="data.offkai.canEdit" color="secondary" size="lg"
+          @click="router.push(`/offkai/${data.offkai.id}/edit`)">
+          <FontAwesomeIcon :icon="faPenToSquare" class="mr-2" />
+          オフ会を編集する
+        </MyButton>
+      </div>
       <p v-if="!canAnswer" class="text-sm text-gray-500">
         募集開始前です。{{ formatWithDay(data.offkai.applicationStartDate, true) }} から参加表明できます。
       </p>
     </div>
   </header>
+
+  <MyConfirmDialog
+    v-model:open="confirmDeleteOpen"
+    title="オフ会を削除しますか？"
+    :message="`「${data.offkai.title}」を削除します。回答データも削除され、この操作は元に戻せません。`"
+    confirm-label="削除する"
+    confirm-color="red"
+    :loading="deleting"
+    @confirm="deleteEvent"
+  />
 
   <div v-if="data.answers.length === 0" class="py-16 flex flex-col items-center gap-3 text-gray-400">
     <FontAwesomeIcon :icon="faUserGroup" class="text-5xl" />
@@ -116,14 +144,15 @@
 
 <script setup lang="ts">
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
-  import { faCalendar, faPen, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
+  import { faCalendar, faPen, faPenToSquare, faTrash, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import { format, formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyBadge from "@/common/components/MyBadge.vue";
   import MyButton from "@/common/components/MyButton.vue";
-  import { useAuth } from "@/common/composables";
+  import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
+  import { useApi, useAuth, useToast } from "@/common/composables";
 
   const { data } = defineProps<{
     data: Unbrand<OffkaiDetail>;
@@ -131,6 +160,10 @@
 
   const router = useRouter();
   const { user } = useAuth();
+  const { del } = useApi();
+  const { success, error } = useToast();
+  const confirmDeleteOpen = ref(false);
+  const deleting = ref(false);
 
   const hasAnswered = computed(() =>
     user.value !== null && data.answers.some((a) => a.user.id === user.value!.id)
@@ -141,6 +174,21 @@
   );
 
   const selectedPreferenceId = ref<string>(data.preferenceQuestions[0]?.id ?? "");
+
+  const deleteEvent = async () => {
+    if (deleting.value) return;
+    deleting.value = true;
+    try {
+      await del(`/offkai-event/${data.offkai.id}`);
+      success("オフ会を削除しました。");
+      confirmDeleteOpen.value = false;
+      await router.push("/dashboard");
+    } catch {
+      error("オフ会の削除に失敗しました。");
+    } finally {
+      deleting.value = false;
+    }
+  };
 
   const countYes = (questionId: string) => {
     return data.answers.filter((a: Unbrand<OffkaiDetail>["answers"][number]) => a.commitmentAnswers[questionId] === "yes")

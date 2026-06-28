@@ -125,22 +125,23 @@ export class OffkaiAnswer {
 				throw new Error("必須の参加可否を選択してください。");
 			}
 
-			// yesの場合
-			if (answer.answer === "yes") {
+			const nowAnswer = nowAnswers?.find((a) => a.questionId === question.id);
+			const isAnswerChanged = nowAnswer
+				? nowAnswer.answer !== answer.answer
+				: true;
+
+			// 締め切りを過ぎてcommitmentの回答を変更するのはだめ
+			if (nowAnswer && isAnswerChanged && now > question.deadline) {
+				throw new Error("締切を過ぎてから参加可否は変更できません。");
+			}
+
+			// yesへ新規回答/変更する場合
+			if (answer.answer === "yes" && isAnswerChanged) {
 				if (now > question.deadline) {
 					throw new Error("締切を過ぎています。");
 				}
 				if (question.numberOfPeople + 1 > question.capacity) {
 					throw new Error("締切人数に到達しました。");
-				}
-			}
-
-			// 締め切りを過ぎてcommitmentの回答を変更するのはだめ
-			if (!nowAnswers) continue;
-			const nowAnswer = nowAnswers.find((a) => a.questionId === question.id);
-			if (nowAnswer) {
-				if (nowAnswer.answer !== answer.answer && now > question.deadline) {
-					throw new Error("締切を過ぎてから参加可否は変更できません。");
 				}
 			}
 		}

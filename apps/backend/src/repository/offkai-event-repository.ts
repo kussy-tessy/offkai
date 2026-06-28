@@ -164,8 +164,16 @@ export class OffkaiEventRepository {
 	}
 
 	async delete(id: string): Promise<void> {
-		await this.prisma.offkaiEvent.delete({
-			where: { id },
+		await this.prisma.$transaction(async (tx) => {
+			await tx.offkaiAnswerHistory.deleteMany({
+				where: { eventId: id },
+			});
+			await tx.offkaiAnswer.deleteMany({
+				where: { eventId: id },
+			});
+			await tx.offkaiEvent.delete({
+				where: { id },
+			});
 		});
 	}
 

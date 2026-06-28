@@ -17,7 +17,7 @@
         参加または作成したオフ会がまだありません。
       </div>
       <div v-else class="space-y-3">
-        <OffkaiEventCard v-for="event in events" :key="event.id" :event="event" />
+        <OffkaiEventCard v-for="event in events" :key="event.id" :event="event" @deleted="removeEvent" />
       </div>
     </section>
   </main>
@@ -33,4 +33,8 @@
   const router = useRouter();
   const { user } = useAuth();
   const { events, loading } = useMyOffkaiEvents();
+
+  const removeEvent = (eventId: string) => {
+    events.value = events.value.filter((event) => event.id !== eventId);
+  };
 </script>
