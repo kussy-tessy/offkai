@@ -1,3 +1,4 @@
 export * from "./domain";
 export * from "./general";
 export * from "./offkai-detail";
+export * from "./photo-share";

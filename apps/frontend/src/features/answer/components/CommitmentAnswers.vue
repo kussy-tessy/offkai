@@ -3,7 +3,7 @@
     <h2 class="text-xl font-bold">参加可否の回答</h2>
 
     <CommitmentAnswerItem v-for="q in questions" :key="q.id" :question="q" :value="answers[q.id] ?? ''"
-      :on-change="v => onChange(q.id, v)" :validation-message="validationMessages[q.id]" />
+      :on-change="v => onChange(q.id, v)" :validation-message="validationMessages[q.id]" :allow-empty="allowEmpty" />
   </main>
 </template>
 
@@ -13,8 +13,9 @@
 
   defineProps<{
     questions: Unbrand<CommitmentQuestionWithAnswer>[]
-    answers: Record<string, "yes" | "no">
-    onChange: (questionId: string, value: "yes" | "no") => void
+    answers: Record<string, "yes" | "no" | null>
+    onChange: (questionId: string, value: "yes" | "no" | null) => void
     validationMessages: Record<string, string>
+    allowEmpty?: boolean
   }>()
 </script>

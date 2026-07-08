@@ -9,8 +9,22 @@ export const UserLoginIdSchema = z
 	.brand("UserLoginId");
 export type UserLoginId = z.infer<typeof UserLoginIdSchema>;
 
-export const UserNameSchema = z.string().brand("UserName");
+export const UserNameSchema = z.string().min(1).max(50).brand("UserName");
 export type UserName = z.infer<typeof UserNameSchema>;
+
+export const DiscordUsernameSchema = z
+	.string()
+	.min(2)
+	.max(32)
+	.regex(/^(?!.*\.\.)[a-z0-9._]+$/)
+	.brand("DiscordUsername");
+export type DiscordUsername = z.infer<typeof DiscordUsernameSchema>;
+
+export const DiscordRoleIdSchema = z
+	.string()
+	.regex(/^\d{17,20}$/)
+	.brand("DiscordRoleId");
+export type DiscordRoleId = z.infer<typeof DiscordRoleIdSchema>;
 
 export const OffkaiSeriesIdSchema = z.string().uuid().brand("OffkaiSeriesId");
 export type OffkaiSeriesId = z.infer<typeof OffkaiSeriesIdSchema>;
@@ -48,6 +62,12 @@ export type QuestionId = z.infer<typeof QuestionIdSchema>;
 
 export const AnswerIdSchema = z.string().uuid().brand("AnswerId");
 export type AnswerId = z.infer<typeof AnswerIdSchema>;
+
+export const PhotoShareIdSchema = z.string().uuid().brand("PhotoShareId");
+export type PhotoShareId = z.infer<typeof PhotoShareIdSchema>;
+
+export const KigurumiIdSchema = z.string().uuid().brand("KigurumiId");
+export type KigurumiId = z.infer<typeof KigurumiIdSchema>;
 
 export const DeadlineSchema = z.date().brand("Deadline");
 export type Deadline = z.infer<typeof DeadlineSchema>;
@@ -98,6 +118,27 @@ export type PreferenceQuestionAnswerForm = z.infer<
 	typeof PreferenceQuestionAnswerFormSchema
 >;
 
+export const PreferenceQuestionTemplateItemSchema = z.object({
+	question: z.string().min(1).max(100),
+	required: z.boolean().default(false),
+	answerTemplate: z.discriminatedUnion("type", [
+		z.object({
+			type: z.literal("free"),
+		}),
+		z.object({
+			type: z.literal("choices"),
+			choices: z.array(z.string().min(1).max(100)),
+		}),
+		z.object({
+			type: z.literal("choicesIncludingOther"),
+			choices: z.array(z.string().min(1).max(100)),
+		}),
+	]),
+});
+export type PreferenceQuestionTemplateItem = z.infer<
+	typeof PreferenceQuestionTemplateItemSchema
+>;
+
 export const PreferenceQuestionSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
@@ -112,3 +153,17 @@ export const PreferenceAnswerSchema = z.object({
 	answer: z.string().nullable(),
 });
 export type PreferenceAnswer = z.infer<typeof PreferenceAnswerSchema>;
+
+export const KigurumiSchema = z.object({
+	id: KigurumiIdSchema,
+	ownerUserId: UserIdSchema,
+	title: z.string().min(1).max(100),
+	character: z.string().min(1).max(100),
+});
+export type Kigurumi = z.infer<typeof KigurumiSchema>;
+
+export const BringingKigurumiSchema = KigurumiSchema.pick({
+	title: true,
+	character: true,
+});
+export type BringingKigurumi = z.infer<typeof BringingKigurumiSchema>;

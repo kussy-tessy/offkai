@@ -32,6 +32,11 @@
             :on-change="v => onChange(`${otherPrefix}${v}`)" />
         </div>
       </div>
+
+      <MyRadioButton v-if="allowEmpty" :name="question.id" value="" :checked="value === ''"
+        :on-change="() => onChange('')">
+        未回答
+      </MyRadioButton>
     </div>
 
     <p v-if="validationMessage" class="text-sm text-amber-700 mt-3 font-semibold">
@@ -51,6 +56,7 @@
     value: string
     onChange: (value: string) => void
     validationMessage?: string
+    allowEmpty?: boolean
   }>()
 
   const otherPrefix = "その他: "

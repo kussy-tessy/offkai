@@ -1,56 +1,97 @@
-import type { UserId } from "@offkai/core";
+import { type UserId, User, UserIdSchema } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "./prisma";
 
-export type CreateUserInput = {
-  loginId: string;
-  name: string;
-  passwordHash: string;
-};
-
-export type UserProfileRecord = {
-  id: string;
-  loginId: string;
-  name: string;
-  createdAt: Date;
-};
-
-export type UserAuthRecord = {
-  id: string;
-  loginId: string;
-  name: string;
-  passwordHash: string;
-};
-
 export class UserRepository {
-  private prisma: PrismaClient;
+	private prisma: PrismaClient;
 
-  constructor() {
-    this.prisma = prisma;
-  }
+	constructor() {
+		this.prisma = prisma;
+	}
 
-  async findByLoginId(loginId: string): Promise<UserAuthRecord | null> {
-    return this.prisma.user.findUnique({
-      where: { loginId },
-      select: { id: true, loginId: true, name: true, passwordHash: true },
-    });
-  }
+	async findByLoginId(loginId: string): Promise<User | null> {
+		const record = await this.prisma.user.findUnique({
+			where: { loginId },
+			select: userSelect,
+		});
 
-  async createUser(input: CreateUserInput): Promise<UserProfileRecord> {
-    return this.prisma.user.create({
-      data: {
-        loginId: input.loginId,
-        name: input.name,
-        passwordHash: input.passwordHash,
-      },
-      select: { id: true, loginId: true, name: true, createdAt: true },
-    });
-  }
+		return record === null ? null : this.toEntity(record);
+	}
 
-  async findById(userId: UserId): Promise<UserProfileRecord | null> {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, loginId: true, name: true, createdAt: true },
-    });
-  }
+	async findByDiscordUsername(discordUsername: string): Promise<User | null> {
+		const record = await this.prisma.user.findUnique({
+			where: { discordUsername },
+			select: userSelect,
+		});
+
+		return record === null ? null : this.toEntity(record);
+	}
+
+	async findById(userId: UserId): Promise<User | null> {
+		const record = await this.prisma.user.findUnique({
+			where: { id: userId },
+			select: userSelect,
+		});
+
+		return record === null ? null : this.toEntity(record);
+	}
+
+	async create(user: User): Promise<User> {
+		const record = await this.prisma.user.create({
+			data: {
+				id: user.id,
+				loginId: user.loginId,
+				name: user.name,
+				passwordHash: user.passwordHash,
+				discordUsername: user.discordUsername,
+				createdAt: user.createdAt,
+			},
+			select: userSelect,
+		});
+
+		return this.toEntity(record);
+	}
+
+	async save(user: User): Promise<User> {
+		const record = await this.prisma.user.update({
+			where: { id: user.id },
+			data: {
+				name: user.name,
+				passwordHash: user.passwordHash,
+				discordUsername: user.discordUsername,
+			},
+			select: userSelect,
+		});
+
+		return this.toEntity(record);
+	}
+
+	private toEntity(record: UserRecord): User {
+		return User.reconstruct({
+			id: UserIdSchema.parse(record.id),
+			loginId: record.loginId,
+			name: record.name,
+			passwordHash: record.passwordHash,
+			discordUsername: record.discordUsername,
+			createdAt: record.createdAt,
+		});
+	}
 }
+
+const userSelect = {
+	id: true,
+	loginId: true,
+	name: true,
+	passwordHash: true,
+	discordUsername: true,
+	createdAt: true,
+} as const;
+
+type UserRecord = {
+	id: string;
+	loginId: string;
+	name: string;
+	passwordHash: string;
+	discordUsername: string | null;
+	createdAt: Date;
+};

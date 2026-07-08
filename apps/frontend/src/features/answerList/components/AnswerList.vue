@@ -28,6 +28,11 @@
           <FontAwesomeIcon :icon="faPenToSquare" class="mr-2" />
           オフ会を編集する
         </MyButton>
+        <MyButton v-if="hasAnswered" color="secondary" size="lg"
+          @click="router.push(`/offkai/${data.offkai.id}/photos`)">
+          <FontAwesomeIcon :icon="faImages" class="mr-2" />
+          写真共有
+        </MyButton>
       </div>
       <p v-if="!canAnswer" class="text-sm text-gray-500">
         募集開始前です。{{ formatWithDay(data.offkai.applicationStartDate, true) }} から参加表明できます。
@@ -93,7 +98,12 @@
             <tr v-for="row in data.answers" :key="row.user.id"
               class="odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
               <td class="border-b border-slate-100 p-2 text-left w-24 truncate font-medium text-slate-700 text-sm">
-                {{ row.user.displayName }}
+                <span>{{ row.user.displayName }}</span>
+                <button v-if="data.offkai.canEdit" type="button" class="ml-2 text-sky-600 hover:text-sky-800"
+                  :aria-label="`${row.user.displayName}さんの回答を編集`"
+                  @click="router.push(`/offkai/${data.offkai.id}/answers/${row.user.id}/edit`)">
+                  <FontAwesomeIcon :icon="faPenToSquare" />
+                </button>
               </td>
               <td v-for="q in data.commitmentQuestions" :key="q.id" class="border-b border-slate-100 p-2 text-xl w-24">
                 <span v-if="row.commitmentAnswers[q.id] === 'yes'">
@@ -113,12 +123,11 @@
     <!-- Preference -->
     <h2 class="text-xl font-semibold mb-2">アンケート</h2>
 
-    <select v-model="selectedPreferenceId"
-      class="w-full border border-sky-500 rounded px-3 py-2 mb-3 bg-white text-gray-600 font-medium shadow-sm">
-      <option v-for="q in data.preferenceQuestions" :key="q.id" :value="q.id">
-        {{ q.question }}
-      </option>
-    </select>
+    <MySelectBox
+      v-model="selectedPreferenceId"
+      class="mb-3 border-sky-500 text-gray-600 font-medium shadow-sm focus:ring-sky-500"
+      :options="preferenceOptions"
+    />
 
     <div class="rounded-xl border border-teal-100 shadow-sm overflow-hidden">
       <table class="w-full border-collapse table-fixed">
@@ -132,8 +141,8 @@
           <tr v-for="row in data.answers" :key="row.user.id"
             class="odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
             <td class="border-b border-slate-100 p-2 w-24 font-medium text-slate-700">{{ row.user.displayName }}</td>
-            <td class="border-b border-slate-100 p-2 text-gray-700">
-              {{ row.preferenceAnswers[selectedPreferenceId] ?? "―" }}
+            <td class="border-b border-slate-100 p-2 text-gray-700 whitespace-pre-line">
+              {{ selectedAnswer(row) }}
             </td>
           </tr>
         </tbody>
@@ -144,15 +153,16 @@
 
 <script setup lang="ts">
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
-  import { faCalendar, faPen, faPenToSquare, faTrash, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
+  import { faCalendar, faImages, faPen, faPenToSquare, faTrash, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import { format, formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyBadge from "@/common/components/MyBadge.vue";
+  import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
-  import { useApi, useAuth, useToast } from "@/common/composables";
+  import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables";
 
   const { data } = defineProps<{
     data: Unbrand<OffkaiDetail>;
@@ -173,7 +183,34 @@
     () => Date.now() >= new Date(data.offkai.applicationStartDate).getTime(),
   );
 
-  const selectedPreferenceId = ref<string>(data.preferenceQuestions[0]?.id ?? "");
+  const BRINGING_KIGURUMI_OPTION_ID = "__bringingKigurumi";
+
+  const selectedPreferenceId = ref<string>(
+    data.preferenceQuestions[0]?.id ?? (data.offkai.askBringingKigurumi ? BRINGING_KIGURUMI_OPTION_ID : ""),
+  );
+  const preferenceOptions = computed<SelectOption[]>(() => {
+    const options = data.preferenceQuestions.map((q) => ({
+      value: q.id,
+      label: q.question,
+    }));
+    if (data.offkai.askBringingKigurumi) {
+      options.push({
+        value: BRINGING_KIGURUMI_OPTION_ID,
+        label: "連れてくる着ぐるみさんは？",
+      });
+    }
+    return options;
+  });
+
+  const selectedAnswer = (row: Unbrand<OffkaiDetail>["answers"][number]) => {
+    if (selectedPreferenceId.value === BRINGING_KIGURUMI_OPTION_ID) {
+      if (row.bringingKigurumis.length === 0) return "―";
+      return row.bringingKigurumis
+        .map((kigurumi) => `${kigurumi.character}(${kigurumi.title})`)
+        .join("\n");
+    }
+    return row.preferenceAnswers[selectedPreferenceId.value] ?? "―";
+  };
 
   const deleteEvent = async () => {
     if (deleting.value) return;
@@ -183,8 +220,8 @@
       success("オフ会を削除しました。");
       confirmDeleteOpen.value = false;
       await router.push("/dashboard");
-    } catch {
-      error("オフ会の削除に失敗しました。");
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "オフ会の削除に失敗しました。"));
     } finally {
       deleting.value = false;
     }

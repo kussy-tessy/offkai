@@ -6,10 +6,10 @@
 </template>
 
 <script setup lang="ts">
-  import type { SeriesQuestionTemplate } from "@offkai/core";
+  import type { GetSeriesQuestionTemplateResponse } from "@offkai/core";
   import { onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
-  import { useApi, useToast } from "@/common/composables";
+  import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
   import OffkaiEvent from "@/features/offkaiEvent/components/OffkaiEvent.vue";
   import type { OffkaiEventInitializeProps } from "@/features/offkaiEvent/composables";
 
@@ -26,21 +26,22 @@
     },
     applicationStartDate: "",
     description: "",
+    askBringingKigurumi: false,
     commitmentQuestions: [],
     preferenceQuestions: [],
   });
 
   onMounted(async () => {
     try {
-      const template = await get<SeriesQuestionTemplate>("/series/my/question-template");
+      const template = await get<GetSeriesQuestionTemplateResponse>("/series/my/question-template");
       if (template) {
         initialValue.value = {
           ...initialValue.value,
           preferenceQuestions: template.preferenceQuestions,
         };
       }
-    } catch {
-      error("アンケートテンプレートの読み込みに失敗しました。空の状態で作成できます。");
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "アンケートテンプレートの読み込みに失敗しました。空の状態で作成できます。"));
     } finally {
       initialLoading.value = false;
     }
@@ -52,8 +53,8 @@
       if (!result) return;
       success("オフ会を作成しました。");
       await router.push(`/offkai/${result.id}/detail`);
-    } catch {
-      error("オフ会の作成に失敗しました。");
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "オフ会の作成に失敗しました。"));
     }
   };
 </script>

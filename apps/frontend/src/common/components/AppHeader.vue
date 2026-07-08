@@ -11,7 +11,12 @@
           {{ user.name }} さん
         </span>
         <div v-if="isMenuOpen"
-          class="absolute right-0 z-20 mt-20 min-w-[140px] rounded-md border border-sky-200 bg-white p-1 shadow-lg">
+          class="absolute right-0 z-20 mt-24 min-w-[160px] rounded-md border border-sky-200 bg-white p-1 shadow-lg">
+          <button type="button"
+            class="w-full rounded px-3 py-2 text-left text-sm text-sky-800 transition hover:bg-sky-50"
+            @click="handleAccount">
+            アカウント設定
+          </button>
           <button type="button"
             class="w-full rounded px-3 py-2 text-left text-sm text-red-700 transition hover:bg-red-50"
             @click="handleLogout">
@@ -49,6 +54,11 @@
     if (!root.contains(target)) {
       isMenuOpen.value = false;
     }
+  };
+
+  const handleAccount = async () => {
+    isMenuOpen.value = false;
+    await router.push("/account");
   };
 
   const handleLogout = async () => {

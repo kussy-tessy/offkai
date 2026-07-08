@@ -21,15 +21,20 @@
 </template>
 
 <script setup lang="ts">
-  import type { SeriesQuestionTemplate } from "@offkai/core";
+  import type {
+    GetSeriesQuestionTemplateResponse,
+    UpdateSeriesQuestionTemplateRequest,
+  } from "@offkai/core";
   import { onMounted, ref } from "vue";
+  import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
-  import { isEmpty, useApi, useFieldErrorsComposable, useToast } from "@/common/composables";
+  import { getApiErrorMessage, isEmpty, useApi, useFieldErrorsComposable, useToast } from "@/common/composables";
   import PreferenceQuestions from "@/features/offkaiEvent/components/PreferenceQuestions.vue";
   import { usePreferenceQuestions } from "@/features/offkaiEvent/composables";
 
   const { get, put } = useApi();
   const { success, error } = useToast();
+  const router = useRouter();
   const questionStore = usePreferenceQuestions();
   const { errors, reset, hasAny } = useFieldErrorsComposable();
   const initialLoading = ref(true);
@@ -37,13 +42,13 @@
 
   onMounted(async () => {
     try {
-      const template = await get<SeriesQuestionTemplate>("/series/my/question-template");
+      const template = await get<GetSeriesQuestionTemplateResponse>("/series/my/question-template");
       questionStore.initialize({
         questions: template?.preferenceQuestions ?? [],
       });
-    } catch {
+    } catch (cause) {
       questionStore.initialize({ questions: [] });
-      error("アンケートテンプレートの読み込みに失敗しました。");
+      error(getApiErrorMessage(cause, "アンケートテンプレートの読み込みに失敗しました。"));
     } finally {
       initialLoading.value = false;
     }
@@ -71,7 +76,7 @@
   const save = async () => {
     if (!validate()) return;
 
-    const payload: SeriesQuestionTemplate = {
+    const payload: UpdateSeriesQuestionTemplateRequest = {
       preferenceQuestions: questionStore.questions.value.map((question) => ({
         question: question.question,
         required: question.required,
@@ -89,8 +94,9 @@
     try {
       await put("/series/my/question-template", payload);
       success("アンケートテンプレートを保存しました。");
-    } catch {
-      error("アンケートテンプレートの保存に失敗しました。");
+      await router.push("/dashboard");
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "アンケートテンプレートの保存に失敗しました。"));
     } finally {
       saving.value = false;
     }

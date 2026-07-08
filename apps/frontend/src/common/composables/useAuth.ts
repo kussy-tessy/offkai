@@ -29,6 +29,29 @@ async function logout() {
   user.value = null;
 }
 
+async function updateName(name: string) {
+  const { put } = useApi();
+  const data = await put<GetMeResponse>("/me/name", { name });
+  user.value = data;
+}
+
+async function changePassword(currentPassword: string, newPassword: string) {
+  const { put } = useApi();
+  await put("/me/password", { currentPassword, newPassword });
+}
+
+async function connectDiscord(discordUsername: string) {
+  const { put } = useApi();
+  const data = await put<GetMeResponse>("/me/discord", { discordUsername });
+  user.value = data;
+}
+
+async function disconnectDiscord() {
+  const { del } = useApi();
+  const data = await del<GetMeResponse>("/me/discord");
+  user.value = data;
+}
+
 export function useAuth() {
   return {
     user,
@@ -36,5 +59,9 @@ export function useAuth() {
     fetchMe,
     login,
     logout,
+    updateName,
+    changePassword,
+    connectDiscord,
+    disconnectDiscord,
   };
 }

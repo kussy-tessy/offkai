@@ -1,98 +1,116 @@
 import type {
-  GetMyAnswerFormRequest,
-  GetMyAnswerFormResponse,
-  Unbrand,
-  UserId,
+	GetMyAnswerFormRequest,
+	GetMyAnswerFormResponse,
+	Unbrand,
+	UserId,
 } from "@offkai/core";
 import { format, isPassed } from "@offkai/core";
-import { OffkaiAnswerRepository, OffkaiEventRepository } from "../../../repository";
+import {
+	KigurumiRepository,
+	OffkaiAnswerRepository,
+	OffkaiEventRepository,
+} from "../../../repository";
 import { rejectBeforeApplicationStart } from "./application-start";
 
 export async function getMyAnswerForm(
-  input: GetMyAnswerFormRequest,
-  userId: UserId,
+	input: GetMyAnswerFormRequest,
+	userId: UserId,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
-  const event = await new OffkaiEventRepository().findById(input.eventId);
-  rejectBeforeApplicationStart(event);
+	return getAnswerForm(input, userId);
+}
 
-  const answerRepository = new OffkaiAnswerRepository();
-  const [allAnswers, myAnswer] = await Promise.all([
-    answerRepository.findManyByEventId(input.eventId),
-    answerRepository.findByEventAndUser(input.eventId, userId),
-  ]);
+export async function getAnswerForm(
+	input: GetMyAnswerFormRequest,
+	userId: UserId,
+	bypassBusinessRules = false,
+): Promise<Unbrand<GetMyAnswerFormResponse>> {
+	const event = await new OffkaiEventRepository().findById(input.eventId);
+	if (!bypassBusinessRules) rejectBeforeApplicationStart(event);
 
-  // 自分を除いた各 commitment question の "yes" 数を集計
-  const counts = new Map<string, number>();
-  for (const question of event.commitmentQuestions) {
-    counts.set(question.id, 0);
-  }
-  for (const record of allAnswers) {
-    if (record.userId === userId) continue;
-    const answers = record.commitmentAnswers as Array<{
-      questionId: string;
-      answer: "yes" | "no" | null;
-    }>;
-    for (const answer of answers) {
-      if (answer.answer !== "yes") continue;
-      counts.set(answer.questionId, (counts.get(answer.questionId) ?? 0) + 1);
-    }
-  }
+	const answerRepository = new OffkaiAnswerRepository();
+	const [allAnswers, myAnswer, kigurumiOptions] = await Promise.all([
+		answerRepository.findManyByEventId(input.eventId),
+		answerRepository.findByEventAndUser(input.eventId, userId),
+		new KigurumiRepository().findManyByOwnerUserId(userId),
+	]);
 
-  const now = new Date();
+	// 自分を除いた各 commitment question の "yes" 数を集計
+	const counts = new Map<string, number>();
+	for (const question of event.commitmentQuestions) {
+		counts.set(question.id, 0);
+	}
+	for (const record of allAnswers) {
+		if (record.userId === userId) continue;
+		const answers = record.commitmentAnswers as Array<{
+			questionId: string;
+			answer: "yes" | "no" | null;
+		}>;
+		for (const answer of answers) {
+			if (answer.answer !== "yes") continue;
+			counts.set(answer.questionId, (counts.get(answer.questionId) ?? 0) + 1);
+		}
+	}
 
-  const commitmentQuestions = event.commitmentQuestions.map((q) => {
-    const currentCount = counts.get(q.id) ?? 0;
-    const deadlinePassed = isPassed(now, q.deadline);
-    const canEdit = !deadlinePassed;
-    const hasCapacity = currentCount < q.capacity;
-    const canSelectYes = canEdit && hasCapacity;
-    const disableReason = !canEdit
-      ? ("deadlinePassed" as const)
-      : !hasCapacity
-        ? ("capacityFull" as const)
-        : undefined;
-    const userAnswer =
-      myAnswer?.commitmentAnswers.find((a) => a.questionId === q.id)?.answer ??
-      null;
+	const now = new Date();
 
-    return {
-      id: q.id,
-      question: q.question,
-      required: q.required,
-      deadline: q.deadline.toISOString(),
-      capacity: q.capacity,
-      currentCount,
-      canSelectYes,
-      canEdit,
-      disableReason,
-      userAnswer,
-    };
-  });
+	const commitmentQuestions = event.commitmentQuestions.map((q) => {
+		const currentCount = counts.get(q.id) ?? 0;
+		const deadlinePassed = isPassed(now, q.deadline);
+		const canEdit = bypassBusinessRules || !deadlinePassed;
+		const hasCapacity = currentCount < q.capacity;
+		const canSelectYes = bypassBusinessRules || (canEdit && hasCapacity);
+		const disableReason = bypassBusinessRules
+			? undefined
+			: !canEdit
+				? ("deadlinePassed" as const)
+				: !hasCapacity
+					? ("capacityFull" as const)
+					: undefined;
+		const userAnswer =
+			myAnswer?.commitmentAnswers.find((a) => a.questionId === q.id)?.answer ??
+			null;
 
-  const preferenceQuestions = event.preferenceQuestions.map((q) => {
-    const userAnswer =
-      myAnswer?.preferenceAnswers.find((a) => a.questionId === q.id)?.answer ??
-      null;
+		return {
+			id: q.id,
+			question: q.question,
+			required: q.required,
+			deadline: q.deadline.toISOString(),
+			capacity: q.capacity,
+			currentCount,
+			canSelectYes,
+			canEdit,
+			disableReason,
+			userAnswer,
+		};
+	});
 
-    return {
-      id: q.id,
-      question: q.question,
-      required: q.required,
-      answerTemplate: q.answerTemplate,
-      userAnswer,
-    };
-  });
+	const preferenceQuestions = event.preferenceQuestions.map((q) => {
+		const userAnswer =
+			myAnswer?.preferenceAnswers.find((a) => a.questionId === q.id)?.answer ??
+			null;
 
-  return {
-    event: {
-      id: event.id,
-      title: event.name,
-      eventPeriod: {
-        startDate: format(event.eventPeriod.startDate, false),
-        endDate: format(event.eventPeriod.endDate, false),
-      },
-    },
-    commitmentQuestions,
-    preferenceQuestions,
-  };
+		return {
+			id: q.id,
+			question: q.question,
+			required: q.required,
+			answerTemplate: q.answerTemplate,
+			userAnswer,
+		};
+	});
+
+	return {
+		event: {
+			id: event.id,
+			title: event.name,
+			eventPeriod: {
+				startDate: format(event.eventPeriod.startDate, false),
+				endDate: format(event.eventPeriod.endDate, false),
+			},
+		},
+		commitmentQuestions,
+		preferenceQuestions,
+		askBringingKigurumi: event.askBringingKigurumi,
+		kigurumiOptions,
+		bringingKigurumis: myAnswer?.bringingKigurumis ?? [],
+	};
 }

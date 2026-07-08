@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
   import { useRouter } from "vue-router"
-  import { useApi, useAuth } from "@/common/composables"
+  import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables"
 
   import Signup from "@/features/auth/components/Signup.vue"
 
@@ -12,10 +12,15 @@
 
   const router = useRouter()
   const { fetchMe } = useAuth()
+  const { error } = useToast()
 
   const handleSubmit = async (payload: any) => {
-    await post("/auth/register", payload)
-    await fetchMe()
-    router.push("/")
+    try {
+      await post("/auth/register", payload)
+      await fetchMe()
+      router.push("/")
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "ユーザー登録に失敗しました。"))
+    }
   }
 </script>

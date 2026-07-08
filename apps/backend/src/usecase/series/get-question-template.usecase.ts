@@ -1,9 +1,16 @@
-import type { SeriesQuestionTemplate, UserId } from "@offkai/core";
+import type {
+	GetSeriesQuestionTemplateResponse,
+	UserId,
+} from "@offkai/core";
 import { SeriesRepository } from "../../repository";
 
 export async function getQuestionTemplate(
 	userId: UserId,
-): Promise<SeriesQuestionTemplate> {
+): Promise<GetSeriesQuestionTemplateResponse> {
 	const repository = new SeriesRepository();
-	return repository.getQuestionTemplateByOwner(userId);
+	const template = await repository.findQuestionTemplateByOwner(userId);
+
+	return {
+		preferenceQuestions: template.preferenceQuestions,
+	};
 }

@@ -7,13 +7,14 @@ import {
 	PreferenceQuestionSchema,
 	type UserId,
 } from "@offkai/core";
+import { runBusinessRule } from "../../../app-error";
 import { OffkaiEventRepository } from "../../../repository";
 
 export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId: UserId) {
 	const repository = new OffkaiEventRepository();
 	const seriesId = await repository.findOwnerSeriesId(userId);
 
-	const offkaiEvent = OffkaiEvent.create({
+	const offkaiEvent = runBusinessRule(() => OffkaiEvent.create({
 		seriesId,
 		name: input.title,
 		eventPeriod: EventPeriodSchema.parse({
@@ -24,6 +25,7 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId:
 			new Date(input.applicationStartDate),
 		),
 		description: input.description,
+		askBringingKigurumi: input.askBringingKigurumi,
 		commitmentQuestions:
 			CommitmentQuestionSchema.omit({ id: true }).array().parse(
 				input.commitmentQuestions.map((question) =>
@@ -39,7 +41,7 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId:
 					required: question.required,
 					answerTemplate: question.answerTemplate,
 				}))),
-	});
+	}));
 	await repository.save(offkaiEvent);
 	return offkaiEvent;
 }

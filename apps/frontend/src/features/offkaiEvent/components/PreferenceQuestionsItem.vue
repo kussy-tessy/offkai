@@ -8,14 +8,12 @@
 
     <!-- 回答形式 -->
     <MyFormField v-slot="{ id }" label="回答形式">
-      <select
+      <MySelectBox
         :id="id"
-        class="w-full border border-gray-300 bg-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-        :value="question.answerTemplate.type" @change="onChangeType(($event.target as HTMLSelectElement).value)">
-        <option value="free">自由記述</option>
-        <option value="choices">選択肢</option>
-        <option value="choicesIncludingOther">選択肢 + その他</option>
-      </select>
+        :value="question.answerTemplate.type"
+        :options="answerTypeOptions"
+        :on-change="onChangeType"
+      />
     </MyFormField>
 
     <MyFormField v-slot="{ id }" label="回答必須">
@@ -59,6 +57,7 @@
   import MyButton from "@/common/components/MyButton.vue"
   import MyCheckbox from "@/common/components/MyCheckbox.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
+  import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue"
   import MyTextbox from "@/common/components/MyTextbox.vue"
   import type { PreferenceQuestion } from "../composables/usePreferenceQuestions"
 
@@ -74,8 +73,16 @@
     props.question.answerTemplate.type !== "free"
   )
 
-  const onChangeType = (type: string) => {
-    if (type === "free") {
+  const answerTypeOptions: SelectOption[] = [
+    { value: "free", label: "自由記述" },
+    { value: "choices", label: "選択肢" },
+    { value: "choicesIncludingOther", label: "選択肢 + その他" },
+  ]
+
+  const onChangeType = (type: string | number) => {
+    const answerType = String(type)
+
+    if (answerType === "free") {
       props.onUpdate(props.question.id, {
         answerTemplate: { type: "free" },
       })
@@ -84,7 +91,7 @@
 
     props.onUpdate(props.question.id, {
       answerTemplate: {
-        type: type as "choices" | "choicesIncludingOther",
+        type: answerType as "choices" | "choicesIncludingOther",
         choices: [],
       },
     })

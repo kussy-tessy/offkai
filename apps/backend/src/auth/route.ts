@@ -1,124 +1,207 @@
-import { type UserId, UserLoginIdSchema } from "@offkai/core";
+import {
+	ChangePasswordRequestSchema,
+	ConnectDiscordRequestSchema,
+	DiscordUsernameSchema,
+	User,
+	UserLoginIdSchema,
+	UpdateUserNameRequestSchema,
+} from "@offkai/core";
 import bcrypt from "bcryptjs";
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../repository/prisma";
-import { getMe } from "../usecase";
+import { AppError, runBusinessRule } from "../app-error";
+import { UserRepository } from "../repository";
+import {
+	changePassword,
+	connectDiscord,
+	disconnectDiscord,
+	getMe,
+	updateUserName,
+} from "../usecase";
 
 type RegisterBody = {
-  loginId: string;
-  password: string;
-  name: string;
+	loginId: string;
+	password: string;
+	name: string;
+	discordUsername?: string | null;
 };
 
 type LoginBody = {
-  loginId: string;
-  password: string;
+	loginId: string;
+	password: string;
 };
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-  // register
-  app.post("/auth/register", async (request, reply) => {
-    const body = request.body as RegisterBody;
+	app.post("/auth/register", async (request, reply) => {
+		const body = (request.body ?? {}) as RegisterBody;
 
-    const loginId = (body.loginId ?? "").trim();
-    const password = body.password ?? "";
-    const name = (body.name ?? "").trim();
-    const loginIdValidation = UserLoginIdSchema.safeParse(loginId);
+		const loginId = (body.loginId ?? "").trim();
+		const password = body.password ?? "";
+		const name = (body.name ?? "").trim();
+		const discordUsernameInput = (body.discordUsername ?? "").trim().toLowerCase();
+		const discordUsername = discordUsernameInput || null;
+		const loginIdValidation = UserLoginIdSchema.safeParse(loginId);
+		const discordUsernameValidation = discordUsername
+			? DiscordUsernameSchema.safeParse(discordUsername)
+			: null;
 
-    if (!loginIdValidation.success || !password || !name) {
-      reply.code(400).send({ ok: false, error: "VALIDATION_ERROR" });
-      return;
-    }
+		if (
+			!loginIdValidation.success ||
+			!password ||
+			!name ||
+			(discordUsernameValidation && !discordUsernameValidation.success)
+		) {
+			throw new AppError(
+				"VALIDATION_ERROR",
+				"ログインID、表示名、パスワードを入力してください。",
+			);
+		}
 
-    const normalizedLoginId = loginId.toLowerCase();
+		const repository = new UserRepository();
+		const normalizedLoginId = loginId.toLowerCase();
 
-    const exists = await prisma.user.findUnique({
-      where: { loginId: normalizedLoginId },
-      select: { id: true },
-    });
-    if (exists) {
-      reply.code(409).send({ ok: false, error: "LOGIN_ID_ALREADY_EXISTS" });
-      return;
-    }
+		const exists = await repository.findByLoginId(normalizedLoginId);
+		if (exists) {
+			throw new AppError(
+				"LOGIN_ID_ALREADY_EXISTS",
+				"このログインIDはすでに使用されています。",
+			);
+		}
 
-    const passwordHash = await bcrypt.hash(password, 12);
+		if (discordUsername) {
+			const linkedUser = await repository.findByDiscordUsername(discordUsername);
+			if (linkedUser) {
+				throw new AppError(
+					"CONFLICT",
+					"このDiscordアカウントはすでに連携されています。",
+				);
+			}
+		}
 
-    const user = await prisma.user.create({
-      data: {
-        loginId: normalizedLoginId,
-        name,
-        passwordHash,
-      },
-      select: { id: true, loginId: true, name: true, createdAt: true },
-    });
+		const passwordHash = await bcrypt.hash(password, 12);
+		const user = await repository.create(
+			runBusinessRule(() =>
+				User.create({
+					loginId: normalizedLoginId,
+					name,
+					passwordHash,
+					discordUsername,
+				}),
+			),
+		);
 
-    const token = await app.auth.signAccessToken({ userId: user.id as UserId });
-    app.auth.setAuthCookie(reply, token);
+		const token = await app.auth.signAccessToken({ userId: user.id });
+		app.auth.setAuthCookie(reply, token);
 
-    reply.send({ ok: true, user });
-  });
+		reply.send({ ok: true, user: toAuthUserResponse(user) });
+	});
 
-  app.post("/auth/login", async (request, reply) => {
-    const body = request.body as LoginBody;
+	app.post("/auth/login", async (request, reply) => {
+		const body = (request.body ?? {}) as LoginBody;
 
-    const loginId = (body.loginId ?? "").trim();
-    const password = body.password ?? "";
+		const loginId = (body.loginId ?? "").trim();
+		const password = body.password ?? "";
 
-    if (!loginId || !password) {
-      reply.code(400).send({ ok: false, error: "VALIDATION_ERROR" });
-      return;
-    }
+		if (!loginId || !password) {
+			throw new AppError(
+				"VALIDATION_ERROR",
+				"ログインIDとパスワードを入力してください。",
+			);
+		}
 
-    const normalizedLoginId = loginId.toLowerCase();
+		const normalizedLoginId = loginId.toLowerCase();
+		const user = await new UserRepository().findByLoginId(normalizedLoginId);
 
-    const user = await prisma.user.findUnique({
-      where: { loginId: normalizedLoginId },
-      select: { id: true, loginId: true, name: true, passwordHash: true },
-    });
+		if (!user) {
+			throw new AppError(
+				"INVALID_CREDENTIALS",
+				"ログインIDまたはパスワードが正しくありません。",
+			);
+		}
 
-    if (!user) {
-      reply.code(401).send({ ok: false, error: "INVALID_CREDENTIALS" });
-      return;
-    }
+		const ok = await bcrypt.compare(password, user.passwordHash);
+		if (!ok) {
+			throw new AppError(
+				"INVALID_CREDENTIALS",
+				"ログインIDまたはパスワードが正しくありません。",
+			);
+		}
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) {
-      reply.code(401).send({ ok: false, error: "INVALID_CREDENTIALS" });
-      return;
-    }
+		const token = await app.auth.signAccessToken({ userId: user.id });
+		app.auth.setAuthCookie(reply, token);
 
-    const token = await app.auth.signAccessToken({ userId: user.id as UserId });
-    app.auth.setAuthCookie(reply, token);
+		reply.send({ ok: true, user: toAuthUserResponse(user) });
+	});
 
-    reply.send({
-      ok: true,
-      user: { id: user.id, loginId: user.loginId, name: user.name },
-    });
-  });
+	app.post("/auth/logout", async (_request, reply) => {
+		app.auth.clearAuthCookie(reply);
+		reply.send({ ok: true });
+	});
 
-  // logout
-  app.post("/auth/logout", async (_request, reply) => {
-    app.auth.clearAuthCookie(reply);
-    reply.send({ ok: true });
-  });
+	app.get("/me", { preHandler: app.auth.requireUser }, async (request, reply) => {
+		const userId = request.user.userId;
+		if (!userId) return;
 
-  // me (login check)
-  app.get(
-    "/me",
-    { preHandler: app.auth.requireUser },
-    async (request, reply) => {
-      const userId = request.user.userId;
-      if (!userId) return; // requireUserが401を返している
+		const me = await getMe(userId);
 
-      const me = await getMe(userId);
+		if (!me) {
+			app.auth.clearAuthCookie(reply);
+			throw new AppError("UNAUTHORIZED", "ログインが必要です。");
+		}
 
-      if (!me) {
-        app.auth.clearAuthCookie(reply);
-        reply.code(401).send({ ok: false, error: "UNAUTHORIZED" });
-        return;
-      }
+		reply.send(me);
+	});
 
-      reply.send(me);
-    },
-  );
+	app.put(
+		"/me/name",
+		{ preHandler: app.auth.requireUser },
+		async (request) => {
+			const userId = request.user.userId;
+			const body = UpdateUserNameRequestSchema.parse(request.body);
+
+			return updateUserName(userId, body.name);
+		},
+	);
+
+	app.put(
+		"/me/password",
+		{ preHandler: app.auth.requireUser },
+		async (request) => {
+			const userId = request.user.userId;
+			const body = ChangePasswordRequestSchema.parse(request.body);
+
+			await changePassword(userId, body.currentPassword, body.newPassword);
+			return { ok: true };
+		},
+	);
+
+	app.put(
+		"/me/discord",
+		{ preHandler: app.auth.requireUser },
+		async (request) => {
+			const userId = request.user.userId;
+			const body = ConnectDiscordRequestSchema.parse(request.body);
+
+			return connectDiscord(userId, body.discordUsername);
+		},
+	);
+
+	app.delete(
+		"/me/discord",
+		{ preHandler: app.auth.requireUser },
+		async (request) => {
+			const userId = request.user.userId;
+
+			return disconnectDiscord(userId);
+		},
+	);
 };
+
+function toAuthUserResponse(user: User) {
+	return {
+		id: user.id,
+		loginId: user.loginId,
+		name: user.name,
+		discordUsername: user.discordUsername,
+		createdAt: user.createdAt.toISOString(),
+	};
+}

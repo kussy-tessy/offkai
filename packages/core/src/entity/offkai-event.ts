@@ -2,6 +2,7 @@ import { v7 as uuidv7 } from "uuid";
 import type {
 	ApplicationStartDate,
 	CommitmentQuestion,
+	DiscordRoleId,
 	EventPeriod,
 	OffkaiEventId,
 	OffkaiSeriesId,
@@ -18,6 +19,8 @@ export class OffkaiEvent {
 		readonly eventPeriod: EventPeriod,
 		readonly description: string,
 		readonly applicationStartDate: ApplicationStartDate,
+		readonly discordRoleId: DiscordRoleId | null,
+		readonly askBringingKigurumi: boolean,
 		readonly commitmentQuestions: CommitmentQuestion[],
 		readonly preferenceQuestions: PreferenceQuestion[],
 	) { }
@@ -29,6 +32,8 @@ export class OffkaiEvent {
 		eventPeriod: EventPeriod;
 		description: string;
 		applicationStartDate: ApplicationStartDate;
+		discordRoleId: DiscordRoleId | null;
+		askBringingKigurumi?: boolean;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}) {
@@ -39,6 +44,8 @@ export class OffkaiEvent {
 			params.eventPeriod,
 			params.description,
 			params.applicationStartDate,
+			params.discordRoleId,
+			params.askBringingKigurumi ?? false,
 			params.commitmentQuestions,
 			params.preferenceQuestions,
 		);
@@ -50,14 +57,13 @@ export class OffkaiEvent {
 		eventPeriod: EventPeriod;
 		description: string;
 		applicationStartDate: ApplicationStartDate;
+		discordRoleId?: DiscordRoleId | null;
+		askBringingKigurumi?: boolean;
 		commitmentQuestions: Omit<CommitmentQuestion, "id">[];
 		preferenceQuestions: Omit<PreferenceQuestion, "id">[];
 	}): OffkaiEvent {
 		if (isPassed(new Date(), params.eventPeriod.startDate)) {
 			throw new Error("すでに開催日を過ぎています");
-		}
-		if (isPassed(new Date(), params.applicationStartDate)) {
-			throw new Error("すでに募集開始日を過ぎています");
 		}
 		return new OffkaiEvent(
 			uuidv7() as OffkaiEventId,
@@ -66,6 +72,8 @@ export class OffkaiEvent {
 			params.eventPeriod,
 			params.description,
 			params.applicationStartDate,
+			params.discordRoleId ?? null,
+			params.askBringingKigurumi ?? false,
 			params.commitmentQuestions.map((question) => ({
 				...question,
 				id: uuidv7() as QuestionId,
@@ -82,6 +90,8 @@ export class OffkaiEvent {
 		eventPeriod: EventPeriod;
 		description: string;
 		applicationStartDate: ApplicationStartDate;
+		discordRoleId?: DiscordRoleId | null;
+		askBringingKigurumi?: boolean;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}): OffkaiEvent {
@@ -95,6 +105,8 @@ export class OffkaiEvent {
 			params.eventPeriod,
 			params.description,
 			params.applicationStartDate,
+			params.discordRoleId ?? this.discordRoleId,
+			params.askBringingKigurumi ?? this.askBringingKigurumi,
 			params.commitmentQuestions,
 			params.preferenceQuestions,
 		);

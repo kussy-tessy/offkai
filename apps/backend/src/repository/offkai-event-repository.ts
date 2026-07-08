@@ -1,6 +1,7 @@
 import {
 	type ApplicationStartDate,
 	type Capacity,
+	type DiscordRoleId,
 	type CommitmentQuestion,
 	type Deadline,
 	EventPeriodSchema,
@@ -13,6 +14,7 @@ import {
 	type UserId,
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
+import { AppError } from "../app-error";
 import { prisma } from "./prisma";
 
 export class OffkaiEventRepository {
@@ -27,7 +29,9 @@ export class OffkaiEventRepository {
 			where: { id },
 		});
 
-		if (!record) throw new Error(`オフ会が見つかりません: ${id}`);
+		if (!record) {
+			throw new AppError("EVENT_NOT_FOUND", "オフ会が見つかりません。");
+		}
 
 		type RawCommitmentQuestion = {
 			id: string;
@@ -60,6 +64,8 @@ export class OffkaiEventRepository {
 				endDate: record.eventEndDate,
 			}),
 			applicationStartDate: record.applicationStartDate as ApplicationStartDate,
+			discordRoleId: record.discordRoleId as DiscordRoleId | null,
+			askBringingKigurumi: record.askBringingKigurumi,
 			commitmentQuestions: rawCommitmentQuestions.map(
 				(q): CommitmentQuestion => ({
 					id: q.id as QuestionId,
@@ -152,6 +158,8 @@ export class OffkaiEventRepository {
 			eventStartDate: event.eventPeriod.startDate,
 			eventEndDate: event.eventPeriod.endDate,
 			applicationStartDate: event.applicationStartDate,
+			discordRoleId: event.discordRoleId,
+			askBringingKigurumi: event.askBringingKigurumi,
 			commitmentQuestions: event.commitmentQuestions,
 			preferenceQuestions: event.preferenceQuestions,
 		};
@@ -183,7 +191,7 @@ export class OffkaiEventRepository {
 			select: { seriesId: true },
 		});
 		if (!member) {
-			throw new Error(`オーナーのシリーズが見つかりません: ${userId}`);
+			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
 		}
 		return member.seriesId as OffkaiSeriesId;
 	}

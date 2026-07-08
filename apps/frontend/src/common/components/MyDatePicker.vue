@@ -1,5 +1,6 @@
 <template>
   <VueDatePicker v-bind="$attrs" :model-value="innerDate" @update:model-value="onUpdate" :formats="formats" :locale="ja"
+    :auto-apply="!includesTime" :action-row="{ showPreview: false }"
     :time-config="{ enableTimePicker: includesTime, timePickerInline: includesTime }" />
   <p v-if="error" class="text-sm text-red-600">
     {{ error }}
@@ -30,8 +31,8 @@
    */
   const formats = computed(() => {
     return includesTime.value
-      ? { input: "yyyy/MM/dd HH:mm", preview: "" }
-      : { input: "yyyy/MM/dd", preview: "" }
+      ? { input: "yyyy/MM/dd HH:mm" }
+      : { input: "yyyy/MM/dd" }
   })
 
   /**

@@ -14,6 +14,7 @@ export const CreateOffkaiEventRequestSchema = z.object({
 	eventPeriod: LocalDatePeriodStringSchema,
 	applicationStartDate: LocalDateTimeToISOStringSchema,
 	description: z.string().max(1000),
+	askBringingKigurumi: z.boolean().default(false),
 	commitmentQuestions: z.array(
 		z.object({
 			question: z.string().min(1).max(100),

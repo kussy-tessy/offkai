@@ -1,6 +1,8 @@
 import {
 	type AnswerId,
 	type AnswerRow,
+	type BringingKigurumi,
+	BringingKigurumiSchema,
 	type CommitmentAnswer,
 	CommitmentAnswerSchema,
 	type CommitmentQuestionHeader,
@@ -15,6 +17,7 @@ import {
 	type UserId,
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
+import { AppError } from "../app-error";
 import { prisma } from "./prisma";
 
 export class OffkaiAnswerRepository {
@@ -26,7 +29,9 @@ export class OffkaiAnswerRepository {
 
 	async findManyByEventId(
 		eventId: OffkaiEventId,
-	): Promise<Array<{ id: string; userId: string; commitmentAnswers: unknown }>> {
+	): Promise<
+		Array<{ id: string; userId: string; commitmentAnswers: unknown }>
+	> {
 		return this.prisma.offkaiAnswer.findMany({
 			where: { eventId },
 			select: {
@@ -60,6 +65,8 @@ export class OffkaiAnswerRepository {
 				record.commitmentAnswers as unknown as CommitmentAnswer[],
 			preferenceAnswers:
 				record.preferenceAnswers as unknown as PreferenceAnswer[],
+			bringingKigurumis:
+				record.bringingKigurumis as unknown as BringingKigurumi[],
 		});
 	}
 
@@ -93,7 +100,7 @@ export class OffkaiAnswerRepository {
 		});
 
 		if (!event) {
-			throw new Error(`オフ会が見つかりません: ${eventId}`);
+			throw new AppError("EVENT_NOT_FOUND", "オフ会が見つかりません。");
 		}
 
 		const commitmentQuestions =
@@ -109,6 +116,7 @@ export class OffkaiAnswerRepository {
 			},
 			commitmentAnswers: this.toCommitmentAnswerRecord(a.commitmentAnswers),
 			preferenceAnswers: this.toPreferenceAnswerRecord(a.preferenceAnswers),
+			bringingKigurumis: this.toBringingKigurumis(a.bringingKigurumis),
 		}));
 
 		const result: Unbrand<OffkaiDetail> = {
@@ -121,6 +129,7 @@ export class OffkaiAnswerRepository {
 					endDate: event.eventEndDate.toISOString().slice(0, 10),
 				},
 				applicationStartDate: event.applicationStartDate.toISOString(),
+				askBringingKigurumi: event.askBringingKigurumi,
 				canEdit: event.series.members.length > 0,
 			},
 			commitmentQuestions,
@@ -131,13 +140,15 @@ export class OffkaiAnswerRepository {
 		return OffkaiDetailSchema.parse(result);
 	}
 
-	async save(answer: OffkaiAnswer): Promise<void> {
+	async save(answer: OffkaiAnswer, updatedBy: UserId): Promise<void> {
 		const props = {
 			id: answer.id,
 			eventId: answer.eventId,
 			userId: answer.userId,
+			updatedBy,
 			commitmentAnswers: answer.commitmentAnswers,
 			preferenceAnswers: answer.preferenceAnswers,
+			bringingKigurumis: answer.bringingKigurumis,
 		};
 
 		await this.prisma.$transaction(async (tx) => {
@@ -160,6 +171,8 @@ export class OffkaiAnswerRepository {
 							existing.commitmentAnswers as unknown as CommitmentAnswer[],
 						preferenceAnswers:
 							existing.preferenceAnswers as unknown as PreferenceAnswer[],
+						bringingKigurumis:
+							existing.bringingKigurumis as unknown as BringingKigurumi[],
 					},
 				});
 			}
@@ -190,5 +203,9 @@ export class OffkaiAnswerRepository {
 	): AnswerRow["preferenceAnswers"] {
 		const items = PreferenceAnswerSchema.array().parse(value);
 		return Object.fromEntries(items.map((i) => [i.questionId, i.answer]));
+	}
+
+	private toBringingKigurumis(value: unknown): BringingKigurumi[] {
+		return BringingKigurumiSchema.array().parse(value ?? []);
 	}
 }

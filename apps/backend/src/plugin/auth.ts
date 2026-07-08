@@ -3,6 +3,7 @@ import jwt from "@fastify/jwt";
 import type { UserId } from "@offkai/core";
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
+import { AppError } from "../app-error";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -63,11 +64,11 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app) => 
       reply.clearCookie(cookieName, { ...baseCookieOptions });
     },
 
-    requireUser: async (request: FastifyRequest, reply: FastifyReply) => {
+    requireUser: async (request: FastifyRequest, _reply: FastifyReply) => {
       try {
         await request.jwtVerify();
       } catch (_e) {
-        reply.code(401).send({ ok: false, error: "UNAUTHORIZED" });
+        throw new AppError("UNAUTHORIZED", "ログインが必要です。");
       }
     },
   });

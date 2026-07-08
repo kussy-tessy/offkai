@@ -9,6 +9,7 @@ import {
 	type UserId,
 } from "@offkai/core";
 import { v7 as uuidv7 } from "uuid";
+import { AppError, runBusinessRule } from "../../../app-error";
 import { OffkaiEventRepository } from "../../../repository";
 
 export async function updateOffkaiEvent(
@@ -21,7 +22,7 @@ export async function updateOffkaiEvent(
 	const seriesRole = await repository.findSeriesMemberRole(userId, event.seriesId);
 
 	if (seriesRole !== "owner") {
-		throw new Error("このオフ会を編集する権限がありません");
+		throw new AppError("FORBIDDEN", "このオフ会を編集する権限がありません。");
 	}
 
 	const commitmentWithoutId = CommitmentQuestionSchema.omit({ id: true })
@@ -54,7 +55,7 @@ export async function updateOffkaiEvent(
 		id: event.preferenceQuestions[index]?.id ?? (uuidv7() as QuestionId),
 	}));
 
-	const updated = event.edit({
+	const updated = runBusinessRule(() => event.edit({
 		name: input.title,
 		eventPeriod: EventPeriodSchema.parse({
 			startDate: new Date(input.eventPeriod.startDate),
@@ -64,9 +65,10 @@ export async function updateOffkaiEvent(
 			new Date(input.applicationStartDate),
 		),
 		description: input.description,
+		askBringingKigurumi: input.askBringingKigurumi,
 		commitmentQuestions: nextCommitmentQuestions,
 		preferenceQuestions: nextPreferenceQuestions,
-	});
+	}));
 
 	await repository.save(updated);
 	return updated;

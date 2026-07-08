@@ -1,10 +1,23 @@
-import type { SeriesQuestionTemplate, UserId } from "@offkai/core";
+import type {
+	UpdateSeriesQuestionTemplateRequest,
+	UpdateSeriesQuestionTemplateResponse,
+	UserId,
+} from "@offkai/core";
 import { SeriesRepository } from "../../repository";
 
 export async function updateQuestionTemplate(
-	input: SeriesQuestionTemplate,
+	input: UpdateSeriesQuestionTemplateRequest,
 	userId: UserId,
-): Promise<SeriesQuestionTemplate> {
+): Promise<UpdateSeriesQuestionTemplateResponse> {
 	const repository = new SeriesRepository();
-	return repository.updateQuestionTemplateByOwner(userId, input);
+	const template = await repository.findQuestionTemplateByOwner(userId);
+	const editedTemplate = template.edit({
+		preferenceQuestions: input.preferenceQuestions,
+	});
+
+	await repository.saveQuestionTemplate(editedTemplate);
+
+	return {
+		preferenceQuestions: editedTemplate.preferenceQuestions,
+	};
 }

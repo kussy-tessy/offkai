@@ -8,16 +8,21 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid(7))
-  loginId   String   @unique
-  name      String
+  id           String @id @default(uuid(7))
+  loginId      String @unique
+  name         String
   passwordHash String
+  discordUsername    String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  seriesMembers SeriesMember[]
-  answers       OffkaiAnswer[]
+  seriesMembers         SeriesMember[]
+  answers               OffkaiAnswer[]        @relation("AnswerOwner")
+  updatedAnswers        OffkaiAnswer[]        @relation("AnswerUpdater")
+  photoShares           OffkaiPhotoShare[]    @relation("PhotoShareUploader")
+  photoDownloadStatuses PhotoDownloadStatus[]
+  kigurumis             Kigurumi[]            @relation("KigurumiOwner")
 }
 
 model Series {
@@ -25,8 +30,8 @@ model Series {
   name                       String
   preferenceQuestionTemplate Json   @default("[]")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   members SeriesMember[]
   events  OffkaiEvent[]
@@ -53,9 +58,11 @@ model OffkaiEvent {
   name        String
   description String?
 
-  eventStartDate        DateTime @db.Date
-  eventEndDate          DateTime @db.Date
-  applicationStartDate  DateTime
+  eventStartDate       DateTime @db.Date
+  eventEndDate         DateTime @db.Date
+  applicationStartDate DateTime
+  discordRoleId        String?
+  askBringingKigurumi Boolean @default(false)
 
   commitmentQuestions Json
   preferenceQuestions Json
@@ -63,24 +70,28 @@ model OffkaiEvent {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  series  Series  @relation(fields: [seriesId], references: [id])
-  answers OffkaiAnswer[]
+  series      Series             @relation(fields: [seriesId], references: [id])
+  answers     OffkaiAnswer[]
+  photoShares OffkaiPhotoShare[]
 }
 
 model OffkaiAnswer {
   id String @id @default(uuid(7))
 
-  eventId  String
-  userId   String
+  eventId   String
+  userId    String
+  updatedBy String
 
   commitmentAnswers Json
   preferenceAnswers Json
+  bringingKigurumis Json @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  event  OffkaiEvent @relation(fields: [eventId], references: [id])
-  user   User        @relation(fields: [userId], references: [id])
+  event   OffkaiEvent @relation(fields: [eventId], references: [id])
+  user    User        @relation("AnswerOwner", fields: [userId], references: [id])
+  updater User        @relation("AnswerUpdater", fields: [updatedBy], references: [id])
 
   histories OffkaiAnswerHistory[]
 
@@ -96,8 +107,57 @@ model OffkaiAnswerHistory {
 
   commitmentAnswers Json
   preferenceAnswers Json
+  bringingKigurumis Json @default("[]")
 
   createdAt DateTime @default(now())
 
   answer OffkaiAnswer @relation(fields: [offkaiAnswerId], references: [id])
+}
+
+model Kigurumi {
+  id          String @id @default(uuid(7))
+  ownerUserId String
+
+  title     String
+  character String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  owner User @relation("KigurumiOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@index([ownerUserId, createdAt])
+}
+
+model OffkaiPhotoShare {
+  id String @id @default(uuid(7))
+
+  eventId        String
+  uploaderUserId String
+
+  url              String
+  downloadDeadline String?
+  password         String?
+  note             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  event            OffkaiEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploader         User                  @relation("PhotoShareUploader", fields: [uploaderUserId], references: [id])
+  downloadStatuses PhotoDownloadStatus[]
+
+  @@index([eventId, createdAt])
+}
+
+model PhotoDownloadStatus {
+  photoShareId String
+  userId       String
+
+  checkedAt DateTime @default(now())
+
+  photoShare OffkaiPhotoShare @relation(fields: [photoShareId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id])
+
+  @@id([photoShareId, userId])
 }

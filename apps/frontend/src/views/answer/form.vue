@@ -8,16 +8,22 @@
       <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
         <h1 class="text-2xl font-bold text-blue-900">{{ formData.event.title }}</h1>
         <p class="text-sm text-blue-700 mt-1">開催日：{{ formatPeriodWithDay(formData.event.eventPeriod) }}</p>
+        <p v-if="isOwnerEdit && formData.respondent" class="font-semibold text-blue-900 mt-2">
+          {{ formData.respondent.displayName }}さんの回答を編集
+        </p>
       </div>
 
       <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
-        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" />
+        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" :allow-empty="isOwnerEdit" />
       <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
-        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages" />
+        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages" :allow-empty="isOwnerEdit" />
+      <BringingKigurumiAnswers v-if="formData.askBringingKigurumi" :options="kigurumiOptions"
+        :selected="bringingKigurumis" :can-manage="!isOwnerEdit" :on-change="updateBringingKigurumis"
+        :on-options-change="updateKigurumiOptions" />
 
       <div class="flex justify-center pt-8">
         <MyButton color="primary" type="submit" :disabled="submitting" class="px-12 py-3 text-lg font-bold">
-          {{ submitting ? "送信中..." : "送信" }}
+          {{ submitting ? "送信中..." : isOwnerEdit ? "回答を更新" : "送信" }}
         </MyButton>
       </div>
     </form>
@@ -27,6 +33,8 @@
 <script setup lang="ts">
   import type {
     GetMyAnswerFormResponse,
+    BringingKigurumi,
+    Kigurumi,
     SaveOffkaiAnswerRequest,
     Unbrand,
   } from "@offkai/core";
@@ -34,7 +42,8 @@
   import { computed, onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
-  import { useApi, useToast } from "@/common/composables";
+  import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+  import BringingKigurumiAnswers from "@/features/answer/components/BringingKigurumiAnswers.vue";
   import CommitmentAnswers from "@/features/answer/components/CommitmentAnswers.vue";
   import PreferenceAnswers from "@/features/answer/components/PreferenceAnswers.vue";
   import {
@@ -44,7 +53,17 @@
 
   const props = defineProps<{
     id: string;
+    userId?: string;
   }>();
+  const isOwnerEdit = computed(() => Boolean(props.userId));
+  const formApiPath = computed(() =>
+    props.userId
+      ? `/offkai-event/${props.id}/answers/${props.userId}/form`
+      : `/offkai-event/${props.id}/my-answer-form`,
+  );
+  const saveApiPath = computed(() =>
+    props.userId ? `/offkai-event/${props.id}/answers/${props.userId}` : `/offkai-event/${props.id}/answers`,
+  );
 
   const { get, put, loading } = useApi();
   const { success, error } = useToast();
@@ -58,10 +77,20 @@
     useCommitmentAnswers([]);
   const { answers: preferenceAnswers, updateAnswer: updatePreferenceAnswer } =
     usePreferenceAnswers([]);
+  const kigurumiOptions = ref<Unbrand<Kigurumi>[]>([]);
+  const bringingKigurumis = ref<Unbrand<BringingKigurumi>[]>([]);
+
+  const updateBringingKigurumis = (selected: Unbrand<BringingKigurumi>[]) => {
+    bringingKigurumis.value = selected;
+  };
+
+  const updateKigurumiOptions = (options: Unbrand<Kigurumi>[]) => {
+    kigurumiOptions.value = options;
+  };
 
   const commitmentValidationMessages = computed<Record<string, string>>(() => {
     const data = formData.value;
-    if (!data) return {};
+    if (!data || isOwnerEdit.value) return {};
 
     const messages: Record<string, string> = {};
     for (const question of data.commitmentQuestions) {
@@ -76,7 +105,7 @@
 
   const preferenceValidationMessages = computed<Record<string, string>>(() => {
     const data = formData.value;
-    if (!data) return {};
+    if (!data || isOwnerEdit.value) return {};
 
     const messages: Record<string, string> = {};
     for (const question of data.preferenceQuestions) {
@@ -116,6 +145,9 @@
         preferenceAnswers.value[question.id] = question.userAnswer;
       }
     }
+
+    kigurumiOptions.value = data.kigurumiOptions;
+    bringingKigurumis.value = data.bringingKigurumis;
   }
 
   onMounted(async () => {
@@ -126,17 +158,15 @@
     }
 
     try {
-      const data = await get<Unbrand<GetMyAnswerFormResponse>>(
-        `/offkai-event/${props.id}/my-answer-form`,
-      );
+      const data = await get<Unbrand<GetMyAnswerFormResponse>>(formApiPath.value);
       if (!data) {
         errorMessage.value = "回答フォームの取得に失敗しました。";
         return;
       }
       formData.value = data;
       hydrateAnswers(data);
-    } catch {
-      errorMessage.value = "回答フォームの取得に失敗しました。";
+    } catch (cause) {
+      errorMessage.value = getApiErrorMessage(cause, "回答フォームの取得に失敗しました。");
     }
   });
 
@@ -167,14 +197,20 @@
             ? preferenceAnswers.value[question.id]
             : null,
         })),
+        bringingKigurumis: formData.value.askBringingKigurumi
+          ? bringingKigurumis.value
+          : [],
       };
 
-      await put(`/offkai-event/${props.id}/answers`, payload);
-      success("回答を送信しました。")
-      await router.push("/dashboard");
-    } catch {
-      errorMessage.value = "回答の送信に失敗しました。";
-      error("回答の送信に失敗しました。")
+      await put(saveApiPath.value, payload);
+      success(isOwnerEdit.value ? "回答を更新しました。" : "回答を送信しました。")
+      await router.push(
+        isOwnerEdit.value ? `/offkai/${props.id}/detail` : "/dashboard",
+      );
+    } catch (cause) {
+      const message = getApiErrorMessage(cause, "回答の送信に失敗しました。");
+      errorMessage.value = message;
+      error(message)
     } finally {
       submitting.value = false;
     }

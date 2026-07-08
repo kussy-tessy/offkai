@@ -21,6 +21,7 @@ export async function getOffkaiEvent(
     },
     applicationStartDate: format(event.applicationStartDate),
     description: event.description,
+    askBringingKigurumi: event.askBringingKigurumi,
     commitmentQuestions: event.commitmentQuestions.map((question) => ({
       ...question,
       deadline: format(question.deadline),

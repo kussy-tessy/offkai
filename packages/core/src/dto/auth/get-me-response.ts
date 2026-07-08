@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  DiscordUsernameSchema,
   ISODateTimeStringSchema,
   UserIdSchema,
   UserLoginIdSchema,
@@ -10,6 +11,7 @@ export const GetMeResponseSchema = z.object({
   id: UserIdSchema,
   loginId: UserLoginIdSchema,
   name: UserNameSchema,
+  discordUsername: DiscordUsernameSchema.nullable(),
   createdAt: ISODateTimeStringSchema,
   isSeriesOwner: z.boolean(),
 });

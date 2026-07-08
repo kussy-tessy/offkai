@@ -70,7 +70,7 @@
   import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
   import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
-  import { useApi, useToast } from "@/common/composables";
+  import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 
   const { event } = defineProps<{
     event: Unbrand<OffkaiEventSummary>;
@@ -93,8 +93,8 @@
       success("オフ会を削除しました。");
       confirmDeleteOpen.value = false;
       emit("deleted", event.id);
-    } catch {
-      error("オフ会の削除に失敗しました。");
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "オフ会の削除に失敗しました。"));
     } finally {
       deleting.value = false;
     }

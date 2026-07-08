@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+	BringingKigurumiSchema,
 	CapacitySchema,
 	ISODateTimeStringSchema,
 	LocalDatePeriodStringSchema,
@@ -39,6 +40,7 @@ export const AnswerRowSchema = z.object({
 		z.enum(["yes", "no"]).nullable(),
 	),
 	preferenceAnswers: z.record(QuestionIdSchema, z.string().nullable()),
+	bringingKigurumis: z.array(BringingKigurumiSchema).default([]),
 });
 export type AnswerRow = z.infer<typeof AnswerRowSchema>;
 
@@ -50,6 +52,7 @@ export const OffkaiDetailSchema = z.object({
 		eventPeriod: LocalDatePeriodStringSchema,
 		applicationStartDate: ISODateTimeStringSchema,
 		canEdit: z.boolean(),
+		askBringingKigurumi: z.boolean().default(false),
 	}),
 
 	commitmentQuestions: z.array(CommitmentQuestionHeaderSchema),

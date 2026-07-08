@@ -1,26 +1,27 @@
 import type {
-  SaveOffkaiAnswerRequest,
-  SaveOffkaiAnswerResponse,
-  Unbrand,
-  UserId,
+	SaveOffkaiAnswerRequest,
+	SaveOffkaiAnswerResponse,
+	Unbrand,
+	UserId,
 } from "@offkai/core";
 import { OffkaiAnswerRepository } from "../../../repository";
 import { OffkaiAnswerService } from "../../../service/offkai-answer.service";
 
 export async function saveOffkaiAnswer(
-  input: SaveOffkaiAnswerRequest,
-  userId: UserId,
+	input: SaveOffkaiAnswerRequest,
+	userId: UserId,
 ): Promise<Unbrand<SaveOffkaiAnswerResponse>> {
-  const service = new OffkaiAnswerService();
-  const answer = await service.prepareAnswerEntity(
-    input.eventId,
-    userId,
-    input.commitmentAnswers,
-    input.preferenceAnswers,
-  );
+	const service = new OffkaiAnswerService();
+	const answer = await service.prepareAnswerEntity(
+		input.eventId,
+		userId,
+		input.commitmentAnswers,
+		input.preferenceAnswers,
+		input.bringingKigurumis,
+	);
 
-  const repository = new OffkaiAnswerRepository();
-  await repository.save(answer);
+	const repository = new OffkaiAnswerRepository();
+	await repository.save(answer, userId);
 
-  return { ok: true };
+	return { ok: true };
 }

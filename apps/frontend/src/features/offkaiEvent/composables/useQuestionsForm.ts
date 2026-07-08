@@ -21,6 +21,7 @@ export type OffkaiEventInitializeProps = {
 	};
 	applicationStartDate: string;
 	description: string;
+	askBringingKigurumi: boolean;
 	commitmentQuestions: CommitmentQuestionInitializeProps["questions"];
 	preferenceQuestions: PreferenceQuestionInitializeProps["questions"];
 };
@@ -31,6 +32,7 @@ export const useQuestionsForm = () => {
 	const eventEndDate = useField("");
 	const applicationStartDate = useField("");
 	const description = useField("");
+	const askBringingKigurumi = useField(false);
 
 	// 子フォーム（サブコレクション）
 	const commitment = useCommitmentQuestions();
@@ -104,6 +106,7 @@ export const useQuestionsForm = () => {
 		eventEndDate.set(props.eventPeriod.endDate);
 		applicationStartDate.set(props.applicationStartDate);
 		description.set(props.description);
+		askBringingKigurumi.set(props.askBringingKigurumi);
 		commitment.initialize({
 			questions: props.commitmentQuestions,
 		});
@@ -120,6 +123,7 @@ export const useQuestionsForm = () => {
 		},
 		applicationStartDate: applicationStartDate.value.value,
 		description: description.value.value,
+		askBringingKigurumi: askBringingKigurumi.value.value,
 		commitmentQuestions: commitment.questions.value.map((question) => ({
 			question: question.question,
 			questionShort: question.questionShort,
@@ -147,6 +151,7 @@ export const useQuestionsForm = () => {
 		eventEndDate,
 		applicationStartDate,
 		description,
+		askBringingKigurumi,
 		commitment,
 		preference,
 		initialize,

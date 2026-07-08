@@ -1,6 +1,12 @@
 import { v7 as uuidv7 } from "uuid";
+import {
+	BringingKigurumiSchema,
+	CommitmentAnswerSchema,
+	PreferenceAnswerSchema,
+} from "../schema";
 import type {
 	AnswerId,
+	BringingKigurumi,
 	CommitmentAnswer,
 	CommitmentQuestion,
 	OffkaiEventId,
@@ -13,9 +19,11 @@ type Params = {
 	answer: {
 		commitmentAnswers: CommitmentAnswer[];
 		preferenceAnswers: PreferenceAnswer[];
+		bringingKigurumis: BringingKigurumi[];
 	};
 	question: {
 		eventId: OffkaiEventId;
+		askBringingKigurumi: boolean;
 		commitmentQuestions: (CommitmentQuestion & { numberOfPeople: number })[];
 		preferenceQuestions: PreferenceQuestion[];
 	};
@@ -28,7 +36,8 @@ export class OffkaiAnswer {
 		readonly userId: UserId,
 		readonly commitmentAnswers: CommitmentAnswer[],
 		readonly preferenceAnswers: PreferenceAnswer[],
-	) { }
+		readonly bringingKigurumis: BringingKigurumi[],
+	) {}
 
 	static reconstruct(params: {
 		id: AnswerId;
@@ -36,6 +45,7 @@ export class OffkaiAnswer {
 		userId: UserId;
 		commitmentAnswers: CommitmentAnswer[];
 		preferenceAnswers: PreferenceAnswer[];
+		bringingKigurumis?: BringingKigurumi[];
 	}) {
 		return new OffkaiAnswer(
 			params.id,
@@ -43,11 +53,13 @@ export class OffkaiAnswer {
 			params.userId,
 			params.commitmentAnswers,
 			params.preferenceAnswers,
+			params.bringingKigurumis ?? [],
 		);
 	}
 
 	static create(params: Params & { userId: UserId }) {
-		OffkaiAnswer.validateAnswer(params);
+		OffkaiAnswer.validateAnswerStructure(params);
+		OffkaiAnswer.validateAnswerBusinessRules(params);
 
 		return new OffkaiAnswer(
 			uuidv7() as AnswerId,
@@ -55,11 +67,13 @@ export class OffkaiAnswer {
 			params.userId,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
+			params.answer.bringingKigurumis,
 		);
 	}
 
 	edit(params: Params) {
-		OffkaiAnswer.validateAnswer(params, this.commitmentAnswers);
+		OffkaiAnswer.validateAnswerStructure(params);
+		OffkaiAnswer.validateAnswerBusinessRules(params, this.commitmentAnswers);
 
 		return new OffkaiAnswer(
 			this.id,
@@ -67,25 +81,28 @@ export class OffkaiAnswer {
 			this.userId,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
+			params.answer.bringingKigurumis,
 		);
 	}
 
 	forceEdit(params: Params) {
+		OffkaiAnswer.validateAnswerStructure(params);
+
 		return new OffkaiAnswer(
 			this.id,
 			this.eventId,
 			this.userId,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
+			params.answer.bringingKigurumis,
 		);
 	}
 
-	private static validateAnswer(
-		params: Params,
-		nowAnswers?: CommitmentAnswer[],
-		now: Date = new Date(),
-	) {
-		// QuestionとAnswerのidが1対1対応であることを確認
+	private static validateAnswerStructure(params: Params) {
+		CommitmentAnswerSchema.array().parse(params.answer.commitmentAnswers);
+		PreferenceAnswerSchema.array().parse(params.answer.preferenceAnswers);
+		BringingKigurumiSchema.array().parse(params.answer.bringingKigurumis);
+
 		const commitmentQuestionIds = new Set(
 			params.question.commitmentQuestions.map((question) => question.id),
 		);
@@ -101,6 +118,12 @@ export class OffkaiAnswer {
 
 		if (
 			!(
+				params.question.commitmentQuestions.length ===
+					commitmentQuestionIds.size &&
+				params.answer.commitmentAnswers.length === commitmentAnswerIds.size &&
+				params.question.preferenceQuestions.length ===
+					preferenceQuestionIds.size &&
+				params.answer.preferenceAnswers.length === preferenceAnswerIds.size &&
 				isSameSet(commitmentQuestionIds, commitmentAnswerIds) &&
 				isSameSet(preferenceQuestionIds, preferenceAnswerIds)
 			)
@@ -109,14 +132,18 @@ export class OffkaiAnswer {
 				"アンケートと回答が対応していません。アンケートが更新された可能性があるので、再度画面を読み込み直して回答し直してください。",
 			);
 		}
+	}
 
-		// 質問ごとにチェック
+	private static validateAnswerBusinessRules(
+		params: Params,
+		nowAnswers?: CommitmentAnswer[],
+		now: Date = new Date(),
+	) {
 		for (const question of params.question.commitmentQuestions) {
 			const answer = params.answer.commitmentAnswers.find(
 				(a) => a.questionId === question.id,
 			);
 
-			// 上で一致チェックしているのでありえない
 			if (!answer) {
 				throw new Error("予期せぬエラー");
 			}
@@ -130,12 +157,10 @@ export class OffkaiAnswer {
 				? nowAnswer.answer !== answer.answer
 				: true;
 
-			// 締め切りを過ぎてcommitmentの回答を変更するのはだめ
 			if (nowAnswer && isAnswerChanged && now > question.deadline) {
 				throw new Error("締切を過ぎてから参加可否は変更できません。");
 			}
 
-			// yesへ新規回答/変更する場合
 			if (answer.answer === "yes" && isAnswerChanged) {
 				if (now > question.deadline) {
 					throw new Error("締切を過ぎています。");

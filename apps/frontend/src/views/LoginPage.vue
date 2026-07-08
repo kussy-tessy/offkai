@@ -3,9 +3,8 @@
 </template>
 
 <script setup lang="ts">
-  import axios from "axios"
   import { useRouter } from "vue-router"
-  import { useApi, useAuth, useToast } from "@/common/composables"
+  import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables"
   import Login from "@/features/auth/components/Login.vue"
 
   const { post } = useApi()
@@ -20,13 +19,11 @@
       await fetchMe()
       router.push("/")
     }
-    catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        showError("ログインに失敗しました。ログインIDまたはパスワードを確認してください。")
-        return
-      }
-
-      showError("ログイン処理でエラーが発生しました。時間を置いて再試行してください。")
+    catch (cause) {
+      showError(getApiErrorMessage(
+        cause,
+        "ログイン処理でエラーが発生しました。時間を置いて再試行してください。",
+      ))
     }
   }
 </script>

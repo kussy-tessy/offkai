@@ -31,6 +31,11 @@
         :on-change="() => onChange('no')">
         いいえ
       </MyRadioButton>
+
+      <MyRadioButton v-if="allowEmpty" :name="question.id" value="" :checked="value === null || value === ''"
+        :disabled="!question.canEdit" :on-change="() => onChange(null)">
+        未回答
+      </MyRadioButton>
     </div>
 
     <!-- 無効理由 -->
@@ -57,7 +62,8 @@
   defineProps<{
     question: Unbrand<CommitmentQuestionWithAnswer>
     value: "yes" | "no" | "" | null
-    onChange: (value: "yes" | "no") => void
+    onChange: (value: "yes" | "no" | null) => void
     validationMessage?: string
+    allowEmpty?: boolean
   }>()
 </script>
