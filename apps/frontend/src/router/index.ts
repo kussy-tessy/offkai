@@ -7,6 +7,7 @@ import Dashboard from "../views/dashboard/Dashboard.vue";
 import Login from "../views/LoginPage.vue";
 import CreateOffkaiEvent from "../views/offkaiEvent/create.vue";
 import EditOffkaiEvent from "../views/offkaiEvent/edit.vue";
+import Participants from "../views/offkaiEvent/participants.vue";
 import PhotoShare from "../views/photoShare/index.vue";
 import QuestionTemplate from "../views/series/questionTemplate.vue";
 import Signup from "../views/SignupPage.vue";
@@ -46,6 +47,12 @@ const routes = [
 	{
 		path: "/offkai/:id/detail",
 		component: AnswerList,
+		props: true,
+		...requiresAuth,
+	},
+	{
+		path: "/offkai/:id/participants",
+		component: Participants,
 		props: true,
 		...requiresAuth,
 	},

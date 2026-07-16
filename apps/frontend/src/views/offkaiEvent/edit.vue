@@ -9,7 +9,7 @@
   import { useRouter } from 'vue-router';
   import { getApiErrorMessage, useApi, useToast } from '@/common/composables';
   import OffkaiEvent from '@/features/offkaiEvent/components/OffkaiEvent.vue';
-  import { CommitmentQuestion, PreferenceQuestion } from '@/features/offkaiEvent/composables';
+  import { CommitmentQuestion, OffkaiEventInitializeProps, PreferenceQuestion } from '@/features/offkaiEvent/composables';
 
   const { id } = defineProps<{
     id: string
@@ -19,7 +19,7 @@
   const { success, error } = useToast();
   const router = useRouter();
 
-  const initialValue = ref({
+  const initialValue = ref<OffkaiEventInitializeProps>({
     title: "",
     eventPeriod: {
       startDate: "",
@@ -27,6 +27,7 @@
     },
     applicationStartDate: "",
     description: "",
+    discordRoleId: null,
     askBringingKigurumi: false,
     commitmentQuestions: [] as CommitmentQuestion[],
     preferenceQuestions: [] as PreferenceQuestion[],

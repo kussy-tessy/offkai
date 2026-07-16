@@ -65,6 +65,7 @@ export async function updateOffkaiEvent(
 			new Date(input.applicationStartDate),
 		),
 		description: input.description,
+		discordRoleId: input.discordRoleId,
 		askBringingKigurumi: input.askBringingKigurumi,
 		commitmentQuestions: nextCommitmentQuestions,
 		preferenceQuestions: nextPreferenceQuestions,

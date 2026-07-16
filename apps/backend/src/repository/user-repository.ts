@@ -27,6 +27,15 @@ export class UserRepository {
 		return record === null ? null : this.toEntity(record);
 	}
 
+	async findByDiscordUserId(discordUserId: string): Promise<User | null> {
+		const record = await this.prisma.user.findUnique({
+			where: { discordUserId },
+			select: userSelect,
+		});
+
+		return record === null ? null : this.toEntity(record);
+	}
+
 	async findById(userId: UserId): Promise<User | null> {
 		const record = await this.prisma.user.findUnique({
 			where: { id: userId },
@@ -44,6 +53,7 @@ export class UserRepository {
 				name: user.name,
 				passwordHash: user.passwordHash,
 				discordUsername: user.discordUsername,
+				discordUserId: user.discordUserId,
 				createdAt: user.createdAt,
 			},
 			select: userSelect,
@@ -59,6 +69,7 @@ export class UserRepository {
 				name: user.name,
 				passwordHash: user.passwordHash,
 				discordUsername: user.discordUsername,
+				discordUserId: user.discordUserId,
 			},
 			select: userSelect,
 		});
@@ -73,6 +84,7 @@ export class UserRepository {
 			name: record.name,
 			passwordHash: record.passwordHash,
 			discordUsername: record.discordUsername,
+			discordUserId: record.discordUserId,
 			createdAt: record.createdAt,
 		});
 	}
@@ -84,6 +96,7 @@ const userSelect = {
 	name: true,
 	passwordHash: true,
 	discordUsername: true,
+	discordUserId: true,
 	createdAt: true,
 } as const;
 
@@ -93,5 +106,6 @@ type UserRecord = {
 	name: string;
 	passwordHash: string;
 	discordUsername: string | null;
+	discordUserId: string | null;
 	createdAt: Date;
 };

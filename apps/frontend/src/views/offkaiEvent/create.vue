@@ -26,6 +26,7 @@
     },
     applicationStartDate: "",
     description: "",
+    discordRoleId: null,
     askBringingKigurumi: false,
     commitmentQuestions: [],
     preferenceQuestions: [],

@@ -20,6 +20,18 @@ export const DiscordUsernameSchema = z
 	.brand("DiscordUsername");
 export type DiscordUsername = z.infer<typeof DiscordUsernameSchema>;
 
+export const DiscordUserIdSchema = z
+	.string()
+	.regex(/^\d{17,20}$/)
+	.brand("DiscordUserId");
+export type DiscordUserId = z.infer<typeof DiscordUserIdSchema>;
+
+export const DiscordGuildIdSchema = z
+	.string()
+	.regex(/^\d{17,20}$/)
+	.brand("DiscordGuildId");
+export type DiscordGuildId = z.infer<typeof DiscordGuildIdSchema>;
+
 export const DiscordRoleIdSchema = z
 	.string()
 	.regex(/^\d{17,20}$/)

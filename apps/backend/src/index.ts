@@ -8,7 +8,7 @@ import { AppError, appErrorStatusCodes } from "./app-error";
 import { authRoutes } from "./auth";
 import { authPlugin } from "./plugin";
 import { prisma } from "./repository/prisma";
-import { kigurumiRoute, offkaiEventRoute, seriesRoute } from "./usecase";
+import { discordRoute, kigurumiRoute, offkaiEventRoute, seriesRoute } from "./usecase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,6 +31,7 @@ app.register(authPlugin, {
 
 // ルートの登録
 app.register(authRoutes, { prefix: "/api" });
+app.register(discordRoute, { prefix: "/api/discord" });
 app.register(kigurumiRoute, { prefix: "/api/kigurumi" });
 app.register(offkaiEventRoute, { prefix: "/api/offkai-event" });
 app.register(seriesRoute, { prefix: "/api/series" });

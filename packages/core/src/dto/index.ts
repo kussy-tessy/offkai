@@ -1,5 +1,6 @@
 export * from "./api-error";
 export * from "./auth";
+export * from "./discord";
 export * from "./offkai-answer";
 export * from "./offkai-detail";
 export * from "./offkai-event";

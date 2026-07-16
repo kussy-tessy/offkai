@@ -14,9 +14,11 @@
       </div>
 
       <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
-        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" :allow-empty="isOwnerEdit" />
+        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages"
+        :allow-empty="isOwnerEdit" />
       <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
-        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages" :allow-empty="isOwnerEdit" />
+        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages"
+        :allow-empty="isOwnerEdit" />
       <BringingKigurumiAnswers v-if="formData.askBringingKigurumi" :options="kigurumiOptions"
         :selected="bringingKigurumis" :can-manage="!isOwnerEdit" :on-change="updateBringingKigurumis"
         :on-options-change="updateKigurumiOptions" />
@@ -32,8 +34,8 @@
 
 <script setup lang="ts">
   import type {
-    GetMyAnswerFormResponse,
     BringingKigurumi,
+    GetMyAnswerFormResponse,
     Kigurumi,
     SaveOffkaiAnswerRequest,
     Unbrand,

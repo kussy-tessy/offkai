@@ -80,39 +80,3 @@
     document.removeEventListener("click", closeMenuIfOutside);
   });
 </script>
-
-<style scoped>
-  .brand-logo {
-    position: relative;
-    display: inline-block;
-    background: linear-gradient(120deg, #075985 10%, #0ea5e9 48%, #6366f1 90%);
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 2px 12px rgb(14 165 233 / 18%);
-    transition: filter 180ms ease, transform 180ms ease;
-  }
-
-  .brand-logo::after {
-    position: absolute;
-    right: 4%;
-    bottom: -0.15rem;
-    left: 4%;
-    height: 2px;
-    content: "";
-    background: linear-gradient(90deg, transparent, #38bdf8 25%, #818cf8 75%, transparent);
-    border-radius: 9999px;
-    opacity: 0.65;
-    transform: scaleX(0.82);
-    transition: opacity 180ms ease, transform 180ms ease;
-  }
-
-  .brand-logo:hover {
-    filter: saturate(1.15) brightness(1.05);
-    transform: translateY(-1px);
-  }
-
-  .brand-logo:hover::after {
-    opacity: 1;
-    transform: scaleX(1);
-  }
-</style>

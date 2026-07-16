@@ -9,7 +9,8 @@ import {
 import bcrypt from "bcryptjs";
 import type { FastifyPluginAsync } from "fastify";
 import { AppError, runBusinessRule } from "../app-error";
-import { UserRepository } from "../repository";
+import { discordService } from "../discord";
+import { OffkaiEventRepository, UserRepository } from "../repository";
 import {
 	changePassword,
 	connectDiscord,
@@ -67,9 +68,20 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			);
 		}
 
+		const discordUserId = discordUsername
+			? await resolveDiscordUserId(discordUsername)
+			: null;
+
+		if (discordUsername && !discordUserId) {
+			throw new AppError("VALIDATION_ERROR", "Discordメンバーが見つかりません。");
+		}
+
 		if (discordUsername) {
-			const linkedUser = await repository.findByDiscordUsername(discordUsername);
-			if (linkedUser) {
+			const [linkedUserByUsername, linkedUserByUserId] = await Promise.all([
+				repository.findByDiscordUsername(discordUsername),
+				discordUserId ? repository.findByDiscordUserId(discordUserId) : null,
+			]);
+			if (linkedUserByUsername || linkedUserByUserId) {
 				throw new AppError(
 					"CONFLICT",
 					"このDiscordアカウントはすでに連携されています。",
@@ -85,6 +97,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 					name,
 					passwordHash,
 					discordUsername,
+					discordUserId,
 				}),
 			),
 		);
@@ -202,6 +215,24 @@ function toAuthUserResponse(user: User) {
 		loginId: user.loginId,
 		name: user.name,
 		discordUsername: user.discordUsername,
+		discordUserId: user.discordUserId,
 		createdAt: user.createdAt.toISOString(),
 	};
+}
+
+async function resolveDiscordUserId(discordUsername: string): Promise<string | null> {
+	const guildIds = await new OffkaiEventRepository().findAllSeriesDiscordGuildIds();
+	if (guildIds.length === 0) {
+		throw new AppError("VALIDATION_ERROR", "DiscordギルドIDが設定されていません。");
+	}
+
+	for (const guildId of guildIds) {
+		const discordUserId = await discordService.getUserIdByUsername({
+			guildId,
+			username: discordUsername,
+		});
+		if (discordUserId) return discordUserId;
+	}
+
+	return null;
 }

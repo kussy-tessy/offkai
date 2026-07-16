@@ -21,6 +21,7 @@ export async function getMe(
 		loginId: user.loginId,
 		name: user.name,
 		discordUsername: user.discordUsername,
+		discordUserId: user.discordUserId,
 		createdAt: user.createdAt.toISOString(),
 		isSeriesOwner: ownerSeriesMember !== null,
 	};

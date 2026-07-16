@@ -13,6 +13,7 @@ model User {
   name         String
   passwordHash String
   discordUsername    String? @unique
+  discordUserId      String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -29,6 +30,7 @@ model Series {
   id                         String @id @default(uuid(7))
   name                       String
   preferenceQuestionTemplate Json   @default("[]")
+  discordGuildId             String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

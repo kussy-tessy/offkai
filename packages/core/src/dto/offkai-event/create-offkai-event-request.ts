@@ -2,6 +2,7 @@ import z from "zod";
 import {
 	LocalDatePeriodStringSchema,
 	LocalDateTimeMinuteStringSchema,
+	DiscordRoleIdSchema,
 } from "../../schema";
 import { preprocessDatetime } from "../../util";
 
@@ -14,6 +15,7 @@ export const CreateOffkaiEventRequestSchema = z.object({
 	eventPeriod: LocalDatePeriodStringSchema,
 	applicationStartDate: LocalDateTimeToISOStringSchema,
 	description: z.string().max(1000),
+	discordRoleId: DiscordRoleIdSchema.nullable().default(null),
 	askBringingKigurumi: z.boolean().default(false),
 	commitmentQuestions: z.array(
 		z.object({
@@ -29,10 +31,19 @@ export const CreateOffkaiEventRequestSchema = z.object({
 		z.object({
 			question: z.string().min(1).max(100),
 			required: z.boolean().default(false),
-			answerTemplate: z.object({
-				type: z.enum(["free", "choices", "choicesIncludingOther"]),
-				choices: z.array(z.string().min(1).max(100)).optional(),
-			})
+			answerTemplate: z.discriminatedUnion("type", [
+				z.object({
+					type: z.literal("free"),
+				}),
+				z.object({
+					type: z.literal("choices"),
+					choices: z.array(z.string().min(1).max(100)).min(1),
+				}),
+				z.object({
+					type: z.literal("choicesIncludingOther"),
+					choices: z.array(z.string().min(1).max(100)).min(1),
+				}),
+			]),
 		}),
 	),
 });

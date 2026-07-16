@@ -1,7 +1,10 @@
 import {
 	type ApplicationStartDate,
 	type Capacity,
+	type DiscordGuildId,
 	type DiscordRoleId,
+	type DiscordUserId,
+	type DiscordUsername,
 	type CommitmentQuestion,
 	type Deadline,
 	EventPeriodSchema,
@@ -12,6 +15,7 @@ import {
 	type PreferenceQuestion,
 	type QuestionId,
 	type UserId,
+	type UserName,
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
 import { AppError } from "../app-error";
@@ -196,6 +200,121 @@ export class OffkaiEventRepository {
 		return member.seriesId as OffkaiSeriesId;
 	}
 
+
+	async findAllSeriesDiscordGuildIds(): Promise<DiscordGuildId[]> {
+		const series = await this.prisma.series.findMany({
+			where: { discordGuildId: { not: null } },
+			select: { discordGuildId: true },
+		});
+
+		return series.flatMap((item) =>
+			item.discordGuildId ? [item.discordGuildId as DiscordGuildId] : [],
+		);
+	}
+
+	async findOwnerSeriesDiscordGuildIds(userId: UserId): Promise<DiscordGuildId[]> {
+		const members = await this.prisma.seriesMember.findMany({
+			where: { userId, role: "owner" },
+			select: {
+				series: {
+					select: { discordGuildId: true },
+				},
+			},
+		});
+		if (members.length === 0) {
+			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
+		}
+
+		return members.flatMap((member) =>
+			member.series.discordGuildId ? [member.series.discordGuildId as DiscordGuildId] : [],
+		);
+	}
+
+	async findOwnerSeriesDiscordGuildId(userId: UserId): Promise<DiscordGuildId | null> {
+		const member = await this.prisma.seriesMember.findFirst({
+			where: { userId, role: "owner" },
+			select: {
+				series: {
+					select: { discordGuildId: true },
+				},
+			},
+		});
+		if (!member) {
+			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
+		}
+
+		return member.series.discordGuildId as DiscordGuildId | null;
+	}
+
+	async findSeriesDiscordGuildId(seriesId: OffkaiSeriesId): Promise<DiscordGuildId | null> {
+		const series = await this.prisma.series.findUnique({
+			where: { id: seriesId },
+			select: { discordGuildId: true },
+		});
+		if (!series) {
+			throw new AppError("SERIES_NOT_FOUND", "シリーズが見つかりません。");
+		}
+
+		return series.discordGuildId as DiscordGuildId | null;
+	}
+
+	async findRespondentUsersByEventId(eventId: OffkaiEventId): Promise<OffkaiEventRespondentUser[]> {
+		const records = await this.prisma.offkaiAnswer.findMany({
+			where: { eventId },
+			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+			select: {
+				user: {
+					select: {
+						id: true,
+						name: true,
+						discordUsername: true,
+						discordUserId: true,
+					},
+				},
+			},
+		});
+
+		return records.map((record) => ({
+			userId: record.user.id as UserId,
+			displayName: record.user.name as UserName,
+			discordUsername: record.user.discordUsername as DiscordUsername | null,
+			discordUserId: record.user.discordUserId as DiscordUserId | null,
+		}));
+	}
+
+	async findRespondentUserByEventAndUser(
+		eventId: OffkaiEventId,
+		userId: UserId,
+	): Promise<OffkaiEventRespondentUser | null> {
+		const record = await this.prisma.offkaiAnswer.findUnique({
+			where: {
+				eventId_userId: {
+					eventId,
+					userId,
+				},
+			},
+			select: {
+				user: {
+					select: {
+						id: true,
+						name: true,
+						discordUsername: true,
+						discordUserId: true,
+					},
+				},
+			},
+		});
+
+		if (!record) return null;
+
+		return {
+			userId: record.user.id as UserId,
+			displayName: record.user.name as UserName,
+			discordUsername: record.user.discordUsername as DiscordUsername | null,
+			discordUserId: record.user.discordUserId as DiscordUserId | null,
+		};
+	}
+
 	async findSeriesMemberRole(
 		userId: UserId,
 		seriesId: OffkaiSeriesId,
@@ -213,3 +332,10 @@ export class OffkaiEventRepository {
 		return member?.role ?? null;
 	}
 }
+
+export type OffkaiEventRespondentUser = {
+	userId: UserId;
+	displayName: UserName;
+	discordUsername: DiscordUsername | null;
+	discordUserId: DiscordUserId | null;
+};

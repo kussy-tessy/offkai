@@ -2,9 +2,7 @@
   <main class="space-y-8">
     <div class="flex items-center justify-between gap-3">
       <h1 class="text-2xl font-bold text-slate-900">アカウント設定</h1>
-      <MyButton color="gray" variant="ghost" size="sm" @click="router.push('/dashboard')">
-        戻る
-      </MyButton>
+      <MyBackLink to="/dashboard" />
     </div>
 
     <section class="border-b border-slate-200 pb-8">
@@ -89,13 +87,12 @@
 
 <script setup lang="ts">
   import { ref, watch } from "vue";
-  import { useRouter } from "vue-router";
+  import MyBackLink from "@/common/components/MyBackLink.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyFormField from "@/common/components/MyFormField.vue";
   import MyTextBox from "@/common/components/MyTextbox.vue";
   import { getApiErrorMessage, useAuth, useToast } from "@/common/composables";
 
-  const router = useRouter();
   const { user, updateName, changePassword, connectDiscord, disconnectDiscord } = useAuth();
   const { success, error } = useToast();
 

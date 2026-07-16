@@ -21,6 +21,7 @@ export type OffkaiEventInitializeProps = {
 	};
 	applicationStartDate: string;
 	description: string;
+	discordRoleId: string | null;
 	askBringingKigurumi: boolean;
 	commitmentQuestions: CommitmentQuestionInitializeProps["questions"];
 	preferenceQuestions: PreferenceQuestionInitializeProps["questions"];
@@ -32,6 +33,7 @@ export const useQuestionsForm = () => {
 	const eventEndDate = useField("");
 	const applicationStartDate = useField("");
 	const description = useField("");
+	const discordRoleId = useField<string | null>(null);
 	const askBringingKigurumi = useField(false);
 
 	// 子フォーム（サブコレクション）
@@ -90,7 +92,10 @@ export const useQuestionsForm = () => {
 			if (question.answerTemplate.type !== "free") {
 				const choices = question.answerTemplate.choices ?? [];
 				const hasEmptyChoice = choices.some(isEmpty);
-				if (hasEmptyChoice) {
+				if (choices.length === 0) {
+					errors.value[`preferenceQuestions.${index}.choices`] =
+						"選択肢を1つ以上追加してください";
+				} else if (hasEmptyChoice) {
 					errors.value[`preferenceQuestions.${index}.choices`] =
 						"選択肢の空欄を埋めてください";
 				}
@@ -106,6 +111,7 @@ export const useQuestionsForm = () => {
 		eventEndDate.set(props.eventPeriod.endDate);
 		applicationStartDate.set(props.applicationStartDate);
 		description.set(props.description);
+		discordRoleId.set(props.discordRoleId);
 		askBringingKigurumi.set(props.askBringingKigurumi);
 		commitment.initialize({
 			questions: props.commitmentQuestions,
@@ -123,6 +129,7 @@ export const useQuestionsForm = () => {
 		},
 		applicationStartDate: applicationStartDate.value.value,
 		description: description.value.value,
+		discordRoleId: discordRoleId.value.value,
 		askBringingKigurumi: askBringingKigurumi.value.value,
 		commitmentQuestions: commitment.questions.value.map((question) => ({
 			question: question.question,
@@ -132,17 +139,37 @@ export const useQuestionsForm = () => {
 			capacity: question.capacity as number,
 			required: question.required,
 		})),
-		preferenceQuestions: preference.questions.value.map((question) => ({
-			question: question.question,
-			required: question.required,
-			answerTemplate:
-				question.answerTemplate.type === "free"
-					? { type: "free" }
-					: {
-						type: question.answerTemplate.type,
-						choices: question.answerTemplate.choices,
+		preferenceQuestions: preference.questions.value.map((question) => {
+			const base = {
+				question: question.question,
+				required: question.required,
+			};
+
+			if (question.answerTemplate.type === "free") {
+				return {
+					...base,
+					answerTemplate: { type: "free" as const },
+				};
+			}
+
+			if (question.answerTemplate.type === "choices") {
+				return {
+					...base,
+					answerTemplate: {
+						type: "choices" as const,
+						choices: question.answerTemplate.choices ?? [],
 					},
-		})),
+				};
+			}
+
+			return {
+				...base,
+				answerTemplate: {
+					type: "choicesIncludingOther" as const,
+					choices: question.answerTemplate.choices ?? [],
+				},
+			};
+		}),
 	});
 
 	return {
@@ -151,6 +178,7 @@ export const useQuestionsForm = () => {
 		eventEndDate,
 		applicationStartDate,
 		description,
+		discordRoleId,
 		askBringingKigurumi,
 		commitment,
 		preference,

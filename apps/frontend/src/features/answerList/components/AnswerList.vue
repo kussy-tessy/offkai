@@ -28,6 +28,11 @@
           <FontAwesomeIcon :icon="faPenToSquare" class="mr-2" />
           オフ会を編集する
         </MyButton>
+        <MyButton v-if="data.offkai.canEdit" color="secondary" size="lg"
+          @click="router.push(`/offkai/${data.offkai.id}/participants`)">
+          <FontAwesomeIcon :icon="faUserGear" class="mr-2" />
+          参加者管理
+        </MyButton>
         <MyButton v-if="hasAnswered" color="secondary" size="lg"
           @click="router.push(`/offkai/${data.offkai.id}/photos`)">
           <FontAwesomeIcon :icon="faImages" class="mr-2" />
@@ -153,7 +158,7 @@
 
 <script setup lang="ts">
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
-  import { faCalendar, faImages, faPen, faPenToSquare, faTrash, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
+  import { faCalendar, faImages, faPen, faPenToSquare, faTrash, faUserGear, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import { format, formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";

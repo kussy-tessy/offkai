@@ -25,6 +25,7 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId:
 			new Date(input.applicationStartDate),
 		),
 		description: input.description,
+		discordRoleId: input.discordRoleId,
 		askBringingKigurumi: input.askBringingKigurumi,
 		commitmentQuestions:
 			CommitmentQuestionSchema.omit({ id: true }).array().parse(

@@ -1,7 +1,9 @@
 import { v7 as uuidv7 } from "uuid";
 import {
+	type DiscordUserId,
 	type DiscordUsername,
 	DiscordUsernameSchema,
+	DiscordUserIdSchema,
 	type UserId,
 	type UserLoginId,
 	UserLoginIdSchema,
@@ -16,6 +18,7 @@ export class User {
 		readonly name: UserName,
 		readonly passwordHash: string,
 		readonly discordUsername: DiscordUsername | null,
+		readonly discordUserId: DiscordUserId | null,
 		readonly createdAt: Date,
 	) {}
 
@@ -25,6 +28,7 @@ export class User {
 		name: string;
 		passwordHash: string;
 		discordUsername: string | null;
+		discordUserId: string | null;
 		createdAt: Date;
 	}): User {
 		return new User(
@@ -33,6 +37,7 @@ export class User {
 			UserNameSchema.parse(params.name),
 			validatePasswordHash(params.passwordHash),
 			params.discordUsername === null ? null : DiscordUsernameSchema.parse(params.discordUsername),
+			params.discordUserId === null ? null : DiscordUserIdSchema.parse(params.discordUserId),
 			params.createdAt,
 		);
 	}
@@ -42,6 +47,7 @@ export class User {
 		name: string;
 		passwordHash: string;
 		discordUsername?: string | null;
+		discordUserId?: string | null;
 	}): User {
 		return new User(
 			uuidv7() as UserId,
@@ -49,6 +55,7 @@ export class User {
 			UserNameSchema.parse(params.name),
 			validatePasswordHash(params.passwordHash),
 			params.discordUsername == null ? null : DiscordUsernameSchema.parse(params.discordUsername),
+			params.discordUserId == null ? null : DiscordUserIdSchema.parse(params.discordUserId),
 			new Date(),
 		);
 	}
@@ -60,6 +67,7 @@ export class User {
 			UserNameSchema.parse(name),
 			this.passwordHash,
 			this.discordUsername,
+			this.discordUserId,
 			this.createdAt,
 		);
 	}
@@ -71,17 +79,19 @@ export class User {
 			this.name,
 			validatePasswordHash(passwordHash),
 			this.discordUsername,
+			this.discordUserId,
 			this.createdAt,
 		);
 	}
 
-	connectDiscord(discordUsername: string): User {
+	connectDiscord(discordUsername: string, discordUserId: string): User {
 		return new User(
 			this.id,
 			this.loginId,
 			this.name,
 			this.passwordHash,
 			DiscordUsernameSchema.parse(discordUsername),
+			DiscordUserIdSchema.parse(discordUserId),
 			this.createdAt,
 		);
 	}
@@ -92,6 +102,7 @@ export class User {
 			this.loginId,
 			this.name,
 			this.passwordHash,
+			null,
 			null,
 			this.createdAt,
 		);

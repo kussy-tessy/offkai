@@ -1,8 +1,7 @@
 <template>
   <main class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">ダッシュボード</h1>
-      <div v-if="user?.isSeriesOwner" class="flex gap-2">
+    <div v-if="user?.isSeriesOwner" class="flex justify-end">
+      <div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
         <MyButton color="secondary" variant="ghost" @click="router.push('/series/question-template')">
           テンプレート設定
         </MyButton>
@@ -13,8 +12,6 @@
     </div>
 
     <section>
-      <h2 class="text-lg font-semibold mb-3">参加・作成したオフ会</h2>
-
       <div v-if="loading" class="text-gray-400 text-sm py-8 text-center">
         読み込み中…
       </div>

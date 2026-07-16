@@ -21,6 +21,7 @@ export async function getOffkaiEvent(
     },
     applicationStartDate: format(event.applicationStartDate),
     description: event.description,
+    discordRoleId: event.discordRoleId,
     askBringingKigurumi: event.askBringingKigurumi,
     commitmentQuestions: event.commitmentQuestions.map((question) => ({
       ...question,

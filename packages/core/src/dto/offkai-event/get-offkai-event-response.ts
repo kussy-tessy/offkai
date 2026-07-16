@@ -5,6 +5,7 @@ import {
 	OffkaiEventIdSchema,
 	OffkaiSeriesIdSchema,
 	QuestionIdSchema,
+	DiscordRoleIdSchema,
 } from "../../schema";
 
 export const OffkaiEventResponseSchema = z.object({
@@ -14,6 +15,7 @@ export const OffkaiEventResponseSchema = z.object({
 	eventPeriod: LocalDatePeriodStringSchema,
 	applicationStartDate: LocalDateTimeMinuteStringSchema,
 	description: z.string(),
+	discordRoleId: DiscordRoleIdSchema.nullable(),
 	askBringingKigurumi: z.boolean().default(false),
 	commitmentQuestions: z.array(
 		z.object({
