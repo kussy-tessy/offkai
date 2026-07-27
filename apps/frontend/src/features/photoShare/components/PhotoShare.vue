@@ -1,7 +1,5 @@
 <template>
   <div class="space-y-8">
-    <MyBackLink :to="`/offkai/${id}/detail`">オフ会詳細へ戻る</MyBackLink>
-
     <div v-if="loading" class="py-16 text-center text-slate-500">
       読み込み中です…
     </div>
@@ -16,17 +14,16 @@
       </MyButton>
     </div>
 
-    <template v-else-if="page">
-      <header>
-        <p class="text-sm font-medium text-teal-600">写真共有</p>
-        <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-          {{ page.event.title }}
-        </h1>
-        <p class="mt-2 text-sm text-slate-600">
-          外部アップローダーに保存した写真のURLを参加者へ共有できます。
-        </p>
-      </header>
+    <template v-else-if="page && detail">
+      <OffkaiDetailHeader
+        :offkai="detail.offkai"
+        :has-answered="true"
+        active-tab="photos"
+      />
 
+      <p class="text-sm text-slate-600">
+        外部アップローダーに保存した写真のURLを参加者へ共有できます。
+      </p>
       <PhotoShareCreateForm :event-id="id" :on-created="addShare" />
       <PhotoShareList
         :event-id="id"
@@ -39,10 +36,11 @@
 </template>
 
 <script setup lang="ts">
+  import type { OffkaiDetail, Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
-  import MyBackLink from "@/common/components/MyBackLink.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import { getApiErrorMessage, useApi } from "@/common/composables";
+  import OffkaiDetailHeader from "@/features/offkaiDetail/components/OffkaiDetailHeader.vue";
   import type { PhotoShare, PhotoSharePage } from "../types";
   import PhotoShareCreateForm from "./PhotoShareCreateForm.vue";
   import PhotoShareList from "./PhotoShareList.vue";
@@ -51,29 +49,31 @@
     id: string;
   }>();
 
-  const { get, loading, error: apiError } = useApi();
+  const { get: getPhotoShares, loading: photoSharesLoading } = useApi();
+  const { get: getDetail, loading: detailLoading } = useApi();
   const page = ref<PhotoSharePage | null>(null);
-  const errorMessage = computed(() => {
-    if (apiError.value) {
-      return getApiErrorMessage(
-        apiError.value,
-        "写真共有の読み込みに失敗しました。",
-      );
-    }
-    if (!loading.value && page.value === null) {
-      return "写真共有の読み込みに失敗しました。";
-    }
-    return "";
-  });
+  const detail = ref<Unbrand<OffkaiDetail> | null>(null);
+  const loadError = ref<unknown>(null);
+  const loading = computed(() => photoSharesLoading.value || detailLoading.value);
+  const errorMessage = computed(() =>
+    loadError.value
+      ? getApiErrorMessage(loadError.value, "写真共有の読み込みに失敗しました。")
+      : "",
+  );
 
   const load = async () => {
     page.value = null;
+    detail.value = null;
+    loadError.value = null;
     try {
-      page.value = await get<PhotoSharePage>(
-        `/offkai-event/${props.id}/photo-shares`,
-      );
-    } catch {
-      // useApiが公開するerrorを表示に使用する。
+      const [loadedPage, loadedDetail] = await Promise.all([
+        getPhotoShares<PhotoSharePage>(`/offkai-event/${props.id}/photo-shares`),
+        getDetail<Unbrand<OffkaiDetail>>(`/offkai-event/${props.id}/detail`),
+      ]);
+      page.value = loadedPage;
+      detail.value = loadedDetail;
+    } catch (cause) {
+      loadError.value = cause;
     }
   };
 

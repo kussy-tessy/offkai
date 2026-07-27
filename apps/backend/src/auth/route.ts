@@ -2,9 +2,9 @@ import {
 	ChangePasswordRequestSchema,
 	ConnectDiscordRequestSchema,
 	DiscordUsernameSchema,
+	UpdateUserNameRequestSchema,
 	User,
 	UserLoginIdSchema,
-	UpdateUserNameRequestSchema,
 } from "@offkai/core";
 import bcrypt from "bcryptjs";
 import type { FastifyPluginAsync } from "fastify";
@@ -38,7 +38,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		const loginId = (body.loginId ?? "").trim();
 		const password = body.password ?? "";
 		const name = (body.name ?? "").trim();
-		const discordUsernameInput = (body.discordUsername ?? "").trim().toLowerCase();
+		const discordUsernameInput = (body.discordUsername ?? "")
+			.trim()
+			.toLowerCase();
 		const discordUsername = discordUsernameInput || null;
 		const loginIdValidation = UserLoginIdSchema.safeParse(loginId);
 		const discordUsernameValidation = discordUsername
@@ -73,7 +75,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			: null;
 
 		if (discordUsername && !discordUserId) {
-			throw new AppError("VALIDATION_ERROR", "Discordメンバーが見つかりません。");
+			throw new AppError(
+				"VALIDATION_ERROR",
+				"Discordメンバーが見つかりません。",
+			);
 		}
 
 		if (discordUsername) {
@@ -150,30 +155,30 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		reply.send({ ok: true });
 	});
 
-	app.get("/me", { preHandler: app.auth.requireUser }, async (request, reply) => {
-		const userId = request.user.userId;
-		if (!userId) return;
-
-		const me = await getMe(userId);
-
-		if (!me) {
-			app.auth.clearAuthCookie(reply);
-			throw new AppError("UNAUTHORIZED", "ログインが必要です。");
-		}
-
-		reply.send(me);
-	});
-
-	app.put(
-		"/me/name",
+	app.get(
+		"/me",
 		{ preHandler: app.auth.requireUser },
-		async (request) => {
+		async (request, reply) => {
 			const userId = request.user.userId;
-			const body = UpdateUserNameRequestSchema.parse(request.body);
+			if (!userId) return;
 
-			return updateUserName(userId, body.name);
+			const me = await getMe(userId);
+
+			if (!me) {
+				app.auth.clearAuthCookie(reply);
+				throw new AppError("UNAUTHORIZED", "ログインが必要です。");
+			}
+
+			reply.send(me);
 		},
 	);
+
+	app.put("/me/name", { preHandler: app.auth.requireUser }, async (request) => {
+		const userId = request.user.userId;
+		const body = UpdateUserNameRequestSchema.parse(request.body);
+
+		return updateUserName(userId, body.name);
+	});
 
 	app.put(
 		"/me/password",
@@ -220,10 +225,16 @@ function toAuthUserResponse(user: User) {
 	};
 }
 
-async function resolveDiscordUserId(discordUsername: string): Promise<string | null> {
-	const guildIds = await new OffkaiEventRepository().findAllSeriesDiscordGuildIds();
+async function resolveDiscordUserId(
+	discordUsername: string,
+): Promise<string | null> {
+	const guildIds =
+		await new OffkaiEventRepository().findAllSeriesDiscordGuildIds();
 	if (guildIds.length === 0) {
-		throw new AppError("VALIDATION_ERROR", "DiscordギルドIDが設定されていません。");
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"DiscordギルドIDが設定されていません。",
+		);
 	}
 
 	for (const guildId of guildIds) {

@@ -81,6 +81,14 @@ export type PhotoShareId = z.infer<typeof PhotoShareIdSchema>;
 export const KigurumiIdSchema = z.string().uuid().brand("KigurumiId");
 export type KigurumiId = z.infer<typeof KigurumiIdSchema>;
 
+export const PaymentAmountSchema = z
+	.number()
+	.int()
+	.nonnegative()
+	.max(2_147_483_647)
+	.brand("PaymentAmount");
+export type PaymentAmount = z.infer<typeof PaymentAmountSchema>;
+
 export const DeadlineSchema = z.date().brand("Deadline");
 export type Deadline = z.infer<typeof DeadlineSchema>;
 

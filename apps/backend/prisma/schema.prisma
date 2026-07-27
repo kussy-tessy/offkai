@@ -96,8 +96,22 @@ model OffkaiAnswer {
   updater User        @relation("AnswerUpdater", fields: [updatedBy], references: [id])
 
   histories OffkaiAnswerHistory[]
+  payment   ParticipantPayment?
 
   @@unique([eventId, userId])
+}
+
+model ParticipantPayment {
+  answerId String @id
+
+  amount         Int     @default(0)
+  collected      Boolean @default(false)
+  changeReturned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  answer OffkaiAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
 }
 
 model OffkaiAnswerHistory {

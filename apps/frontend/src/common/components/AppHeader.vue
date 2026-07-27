@@ -1,5 +1,5 @@
 <template>
-  <header class="w-full border-b border-sky-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+  <header class="relative z-30 w-full border-b border-sky-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
     <div class="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
       <RouterLink to="/dashboard" class="brand-logo text-xl font-bold tracking-wide md:text-3xl">
         KigPla
