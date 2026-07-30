@@ -7,6 +7,7 @@ import type {
 	UserId,
 } from "@offkai/core";
 import { AppError } from "../../../app-error";
+import { hasSeriesRole } from "../../../authorization/event-access";
 import {
 	OffkaiAnswerRepository,
 	OffkaiEventRepository,
@@ -78,7 +79,7 @@ async function requireEventOwner(
 		event.seriesId,
 	);
 
-	if (role !== "owner") {
+	if (!hasSeriesRole(role, "owner")) {
 		throw new AppError("FORBIDDEN", "この回答を編集する権限がありません。");
 	}
 }

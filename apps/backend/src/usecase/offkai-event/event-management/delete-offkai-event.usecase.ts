@@ -1,5 +1,6 @@
 import type { GetOffkaiEventRequest, UserId } from "@offkai/core";
 import { AppError } from "../../../app-error";
+import { hasSeriesRole } from "../../../authorization/event-access";
 import { OffkaiEventRepository } from "../../../repository";
 
 export async function deleteOffkaiEvent(
@@ -10,7 +11,7 @@ export async function deleteOffkaiEvent(
 	const event = await repository.findById(params.id);
 	const seriesRole = await repository.findSeriesMemberRole(userId, event.seriesId);
 
-	if (seriesRole !== "owner") {
+	if (!hasSeriesRole(seriesRole, "owner")) {
 		throw new AppError("FORBIDDEN", "このオフ会を削除する権限がありません。");
 	}
 

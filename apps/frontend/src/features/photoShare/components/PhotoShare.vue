@@ -18,7 +18,7 @@
       <OffkaiDetailHeader
         :offkai="detail.offkai"
         :has-answered="true"
-        active-tab="photos"
+				:permissions="detail.viewer.permissions"
       />
 
       <p class="text-sm text-slate-600">

@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EventVisibility {
+  PUBLIC
+  AUTHENTICATED
+  GUILD_MEMBERS
+  PARTICIPANTS
+}
+
 model User {
   id           String @id @default(uuid(7))
   loginId      String @unique
@@ -65,6 +72,8 @@ model OffkaiEvent {
   applicationStartDate DateTime
   discordRoleId        String?
   askBringingKigurumi Boolean @default(false)
+  overviewVisibility     EventVisibility @default(AUTHENTICATED)
+  participantsVisibility EventVisibility @default(AUTHENTICATED)
 
   commitmentQuestions Json
   preferenceQuestions Json

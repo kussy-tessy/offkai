@@ -72,24 +72,12 @@ export class OffkaiAnswerRepository {
 
 	async getOffkaiDetail(
 		eventId: OffkaiEventId,
-		userId: UserId,
+		viewer: Unbrand<OffkaiDetail>["viewer"],
+		participantsAccess: Unbrand<OffkaiDetail>["participantsAccess"],
 	): Promise<OffkaiDetail> {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			include: {
-				series: {
-					select: {
-						members: {
-							where: {
-								userId,
-								role: "owner",
-							},
-							select: {
-								userId: true,
-							},
-						},
-					},
-				},
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					include: {
@@ -109,14 +97,25 @@ export class OffkaiAnswerRepository {
 		const preferenceQuestions =
 			event.preferenceQuestions as PreferenceQuestionHeader[];
 
-		const answers: Unbrand<AnswerRow>[] = event.answers.map((a) => ({
+		const canViewPrivateAnswers = viewer.permissions.canViewPrivateAnswers;
+		const answerRows: Unbrand<AnswerRow>[] = event.answers.map((a) => ({
 			user: {
 				id: a.user.id,
 				displayName: a.user.name,
 			},
 			commitmentAnswers: this.toCommitmentAnswerRecord(a.commitmentAnswers),
-			preferenceAnswers: this.toPreferenceAnswerRecord(a.preferenceAnswers),
-			bringingKigurumis: this.toBringingKigurumis(a.bringingKigurumis),
+			preferenceAnswers: canViewPrivateAnswers
+				? this.toPreferenceAnswerRecord(a.preferenceAnswers)
+				: null,
+			bringingKigurumis: canViewPrivateAnswers
+				? this.toBringingKigurumis(a.bringingKigurumis)
+				: null,
+		}));
+		const commitmentQuestionsWithCounts = commitmentQuestions.map((question) => ({
+			...question,
+			yesCount: answerRows.filter(
+				(answer) => answer.commitmentAnswers[question.id] === "yes",
+			).length,
 		}));
 
 		const result: Unbrand<OffkaiDetail> = {
@@ -130,11 +129,12 @@ export class OffkaiAnswerRepository {
 				},
 				applicationStartDate: event.applicationStartDate.toISOString(),
 				askBringingKigurumi: event.askBringingKigurumi,
-				canEdit: event.series.members.length > 0,
 			},
-			commitmentQuestions,
-			preferenceQuestions,
-			answers,
+			viewer,
+			participantsAccess,
+			commitmentQuestions: commitmentQuestionsWithCounts,
+			preferenceQuestions: canViewPrivateAnswers ? preferenceQuestions : null,
+			answers: participantsAccess.granted ? answerRows : null,
 		};
 
 		return OffkaiDetailSchema.parse(result);

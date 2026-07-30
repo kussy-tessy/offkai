@@ -3,13 +3,14 @@
 </template>
 
 <script setup lang="ts">
-  import { useRouter } from "vue-router"
+	import { useRoute, useRouter } from "vue-router"
   import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables"
   import Login from "@/features/auth/components/Login.vue"
 
   const { post } = useApi()
 
   const router = useRouter()
+	const route = useRoute()
   const { fetchMe } = useAuth()
   const { error: showError } = useToast()
 
@@ -17,7 +18,12 @@
     try {
       await post("/auth/login", payload)
       await fetchMe()
-      router.push("/")
+		const redirect = typeof route.query.redirect === "string"
+			&& route.query.redirect.startsWith("/")
+			&& !route.query.redirect.startsWith("//")
+			? route.query.redirect
+			: "/";
+		await router.push(redirect)
     }
     catch (cause) {
       showError(getApiErrorMessage(

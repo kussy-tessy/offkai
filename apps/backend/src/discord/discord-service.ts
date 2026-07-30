@@ -42,6 +42,10 @@ export class DiscordService {
     string,
     { value: Snowflake | null; expiresAt: number }
   >();
+  private readonly guildMembershipCache = new Map<
+		string,
+		{ value: boolean; expiresAt: number }
+	>();
   private readyPromise?: Promise<DiscordClient<true>>;
 
   constructor(options: DiscordServiceOptions = {}) {
@@ -182,6 +186,32 @@ export class DiscordService {
     const member = await this.withDiscordErrorHandling(() => guild.members.fetch(input.userId));
 
     return member.roles.cache.has(input.roleId);
+  }
+
+  async isGuildMember(input: {
+		guildId: Snowflake;
+		userId: Snowflake;
+	}): Promise<boolean> {
+		const key = `${input.guildId}:${input.userId}`;
+		const cached = this.guildMembershipCache.get(key);
+		if (cached && cached.expiresAt > Date.now()) return cached.value;
+		if (cached) this.guildMembershipCache.delete(key);
+
+		const guild = await this.fetchGuild(input.guildId);
+		const member = await this.withDiscordErrorHandling(async () => {
+			try {
+				return await guild.members.fetch(input.userId);
+			} catch (cause) {
+				if (getDiscordErrorCode(cause) === 10007) return null;
+				throw cause;
+			}
+		});
+		const value = member !== null;
+		this.guildMembershipCache.set(key, {
+			value,
+			expiresAt: Date.now() + this.cacheTtlMs,
+		});
+		return value;
   }
 
   async addRoleToMember(input: DiscordGuildMemberRoleInput): Promise<void> {

@@ -1,5 +1,5 @@
 <template>
-  <main class="space-y-4 md:space-y-6">
+  <main ref="formElement" class="space-y-4 md:space-y-6">
     <h1 class="text-3xl ">{{ isEdit ? 'オフ会の編集' : 'オフ会の作成' }}</h1>
     <MyFormField v-slot="{ id }" label="タイトル">
       <MyTextBox :id="id" :value="title.value" :on-change="title.set" :error="errors.title" />
@@ -38,6 +38,29 @@
       />
     </MyFormField>
 
+    <section class="space-y-4 rounded-xl border border-teal-100 bg-teal-50/50 p-4">
+      <h2 class="text-xl font-semibold text-slate-800">公開範囲</h2>
+      <MyFormField v-slot="{ id }" label="オフ会概要">
+        <MySelectBox
+          :id="id"
+          :value="overviewVisibility.value"
+					:options="overviewVisibilityOptions"
+          :on-change="value => overviewVisibility.set(toVisibility(value))"
+        />
+      </MyFormField>
+      <MyFormField v-slot="{ id }" label="参加者一覧・回答">
+        <MySelectBox
+          :id="id"
+          :value="participantsVisibility.value"
+          :options="visibilityOptions"
+          :on-change="value => participantsVisibility.set(toVisibility(value))"
+        />
+				<p v-if="visibilityError" class="mt-1 text-sm text-red-600">
+					{{ visibilityError }}
+				</p>
+      </MyFormField>
+    </section>
+
     <!-- 子フォーム -->
     <section>
       <h2 class="text-xl font-semibold mb-2">参加表明に関する質問</h2>
@@ -65,8 +88,9 @@
 </template>
 
 <script setup lang="ts">
-  import type { ListDiscordRolesResponse } from "@offkai/core"
-  import { computed, onMounted, ref, watch } from "vue"
+  import type { EventVisibility, ListDiscordRolesResponse } from "@offkai/core"
+	import { isVisibilityAtLeastAsRestricted } from "@offkai/core"
+  import { computed, nextTick, onMounted, ref, watch } from "vue"
   import MyButton from "@/common/components/MyButton.vue"
   import MyCheckbox from "@/common/components/MyCheckbox.vue"
   import MyDatePicker from "@/common/components/MyDatePicker.vue"
@@ -93,6 +117,8 @@
     description,
     discordRoleId,
     askBringingKigurumi,
+		overviewVisibility,
+		participantsVisibility,
     commitment,
     preference,
     errors,
@@ -102,6 +128,7 @@
 
   const { get } = useApi()
   const { error } = useToast()
+  const formElement = ref<HTMLElement | null>(null)
   const discordRoles = ref<ListDiscordRolesResponse["roles"]>([])
   const loadingDiscordRoles = ref(false)
 
@@ -114,6 +141,27 @@
       label: role.name,
     })),
   ])
+
+	const visibilityOptions: SelectOption[] = [
+		{ value: "PUBLIC", label: "誰でも" },
+		{ value: "AUTHENTICATED", label: "ログインユーザー" },
+		{ value: "GUILD_MEMBERS", label: "Discordサーバー参加者" },
+		{ value: "PARTICIPANTS", label: "オフ会参加表明者" },
+	]
+	const overviewVisibilityOptions = visibilityOptions.filter(
+		(option) => option.value !== "PARTICIPANTS",
+	)
+	const toVisibility = (value: string | number): EventVisibility =>
+		String(value) as EventVisibility
+
+	const visibilityError = computed(() =>
+		isVisibilityAtLeastAsRestricted(
+			participantsVisibility.value.value,
+			overviewVisibility.value.value,
+		)
+			? ""
+			: "参加者一覧・回答の公開範囲は、オフ会概要と同じか、より限定してください",
+	)
 
   const onDiscordRoleChange = (value: string | number) => {
     const roleId = String(value)
@@ -139,7 +187,14 @@
 
 
   const submit = async () => {
-    if (!validate()) return;
+    if (!validate()) {
+      error("入力内容にエラーがあります。表示された項目をご確認ください。")
+      await nextTick()
+      formElement.value
+        ?.querySelector<HTMLElement>(".text-red-600")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
     await handleSubmit(toPayload())
   }
 </script>

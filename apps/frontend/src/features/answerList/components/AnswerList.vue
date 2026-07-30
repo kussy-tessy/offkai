@@ -2,10 +2,32 @@
   <OffkaiDetailHeader
     :offkai="data.offkai"
     :has-answered="hasAnswered"
-    active-tab="answers"
+		:permissions="data.viewer.permissions"
   />
 
-  <div v-if="data.answers.length === 0" class="py-16 flex flex-col items-center gap-3 text-gray-400">
+	<section
+		v-if="data.answers === null"
+		class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-8 text-center text-slate-600"
+	>
+		<FontAwesomeIcon :icon="faUserGroup" class="mb-3 text-4xl text-slate-400" />
+		<p class="font-medium">参加者一覧は公開されていません</p>
+		<p
+			v-if="data.participantsAccess.reason === 'AUTHENTICATION_REQUIRED'"
+			class="mt-1 text-sm"
+		>
+			参加者一覧を見るには
+			<RouterLink
+				:to="loginRoute"
+				class="font-medium text-teal-700 underline underline-offset-2 hover:text-teal-800"
+			>
+				ログイン
+			</RouterLink>
+			してください。
+		</p>
+		<p v-else class="mt-1 text-sm">{{ participantsAccessMessage }}</p>
+	</section>
+
+  <div v-else-if="data.answers.length === 0" class="py-16 flex flex-col items-center gap-3 text-gray-400">
     <FontAwesomeIcon :icon="faUserGroup" class="text-5xl" />
     <p class="text-lg font-medium">まだ参加者はいません</p>
     <p class="text-sm">最初の参加者になりましょう！</p>
@@ -55,7 +77,7 @@
               <td class="sticky left-0 z-10 group-hover:bg-sky-50 border-b border-slate-100 p-2 text-left w-24 truncate font-medium text-slate-700 text-sm [box-shadow:1px_0_0_0_theme(colors.slate.100)]"
                 :class="rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'">
                 <span>{{ row.user.displayName }}</span>
-                <button v-if="data.offkai.canEdit" type="button" class="ml-2 text-sky-600 hover:text-sky-800"
+				<button v-if="data.viewer.permissions.canEditAnswers" type="button" class="ml-2 text-sky-600 hover:text-sky-800"
                   :aria-label="`${row.user.displayName}さんの回答を編集`"
                   @click="router.push(`/offkai/${data.offkai.id}/answers/${row.user.id}/edit`)">
                   <FontAwesomeIcon :icon="faPenToSquare" />
@@ -76,8 +98,9 @@
       </div>
     </section>
 
-    <!-- Preference -->
-    <h2 class="text-xl font-semibold mb-2">アンケート</h2>
+		<!-- Preference -->
+		<template v-if="data.viewer.permissions.canViewPrivateAnswers">
+		<h2 class="text-xl font-semibold mb-2">アンケート</h2>
 
     <MySelectBox
       v-model="selectedPreferenceId"
@@ -103,8 +126,9 @@
           </tr>
         </tbody>
       </table>
-    </div>
-  </template>
+		</div>
+		</template>
+	</template>
 </template>
 
 <script setup lang="ts">
@@ -115,7 +139,6 @@
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
-  import { useAuth } from "@/common/composables";
   import OffkaiDetailHeader from "@/features/offkaiDetail/components/OffkaiDetailHeader.vue";
 
   const { data } = defineProps<{
@@ -123,18 +146,34 @@
   }>();
 
   const router = useRouter();
-  const { user } = useAuth();
-  const hasAnswered = computed(() =>
-    user.value !== null && data.answers.some((a) => a.user.id === user.value!.id)
-  );
+	const hasAnswered = computed(() => data.viewer.isParticipant);
+	const loginRoute = computed(() => ({
+		path: "/login",
+		query: { redirect: `/offkai/${data.offkai.id}/detail` },
+	}));
+	const participantsAccessMessage = computed(() => {
+		switch (data.participantsAccess.reason) {
+			case "DISCORD_NOT_CONNECTED":
+				return "参加者一覧を見るにはDiscordアカウントの連携が必要です。";
+			case "NOT_GUILD_MEMBER":
+				return "参加者一覧はDiscordサーバー参加者に限定されています。";
+			case "NOT_PARTICIPANT":
+				return "参加者一覧はオフ会へ参加表明したユーザーに限定されています。";
+			case "MEMBERSHIP_CHECK_UNAVAILABLE":
+				return "Discordサーバーへの所属を一時的に確認できません。";
+			default:
+				return "";
+		}
+	});
 
   const BRINGING_KIGURUMI_OPTION_ID = "__bringingKigurumi";
 
   const selectedPreferenceId = ref<string>(
-    data.preferenceQuestions[0]?.id ?? (data.offkai.askBringingKigurumi ? BRINGING_KIGURUMI_OPTION_ID : ""),
+		data.preferenceQuestions?.[0]?.id ??
+			(data.offkai.askBringingKigurumi ? BRINGING_KIGURUMI_OPTION_ID : ""),
   );
   const preferenceOptions = computed<SelectOption[]>(() => {
-    const options = data.preferenceQuestions.map((q) => ({
+		const options = (data.preferenceQuestions ?? []).map((q) => ({
       value: q.id,
       label: q.question,
     }));
@@ -147,19 +186,21 @@
     return options;
   });
 
-  const selectedAnswer = (row: Unbrand<OffkaiDetail>["answers"][number]) => {
+	const selectedAnswer = (
+		row: NonNullable<Unbrand<OffkaiDetail>["answers"]>[number],
+	) => {
     if (selectedPreferenceId.value === BRINGING_KIGURUMI_OPTION_ID) {
-      if (row.bringingKigurumis.length === 0) return "―";
+			if (!row.bringingKigurumis || row.bringingKigurumis.length === 0) return "―";
       return row.bringingKigurumis
         .map((kigurumi) => `${kigurumi.character}(${kigurumi.title})`)
         .join("\n");
     }
-    return row.preferenceAnswers[selectedPreferenceId.value] ?? "―";
+		return row.preferenceAnswers?.[selectedPreferenceId.value] ?? "―";
   };
 
   const countYes = (questionId: string) => {
-    return data.answers.filter((a: Unbrand<OffkaiDetail>["answers"][number]) => a.commitmentAnswers[questionId] === "yes")
-      .length;
+		return data.commitmentQuestions.find((question) => question.id === questionId)
+			?.yesCount ?? 0;
   };
 
   const capacityRate = (questionId: string, capacity: number | null) => {

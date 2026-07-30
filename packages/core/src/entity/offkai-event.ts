@@ -4,6 +4,7 @@ import type {
 	CommitmentQuestion,
 	DiscordRoleId,
 	EventPeriod,
+	EventVisibility,
 	OffkaiEventId,
 	OffkaiSeriesId,
 	PreferenceQuestion,
@@ -21,6 +22,8 @@ export class OffkaiEvent {
 		readonly applicationStartDate: ApplicationStartDate,
 		readonly discordRoleId: DiscordRoleId | null,
 		readonly askBringingKigurumi: boolean,
+		readonly overviewVisibility: EventVisibility,
+		readonly participantsVisibility: EventVisibility,
 		readonly commitmentQuestions: CommitmentQuestion[],
 		readonly preferenceQuestions: PreferenceQuestion[],
 	) { }
@@ -34,6 +37,8 @@ export class OffkaiEvent {
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
+		overviewVisibility?: EventVisibility;
+		participantsVisibility?: EventVisibility;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}) {
@@ -46,6 +51,8 @@ export class OffkaiEvent {
 			params.applicationStartDate,
 			params.discordRoleId,
 			params.askBringingKigurumi ?? false,
+			params.overviewVisibility ?? "AUTHENTICATED",
+			params.participantsVisibility ?? "AUTHENTICATED",
 			params.commitmentQuestions,
 			params.preferenceQuestions,
 		);
@@ -59,6 +66,8 @@ export class OffkaiEvent {
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId?: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
+		overviewVisibility?: EventVisibility;
+		participantsVisibility?: EventVisibility;
 		commitmentQuestions: Omit<CommitmentQuestion, "id">[];
 		preferenceQuestions: Omit<PreferenceQuestion, "id">[];
 	}): OffkaiEvent {
@@ -74,6 +83,8 @@ export class OffkaiEvent {
 			params.applicationStartDate,
 			params.discordRoleId ?? null,
 			params.askBringingKigurumi ?? false,
+			params.overviewVisibility ?? "AUTHENTICATED",
+			params.participantsVisibility ?? "AUTHENTICATED",
 			params.commitmentQuestions.map((question) => ({
 				...question,
 				id: uuidv7() as QuestionId,
@@ -92,6 +103,8 @@ export class OffkaiEvent {
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId?: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
+		overviewVisibility: EventVisibility;
+		participantsVisibility: EventVisibility;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}): OffkaiEvent {
@@ -107,6 +120,8 @@ export class OffkaiEvent {
 			params.applicationStartDate,
 			params.discordRoleId ?? this.discordRoleId,
 			params.askBringingKigurumi ?? this.askBringingKigurumi,
+			params.overviewVisibility,
+			params.participantsVisibility,
 			params.commitmentQuestions,
 			params.preferenceQuestions,
 		);

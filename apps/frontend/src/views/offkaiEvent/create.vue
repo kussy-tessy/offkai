@@ -28,6 +28,8 @@
     description: "",
     discordRoleId: null,
     askBringingKigurumi: false,
+		overviewVisibility: "AUTHENTICATED",
+		participantsVisibility: "AUTHENTICATED",
     commitmentQuestions: [],
     preferenceQuestions: [],
   });

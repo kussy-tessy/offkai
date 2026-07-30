@@ -2,8 +2,9 @@
   <header class="pb-8 mb-8 text-center space-y-4">
     <div class="flex flex-wrap items-start justify-center gap-2">
       <h1 class="text-4xl font-bold tracking-tight">{{ offkai.title }}</h1>
-      <div v-if="offkai.canEdit" class="flex items-center gap-1">
+		<div v-if="showManagementActions" class="flex items-center gap-1">
         <button
+			v-if="permissions.canEditEvent"
           type="button"
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
           aria-label="オフ会を編集する"
@@ -13,16 +14,18 @@
           <FontAwesomeIcon :icon="faPenToSquare" class="text-lg" />
         </button>
         <button
+			v-if="canManageParticipants"
           type="button"
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
           aria-label="参加者を管理する"
           title="参加者を管理する"
-          @click="router.push(`/offkai/${offkai.id}/participants`)"
+          @click="router.push(`/offkai/${offkai.id}/participants/discord`)"
         >
           <FontAwesomeIcon :icon="faUserGear" class="text-lg" />
         </button>
-        <span class="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
+			<span v-if="permissions.canDeleteEvent" class="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
         <button
+			v-if="permissions.canDeleteEvent"
           type="button"
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
           aria-label="オフ会を削除する"
@@ -53,26 +56,12 @@
       </p>
     </div>
 
-    <nav v-if="hasAnswered" class="flex justify-center gap-1 pt-2" aria-label="オフ会コンテンツ">
-      <RouterLink
-        :to="`/offkai/${offkai.id}/detail`"
-        class="inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-        :class="tabClass('answers')"
-        :aria-current="activeTab === 'answers' ? 'page' : undefined"
-      >
-        <FontAwesomeIcon :icon="faClipboardList" />
-        回答一覧
-      </RouterLink>
-      <RouterLink
-        :to="`/offkai/${offkai.id}/photos`"
-        class="inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-        :class="tabClass('photos')"
-        :aria-current="activeTab === 'photos' ? 'page' : undefined"
-      >
-        <FontAwesomeIcon :icon="faImages" />
-        写真共有
-      </RouterLink>
-    </nav>
+    <RouteTabs
+      v-if="hasAnswered"
+      class="pt-2"
+      label="オフ会コンテンツ"
+      :items="contentTabs"
+    />
   </header>
 
   <MyConfirmDialog
@@ -95,12 +84,14 @@
   import MyBadge from "@/common/components/MyBadge.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
+  import RouteTabs from "@/common/components/RouteTabs.vue";
+  import type { RouteTabItem } from "@/common/components/RouteTabs.types";
   import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 
   const props = defineProps<{
     offkai: Unbrand<OffkaiDetail>["offkai"];
     hasAnswered: boolean;
-    activeTab: "answers" | "photos";
+		permissions: Unbrand<OffkaiDetail>["viewer"]["permissions"];
   }>();
 
   const router = useRouter();
@@ -111,11 +102,30 @@
   const canAnswer = computed(
     () => Date.now() >= new Date(props.offkai.applicationStartDate).getTime(),
   );
+	const canManageParticipants = computed(
+		() =>
+			props.permissions.canManageDiscordRole ||
+			props.permissions.canManagePayments,
+	);
+	const showManagementActions = computed(
+		() =>
+			props.permissions.canEditEvent ||
+			props.permissions.canDeleteEvent ||
+			canManageParticipants.value,
+	);
 
-  const tabClass = (tab: "answers" | "photos") =>
-    props.activeTab === tab
-      ? "border-teal-500 text-teal-700"
-      : "border-transparent text-gray-500 hover:border-teal-200 hover:text-teal-700";
+  const contentTabs = computed<RouteTabItem[]>(() => [
+    {
+      label: "回答一覧",
+      to: `/offkai/${props.offkai.id}/detail`,
+      icon: faClipboardList,
+    },
+    {
+      label: "写真共有",
+      to: `/offkai/${props.offkai.id}/photos`,
+      icon: faImages,
+    },
+  ]);
 
   const deleteEvent = async () => {
     if (deleting.value) return;

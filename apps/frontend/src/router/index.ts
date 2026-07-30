@@ -1,4 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import {
+	createRouter,
+	createWebHistory,
+	type RouteLocationGeneric,
+} from "vue-router";
 import { useAuth } from "@/common/composables";
 import CreateAnswer from "../views/answer/form.vue";
 import AnswerList from "../views/answerList/detail.vue";
@@ -48,10 +52,19 @@ const routes = [
 		path: "/offkai/:id/detail",
 		component: AnswerList,
 		props: true,
-		...requiresAuth,
+	},
+	{
+		path: "/offkai/:id",
+		redirect: (to: RouteLocationGeneric) =>
+			`/offkai/${String(to.params.id)}/detail`,
 	},
 	{
 		path: "/offkai/:id/participants",
+		redirect: (to: RouteLocationGeneric) =>
+			`/offkai/${String(to.params.id)}/participants/discord`,
+	},
+	{
+		path: "/offkai/:id/participants/discord",
 		component: Participants,
 		props: true,
 		...requiresAuth,
@@ -93,7 +106,7 @@ router.beforeEach(async (to) => {
 	}
 
 	if (to.meta.requiresAuth && !user.value) {
-		return "/login";
+		return { path: "/login", query: { redirect: to.fullPath } };
 	}
 
 	if (to.meta.requiresSeriesOwner && !user.value?.isSeriesOwner) {

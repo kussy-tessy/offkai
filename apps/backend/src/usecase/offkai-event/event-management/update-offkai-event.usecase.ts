@@ -10,6 +10,7 @@ import {
 } from "@offkai/core";
 import { v7 as uuidv7 } from "uuid";
 import { AppError, runBusinessRule } from "../../../app-error";
+import { hasSeriesRole } from "../../../authorization/event-access";
 import { OffkaiEventRepository } from "../../../repository";
 
 export async function updateOffkaiEvent(
@@ -21,8 +22,18 @@ export async function updateOffkaiEvent(
 	const event = await repository.findById(params.id);
 	const seriesRole = await repository.findSeriesMemberRole(userId, event.seriesId);
 
-	if (seriesRole !== "owner") {
+	if (!hasSeriesRole(seriesRole, "owner")) {
 		throw new AppError("FORBIDDEN", "このオフ会を編集する権限がありません。");
+	}
+	if (
+		(input.overviewVisibility === "GUILD_MEMBERS" ||
+			input.participantsVisibility === "GUILD_MEMBERS") &&
+		!(await repository.findSeriesDiscordGuildId(event.seriesId))
+	) {
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"Discordサーバー参加者限定にするには、シリーズのDiscordギルド設定が必要です。",
+		);
 	}
 
 	const commitmentWithoutId = CommitmentQuestionSchema.omit({ id: true })
@@ -67,6 +78,8 @@ export async function updateOffkaiEvent(
 		description: input.description,
 		discordRoleId: input.discordRoleId,
 		askBringingKigurumi: input.askBringingKigurumi,
+		overviewVisibility: input.overviewVisibility,
+		participantsVisibility: input.participantsVisibility,
 		commitmentQuestions: nextCommitmentQuestions,
 		preferenceQuestions: nextPreferenceQuestions,
 	}));

@@ -18,7 +18,7 @@
             <div class="flex items-start gap-1.5">
               <h3 class="text-base font-bold text-gray-900 leading-snug">{{ event.title }}</h3>
               <button
-                v-if="event.canEdit"
+				v-if="event.seriesRole === 'owner'"
                 type="button"
                 class="relative z-10 pointer-events-auto inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 aria-label="オフ会を削除する"

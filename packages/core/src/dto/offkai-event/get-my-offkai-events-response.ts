@@ -1,12 +1,16 @@
 import { z } from "zod";
-import { LocalDatePeriodStringSchema, OffkaiEventIdSchema } from "../../schema";
+import {
+  LocalDatePeriodStringSchema,
+  OffkaiEventIdSchema,
+  SeriesRoleSchema,
+} from "../../schema";
 
 export const OffkaiEventSummarySchema = z.object({
   id: OffkaiEventIdSchema,
   title: z.string(),
   eventPeriod: LocalDatePeriodStringSchema,
   description: z.string(),
-  canEdit: z.boolean(),
+  seriesRole: SeriesRoleSchema.nullable(),
 });
 export type OffkaiEventSummary = z.infer<typeof OffkaiEventSummarySchema>;
 

@@ -29,6 +29,8 @@
     description: "",
     discordRoleId: null,
     askBringingKigurumi: false,
+		overviewVisibility: "AUTHENTICATED",
+		participantsVisibility: "AUTHENTICATED",
     commitmentQuestions: [] as CommitmentQuestion[],
     preferenceQuestions: [] as PreferenceQuestion[],
   })

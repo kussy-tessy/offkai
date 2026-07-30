@@ -40,15 +40,21 @@ import {
 } from "./photo-sharing";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
-	app.addHook("preHandler", app.auth.requireUser);
+	const requireUser = { preHandler: app.auth.requireUser };
 
-	app.get("/:eventId/photo-shares", async (request) => {
+	app.get("/:eventId/detail", async (request) => {
+		const userId = await app.auth.resolveOptionalUser(request);
+		const input = GetOffkaiDetailRequestSchema.parse(request.params);
+		return getOffkaiDetail(input, userId);
+	});
+
+	app.get("/:eventId/photo-shares", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = PhotoShareRouteParamsSchema.parse(request.params);
 		return getPhotoShares(input, userId);
 	});
 
-	app.post("/:eventId/photo-shares", async (request, reply) => {
+	app.post("/:eventId/photo-shares", requireUser, async (request, reply) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const params = request.params as Record<string, unknown>;
 		const body = request.body as Record<string, unknown>;
@@ -57,7 +63,7 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return reply.code(201).send(created);
 	});
 
-	app.put("/:eventId/photo-shares/:photoShareId", async (request) => {
+	app.put("/:eventId/photo-shares/:photoShareId", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const params = request.params as Record<string, unknown>;
 		const body = request.body as Record<string, unknown>;
@@ -67,6 +73,7 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 
 	app.delete(
 		"/:eventId/photo-shares/:photoShareId",
+		requireUser,
 		async (request, reply) => {
 			const userId = UserIdSchema.parse(request.user.userId);
 			const input = PhotoShareItemRouteParamsSchema.parse(request.params);
@@ -77,6 +84,7 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 
 	app.put(
 		"/:eventId/photo-shares/:photoShareId/download-status",
+		requireUser,
 		async (request) => {
 			const userId = UserIdSchema.parse(request.user.userId);
 			const params = request.params as Record<string, unknown>;
@@ -89,23 +97,24 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		},
 	);
 
-	app.get("/my", async (request) => {
+	app.get("/my", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		return getMyOffkaiEvents(userId);
 	});
 
-	app.get("/:id", async (request) => {
+	app.get("/:id", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
 		const input = GetOffkaiEventRequestSchema.parse(request.params);
-		return getOffkaiEvent(input);
+		return getOffkaiEvent(input, userId);
 	});
 
-	app.get("/:eventId/discord-role-members", async (request) => {
+	app.get("/:eventId/discord-role-members", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(request.params);
 		return getOffkaiEventDiscordRoleMembers(input, userId);
 	});
 
-	app.put("/:eventId/discord-role-members/:userId", async (request) => {
+	app.put("/:eventId/discord-role-members/:userId", requireUser, async (request) => {
 		const ownerUserId = UserIdSchema.parse(request.user.userId);
 		const params = request.params as Record<string, unknown>;
 		const body = request.body as Record<string, unknown>;
@@ -116,45 +125,39 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return updateOffkaiEventDiscordRoleMember(input, ownerUserId);
 	});
 
-	app.get("/:eventId/my-answer-form", async (request) => {
+	app.get("/:eventId/my-answer-form", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = GetMyAnswerFormRequestSchema.parse(request.params);
 		return getMyAnswerForm(input, userId);
 	});
 
-	app.get("/:eventId/answers/:userId/form", async (request) => {
+	app.get("/:eventId/answers/:userId/form", requireUser, async (request) => {
 		const ownerUserId = UserIdSchema.parse(request.user.userId);
 		const input = ManageOffkaiAnswerRequestSchema.parse(request.params);
 		return getManagedOffkaiAnswerForm(input, ownerUserId);
 	});
 
-	app.get("/:eventId/detail", async (request) => {
-		const userId = UserIdSchema.parse(request.user.userId);
-		const input = GetOffkaiDetailRequestSchema.parse(request.params);
-		return getOffkaiDetail(input, userId);
-	});
-
-	app.post("/", async (request) => {
+	app.post("/", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = CreateOffkaiEventRequestSchema.parse(request.body);
 		return createOffkaiEvent(input, userId);
 	});
 
-	app.put("/:id", async (request) => {
+	app.put("/:id", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const params = GetOffkaiEventRequestSchema.parse(request.params);
 		const input = CreateOffkaiEventRequestSchema.parse(request.body);
 		return updateOffkaiEvent(params, input, userId);
 	});
 
-	app.delete("/:id", async (request, reply) => {
+	app.delete("/:id", requireUser, async (request, reply) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const params = GetOffkaiEventRequestSchema.parse(request.params);
 		await deleteOffkaiEvent(params, userId);
 		return reply.code(204).send();
 	});
 
-	app.put("/:eventId/answers/:userId", async (request) => {
+	app.put("/:eventId/answers/:userId", requireUser, async (request) => {
 		const ownerUserId = UserIdSchema.parse(request.user.userId);
 		const params = ManageOffkaiAnswerRequestSchema.parse(request.params);
 		const body = request.body as Record<string, unknown>;
@@ -165,7 +168,7 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return saveManagedOffkaiAnswer(params, input, ownerUserId);
 	});
 
-	app.put("/:eventId/answers", async (request) => {
+	app.put("/:eventId/answers", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const params = request.params as Record<string, unknown>;
 		const body = request.body as Record<string, unknown>;

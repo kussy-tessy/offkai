@@ -1,4 +1,9 @@
-import type { CreateOffkaiEventRequest, Unbrand } from "@offkai/core";
+import {
+	isVisibilityAtLeastAsRestricted,
+	type CreateOffkaiEventRequest,
+	type EventVisibility,
+	type Unbrand,
+} from "@offkai/core";
 import {
 	isEmpty,
 	useField,
@@ -23,6 +28,8 @@ export type OffkaiEventInitializeProps = {
 	description: string;
 	discordRoleId: string | null;
 	askBringingKigurumi: boolean;
+	overviewVisibility: EventVisibility;
+	participantsVisibility: EventVisibility;
 	commitmentQuestions: CommitmentQuestionInitializeProps["questions"];
 	preferenceQuestions: PreferenceQuestionInitializeProps["questions"];
 };
@@ -35,6 +42,8 @@ export const useQuestionsForm = () => {
 	const description = useField("");
 	const discordRoleId = useField<string | null>(null);
 	const askBringingKigurumi = useField(false);
+	const overviewVisibility = useField<EventVisibility>("AUTHENTICATED");
+	const participantsVisibility = useField<EventVisibility>("AUTHENTICATED");
 
 	// 子フォーム（サブコレクション）
 	const commitment = useCommitmentQuestions();
@@ -62,6 +71,15 @@ export const useQuestionsForm = () => {
 		}
 		if (isEmpty(applicationStartDate.value)) {
 			errors.value.applicationStartDate = "募集開始日を指定してください";
+		}
+		if (
+			!isVisibilityAtLeastAsRestricted(
+				participantsVisibility.value.value,
+				overviewVisibility.value.value,
+			)
+		) {
+			errors.value.participantsVisibility =
+				"参加者一覧・回答の公開範囲は、オフ会概要と同じか、より限定してください";
 		}
 
 		for (const [index, question] of commitment.questions.value.entries()) {
@@ -113,6 +131,8 @@ export const useQuestionsForm = () => {
 		description.set(props.description);
 		discordRoleId.set(props.discordRoleId);
 		askBringingKigurumi.set(props.askBringingKigurumi);
+		overviewVisibility.set(props.overviewVisibility);
+		participantsVisibility.set(props.participantsVisibility);
 		commitment.initialize({
 			questions: props.commitmentQuestions,
 		});
@@ -131,6 +151,8 @@ export const useQuestionsForm = () => {
 		description: description.value.value,
 		discordRoleId: discordRoleId.value.value,
 		askBringingKigurumi: askBringingKigurumi.value.value,
+		overviewVisibility: overviewVisibility.value.value,
+		participantsVisibility: participantsVisibility.value.value,
 		commitmentQuestions: commitment.questions.value.map((question) => ({
 			question: question.question,
 			questionShort: question.questionShort,
@@ -180,6 +202,8 @@ export const useQuestionsForm = () => {
 		description,
 		discordRoleId,
 		askBringingKigurumi,
+		overviewVisibility,
+		participantsVisibility,
 		commitment,
 		preference,
 		initialize,

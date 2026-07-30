@@ -7,6 +7,7 @@ import {
 	type DiscordUsername,
 	type CommitmentQuestion,
 	type Deadline,
+	type EventVisibility,
 	EventPeriodSchema,
 	OffkaiEvent,
 	type OffkaiEventId,
@@ -14,6 +15,8 @@ import {
 	type OffkaiSeriesId,
 	type PreferenceQuestion,
 	type QuestionId,
+	SeriesRoleSchema,
+	type SeriesRole,
 	type UserId,
 	type UserName,
 } from "@offkai/core";
@@ -70,6 +73,8 @@ export class OffkaiEventRepository {
 			applicationStartDate: record.applicationStartDate as ApplicationStartDate,
 			discordRoleId: record.discordRoleId as DiscordRoleId | null,
 			askBringingKigurumi: record.askBringingKigurumi,
+			overviewVisibility: record.overviewVisibility as EventVisibility,
+			participantsVisibility: record.participantsVisibility as EventVisibility,
 			commitmentQuestions: rawCommitmentQuestions.map(
 				(q): CommitmentQuestion => ({
 					id: q.id as QuestionId,
@@ -109,7 +114,6 @@ export class OffkaiEventRepository {
 							members: {
 								some: {
 									userId,
-									role: "owner",
 								},
 							},
 						},
@@ -127,10 +131,9 @@ export class OffkaiEventRepository {
 						members: {
 							where: {
 								userId,
-								role: "owner",
 							},
 							select: {
-								userId: true,
+								role: true,
 							},
 						},
 					},
@@ -149,7 +152,9 @@ export class OffkaiEventRepository {
 				endDate: record.eventEndDate.toISOString().slice(0, 10),
 			},
 			description: record.description ?? "",
-			canEdit: record.series.members.length > 0,
+			seriesRole: record.series.members[0]
+				? SeriesRoleSchema.parse(record.series.members[0].role)
+				: null,
 		}));
 	}
 
@@ -164,6 +169,8 @@ export class OffkaiEventRepository {
 			applicationStartDate: event.applicationStartDate,
 			discordRoleId: event.discordRoleId,
 			askBringingKigurumi: event.askBringingKigurumi,
+			overviewVisibility: event.overviewVisibility,
+			participantsVisibility: event.participantsVisibility,
 			commitmentQuestions: event.commitmentQuestions,
 			preferenceQuestions: event.preferenceQuestions,
 		};
@@ -318,7 +325,7 @@ export class OffkaiEventRepository {
 	async findSeriesMemberRole(
 		userId: UserId,
 		seriesId: OffkaiSeriesId,
-	): Promise<string | null> {
+	): Promise<SeriesRole | null> {
 		const member = await this.prisma.seriesMember.findUnique({
 			where: {
 				seriesId_userId: {
@@ -329,7 +336,15 @@ export class OffkaiEventRepository {
 			select: { role: true },
 		});
 
-		return member?.role ?? null;
+		return member ? SeriesRoleSchema.parse(member.role) : null;
+	}
+
+	async isParticipant(eventId: OffkaiEventId, userId: UserId): Promise<boolean> {
+		const answer = await this.prisma.offkaiAnswer.findUnique({
+			where: { eventId_userId: { eventId, userId } },
+			select: { id: true },
+		});
+		return answer !== null;
 	}
 }
 

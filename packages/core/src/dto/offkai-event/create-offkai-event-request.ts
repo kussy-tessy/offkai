@@ -3,6 +3,8 @@ import {
 	LocalDatePeriodStringSchema,
 	LocalDateTimeMinuteStringSchema,
 	DiscordRoleIdSchema,
+	EventVisibilitySchema,
+	isVisibilityAtLeastAsRestricted,
 } from "../../schema";
 import { preprocessDatetime } from "../../util";
 
@@ -17,6 +19,8 @@ export const CreateOffkaiEventRequestSchema = z.object({
 	description: z.string().max(1000),
 	discordRoleId: DiscordRoleIdSchema.nullable().default(null),
 	askBringingKigurumi: z.boolean().default(false),
+	overviewVisibility: EventVisibilitySchema.default("AUTHENTICATED"),
+	participantsVisibility: EventVisibilitySchema.default("AUTHENTICATED"),
 	commitmentQuestions: z.array(
 		z.object({
 			question: z.string().min(1).max(100),
@@ -46,6 +50,26 @@ export const CreateOffkaiEventRequestSchema = z.object({
 			]),
 		}),
 	),
+}).superRefine((value, ctx) => {
+	if (value.overviewVisibility === "PARTICIPANTS") {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ["overviewVisibility"],
+			message: "オフ会概要の公開範囲にオフ会参加表明者は指定できません",
+		});
+	}
+	if (
+		!isVisibilityAtLeastAsRestricted(
+			value.participantsVisibility,
+			value.overviewVisibility,
+		)
+	) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ["participantsVisibility"],
+			message: "参加者一覧・回答の公開範囲は、オフ会概要と同じか、より限定してください",
+		});
+	}
 });
 export type CreateOffkaiEventRequest = z.infer<
 	typeof CreateOffkaiEventRequestSchema

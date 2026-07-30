@@ -6,6 +6,7 @@ import {
 	LocalDatePeriodStringSchema,
 	OffkaiEventIdSchema,
 	QuestionIdSchema,
+	SeriesRoleSchema,
 	UserIdSchema,
 	UserNameSchema,
 } from ".";
@@ -14,6 +15,7 @@ export const CommitmentQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,
 	questionShort: z.string(),
 	capacity: CapacitySchema.nullable(),
+	yesCount: z.number().int().nonnegative(),
 	deadline: ISODateTimeStringSchema.nullable(),
 	required: z.boolean().default(false),
 });
@@ -39,8 +41,10 @@ export const AnswerRowSchema = z.object({
 		QuestionIdSchema,
 		z.enum(["yes", "no"]).nullable(),
 	),
-	preferenceAnswers: z.record(QuestionIdSchema, z.string().nullable()),
-	bringingKigurumis: z.array(BringingKigurumiSchema).default([]),
+	preferenceAnswers: z
+		.record(QuestionIdSchema, z.string().nullable())
+		.nullable(),
+	bringingKigurumis: z.array(BringingKigurumiSchema).nullable(),
 });
 export type AnswerRow = z.infer<typeof AnswerRowSchema>;
 
@@ -51,13 +55,38 @@ export const OffkaiDetailSchema = z.object({
 		description: z.string(),
 		eventPeriod: LocalDatePeriodStringSchema,
 		applicationStartDate: ISODateTimeStringSchema,
-		canEdit: z.boolean(),
 		askBringingKigurumi: z.boolean().default(false),
+	}),
+	viewer: z.object({
+		seriesRole: SeriesRoleSchema.nullable(),
+		isParticipant: z.boolean(),
+		permissions: z.object({
+			canViewOverview: z.boolean(),
+			canViewParticipants: z.boolean(),
+			canViewPrivateAnswers: z.boolean(),
+			canEditEvent: z.boolean(),
+			canDeleteEvent: z.boolean(),
+			canEditAnswers: z.boolean(),
+			canManageDiscordRole: z.boolean(),
+			canManagePayments: z.boolean(),
+		}),
+	}),
+	participantsAccess: z.object({
+		granted: z.boolean(),
+		reason: z
+			.enum([
+				"AUTHENTICATION_REQUIRED",
+				"DISCORD_NOT_CONNECTED",
+				"NOT_GUILD_MEMBER",
+				"NOT_PARTICIPANT",
+				"MEMBERSHIP_CHECK_UNAVAILABLE",
+			])
+			.optional(),
 	}),
 
 	commitmentQuestions: z.array(CommitmentQuestionHeaderSchema),
-	preferenceQuestions: z.array(PreferenceQuestionHeaderSchema),
+	preferenceQuestions: z.array(PreferenceQuestionHeaderSchema).nullable(),
 
-	answers: z.array(AnswerRowSchema),
+	answers: z.array(AnswerRowSchema).nullable(),
 });
 export type OffkaiDetail = z.infer<typeof OffkaiDetailSchema>;

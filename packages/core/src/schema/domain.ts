@@ -41,6 +41,29 @@ export type DiscordRoleId = z.infer<typeof DiscordRoleIdSchema>;
 export const OffkaiSeriesIdSchema = z.string().uuid().brand("OffkaiSeriesId");
 export type OffkaiSeriesId = z.infer<typeof OffkaiSeriesIdSchema>;
 
+export const SeriesRoleSchema = z.enum(["owner", "staff"]);
+export type SeriesRole = z.infer<typeof SeriesRoleSchema>;
+
+export const EventVisibilitySchema = z.enum([
+	"PUBLIC",
+	"AUTHENTICATED",
+	"GUILD_MEMBERS",
+	"PARTICIPANTS",
+]);
+export type EventVisibility = z.infer<typeof EventVisibilitySchema>;
+
+const EventVisibilityLevel: Record<EventVisibility, number> = {
+	PUBLIC: 0,
+	AUTHENTICATED: 1,
+	GUILD_MEMBERS: 2,
+	PARTICIPANTS: 3,
+};
+
+export const isVisibilityAtLeastAsRestricted = (
+	visibility: EventVisibility,
+	baseVisibility: EventVisibility,
+): boolean => EventVisibilityLevel[visibility] >= EventVisibilityLevel[baseVisibility];
+
 export const OffkaiEventIdSchema = z.string().uuid().brand("OffkaiEventId");
 export type OffkaiEventId = z.infer<typeof OffkaiEventIdSchema>;
 
