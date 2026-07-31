@@ -12,6 +12,8 @@ import Login from "../views/LoginPage.vue";
 import CreateOffkaiEvent from "../views/offkaiEvent/create.vue";
 import EditOffkaiEvent from "../views/offkaiEvent/edit.vue";
 import Participants from "../views/offkaiEvent/participants.vue";
+import DiscordManagement from "@/features/participantManagement/components/DiscordManagement.vue";
+import PaymentManagement from "@/features/participantManagement/components/PaymentManagement.vue";
 import PhotoShare from "../views/photoShare/index.vue";
 import QuestionTemplate from "../views/series/questionTemplate.vue";
 import Signup from "../views/SignupPage.vue";
@@ -60,14 +62,30 @@ const routes = [
 	},
 	{
 		path: "/offkai/:id/participants",
-		redirect: (to: RouteLocationGeneric) =>
-			`/offkai/${String(to.params.id)}/participants/discord`,
-	},
-	{
-		path: "/offkai/:id/participants/discord",
 		component: Participants,
 		props: true,
 		...requiresAuth,
+		children: [
+			{
+				path: "",
+				redirect: (to: RouteLocationGeneric) =>
+					`/offkai/${String(to.params.id)}/participants/discord`,
+			},
+			{
+				path: "discord",
+				component: DiscordManagement,
+				props: (route: RouteLocationGeneric) => ({
+					eventId: String(route.params.id),
+				}),
+			},
+			{
+				path: "payments",
+				component: PaymentManagement,
+				props: (route: RouteLocationGeneric) => ({
+					eventId: String(route.params.id),
+				}),
+			},
+		],
 	},
 	{
 		path: "/offkai/:id/photos",

@@ -9,9 +9,11 @@ import {
 	GetOffkaiDetailRequestSchema,
 	GetOffkaiEventDiscordRoleMembersRequestSchema,
 	GetOffkaiEventRequestSchema,
+	GetParticipantPaymentsRequestSchema,
 	ManageOffkaiAnswerRequestSchema,
 	SaveOffkaiAnswerRequestSchema,
 	UpdateOffkaiEventDiscordRoleMemberRequestSchema,
+	UpdateParticipantPaymentRequestSchema,
 	UserIdSchema,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
@@ -31,6 +33,7 @@ import { deleteOffkaiEvent } from "./event-management/delete-offkai-event.usecas
 import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.usecase";
 import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
 import { updateOffkaiEvent } from "./event-management/update-offkai-event.usecase";
+import { getParticipantPayments, updateParticipantPayment } from "./participant-payment";
 import {
 	createPhotoShare,
 	deletePhotoShare,
@@ -124,6 +127,27 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		});
 		return updateOffkaiEventDiscordRoleMember(input, ownerUserId);
 	});
+
+	app.get("/:eventId/participant-payments", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const input = GetParticipantPaymentsRequestSchema.parse(request.params);
+		return getParticipantPayments(input, userId);
+	});
+
+	app.put(
+		"/:eventId/participant-payments/:userId",
+		requireUser,
+		async (request) => {
+			const viewerUserId = UserIdSchema.parse(request.user.userId);
+			const params = request.params as Record<string, unknown>;
+			const body = request.body as Record<string, unknown>;
+			const input = UpdateParticipantPaymentRequestSchema.parse({
+				...body,
+				...params,
+			});
+			return updateParticipantPayment(input, viewerUserId);
+		},
+	);
 
 	app.get("/:eventId/my-answer-form", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);

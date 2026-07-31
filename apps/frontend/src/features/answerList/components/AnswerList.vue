@@ -42,14 +42,14 @@
         <table class="w-full border-collapse text-center table-fixed">
           <thead class="bg-gradient-to-r from-teal-50 to-sky-50 align-top">
             <tr>
-              <th class="sticky left-0 z-20 bg-teal-50 p-2 text-left w-24 text-sm font-semibold [box-shadow:1px_0_0_0_theme(colors.teal.100)]">名前</th>
-              <th v-for="q in data.commitmentQuestions" :key="q.id" class="p-2 w-24">
+              <th class="sticky left-0 z-20 bg-teal-50 p-1 text-left w-24 text-sm font-semibold [box-shadow:1px_0_0_0_theme(colors.teal.100)]">名前</th>
+              <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 p-0">
                 <div class="font-semibold text-slate-800 text-xs">{{ q.questionShort }}</div>
               </th>
             </tr>
             <tr>
-              <th class="sticky left-0 z-20 bg-teal-50 p-1 text-right w-24 text-xs font-medium text-slate-600 [box-shadow:1px_0_0_0_theme(colors.teal.100)]">定員</th>
-              <th v-for="q in data.commitmentQuestions" :key="q.id" class="p-1 w-24">
+              <th class="sticky left-0 z-20 bg-teal-50 p-0 text-right w-24 text-xs font-medium text-slate-600 [box-shadow:1px_0_0_0_theme(colors.teal.100)]">定員</th>
+              <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 p-0">
                 <div v-if="q.capacity !== null" class="flex justify-center">
                   <span class="px-1.5 py-0.5 rounded-full font-semibold text-xs whitespace-nowrap"
                     :class="capacityBadgeClass(q.id, q.capacity)">
@@ -60,8 +60,8 @@
               </th>
             </tr>
             <tr>
-              <th class="sticky left-0 z-20 bg-teal-50 border-b border-teal-100 p-1 text-right w-24 text-xs font-medium text-slate-600 [box-shadow:1px_0_0_0_theme(colors.teal.100)]">締切</th>
-              <th v-for="q in data.commitmentQuestions" :key="q.id" class="border-b border-teal-100 p-1 w-24">
+              <th class="sticky left-0 z-20 bg-teal-50 border-b border-teal-100 p-0 text-right w-24 text-xs font-medium text-slate-600 [box-shadow:1px_0_0_0_theme(colors.teal.100)]">締切</th>
+              <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 border-b border-teal-100 p-0">
                 <div v-if="q.deadline" class="flex justify-center">
                   <span class="px-1.5 py-0.5 rounded-full font-semibold text-xs whitespace-nowrap"
                     :class="deadlineBadgeClass(q.deadline)">
@@ -74,7 +74,7 @@
           <tbody>
             <tr v-for="(row, rowIndex) in data.answers" :key="row.user.id"
               class="group odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
-              <td class="sticky left-0 z-10 group-hover:bg-sky-50 border-b border-slate-100 p-2 text-left w-24 truncate font-medium text-slate-700 text-sm [box-shadow:1px_0_0_0_theme(colors.slate.100)]"
+              <td class="sticky left-0 z-10 group-hover:bg-sky-50 border-b border-slate-100 p-1 text-left w-24 truncate font-medium text-slate-700 text-sm [box-shadow:1px_0_0_0_theme(colors.slate.100)]"
                 :class="rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'">
                 <span>{{ row.user.displayName }}</span>
 				<button v-if="data.viewer.permissions.canEditAnswers" type="button" class="ml-2 text-sky-600 hover:text-sky-800"
@@ -83,7 +83,7 @@
                   <FontAwesomeIcon :icon="faPenToSquare" />
                 </button>
               </td>
-              <td v-for="q in data.commitmentQuestions" :key="q.id" class="border-b border-slate-100 p-2 text-xl w-24">
+              <td v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 border-b border-slate-100 p-0 text-lg">
                 <span v-if="row.commitmentAnswers[q.id] === 'yes'">
                   <FontAwesomeIcon :icon="faCircle" class="text-sky-500" />
                 </span>

@@ -2,13 +2,26 @@ import { z } from "zod";
 import {
 	OffkaiEventIdSchema,
 	PaymentAmountSchema,
+	QuestionIdSchema,
 	UserIdSchema,
 	UserNameSchema,
 } from "../../schema";
 
+export const ParticipantPaymentCommitmentQuestionSchema = z.object({
+	id: QuestionIdSchema,
+	questionShort: z.string(),
+});
+export type ParticipantPaymentCommitmentQuestion = z.infer<
+	typeof ParticipantPaymentCommitmentQuestionSchema
+>;
+
 export const ParticipantPaymentSchema = z.object({
 	userId: UserIdSchema,
 	displayName: UserNameSchema,
+	commitmentAnswers: z.record(
+		QuestionIdSchema,
+		z.enum(["yes", "no"]).nullable(),
+	),
 	amount: PaymentAmountSchema,
 	collected: z.boolean(),
 	changeReturned: z.boolean(),
@@ -23,6 +36,7 @@ export type GetParticipantPaymentsRequest = z.infer<
 >;
 
 export const GetParticipantPaymentsResponseSchema = z.object({
+	commitmentQuestions: z.array(ParticipantPaymentCommitmentQuestionSchema),
 	participants: z.array(ParticipantPaymentSchema),
 });
 export type GetParticipantPaymentsResponse = z.infer<

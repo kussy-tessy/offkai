@@ -5,6 +5,7 @@ import type {
 	UserId,
 } from "@offkai/core";
 import { format, isPassed } from "@offkai/core";
+import { hasSeriesRole } from "../../../authorization/event-access";
 import {
 	KigurumiRepository,
 	OffkaiAnswerRepository,
@@ -24,8 +25,15 @@ export async function getAnswerForm(
 	userId: UserId,
 	bypassBusinessRules = false,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
-	const event = await new OffkaiEventRepository().findById(input.eventId);
-	if (!bypassBusinessRules) rejectBeforeApplicationStart(event);
+	const eventRepository = new OffkaiEventRepository();
+	const event = await eventRepository.findById(input.eventId);
+	const seriesRole = await eventRepository.findSeriesMemberRole(
+		userId,
+		event.seriesId,
+	);
+	if (!bypassBusinessRules && !hasSeriesRole(seriesRole, "owner")) {
+		rejectBeforeApplicationStart(event);
+	}
 
 	const answerRepository = new OffkaiAnswerRepository();
 	const [allAnswers, myAnswer, kigurumiOptions] = await Promise.all([

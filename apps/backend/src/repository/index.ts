@@ -2,6 +2,7 @@ export * from "./offkai-answer-repository";
 export * from "./kigurumi-repository";
 export * from "./offkai-event-repository";
 export * from "./photo-share-repository";
+export * from "./participant-payment-repository";
 export * from "./prisma";
 export * from "./series-repository";
 export * from "./user-repository";

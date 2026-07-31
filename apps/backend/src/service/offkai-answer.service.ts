@@ -8,6 +8,7 @@ import type {
 } from "@offkai/core";
 import { OffkaiAnswer } from "@offkai/core";
 import { AppError, runBusinessRule } from "../app-error";
+import { hasSeriesRole } from "../authorization/event-access";
 import { OffkaiAnswerRepository, OffkaiEventRepository } from "../repository";
 import { rejectBeforeApplicationStart } from "../usecase/offkai-event/answer-command/application-start";
 
@@ -19,8 +20,15 @@ export class OffkaiAnswerService {
 		preferenceAnswers: PreferenceAnswer[],
 		bringingKigurumis: BringingKigurumi[],
 	): Promise<OffkaiAnswer> {
-		const event = await new OffkaiEventRepository().findById(eventId);
-		rejectBeforeApplicationStart(event);
+		const eventRepository = new OffkaiEventRepository();
+		const event = await eventRepository.findById(eventId);
+		const seriesRole = await eventRepository.findSeriesMemberRole(
+			userId,
+			event.seriesId,
+		);
+		if (!hasSeriesRole(seriesRole, "owner")) {
+			rejectBeforeApplicationStart(event);
+		}
 
 		const answerRepository = new OffkaiAnswerRepository();
 		const existing = await answerRepository.findByEventAndUser(

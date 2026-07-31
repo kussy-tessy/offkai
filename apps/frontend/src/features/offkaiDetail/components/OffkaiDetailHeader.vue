@@ -19,7 +19,7 @@
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
           aria-label="参加者を管理する"
           title="参加者を管理する"
-          @click="router.push(`/offkai/${offkai.id}/participants/discord`)"
+          @click="router.push(managementRoute)"
         >
           <FontAwesomeIcon :icon="faUserGear" class="text-lg" />
         </button>
@@ -100,12 +100,19 @@
   const confirmDeleteOpen = ref(false);
   const deleting = ref(false);
   const canAnswer = computed(
-    () => Date.now() >= new Date(props.offkai.applicationStartDate).getTime(),
+    () =>
+      props.permissions.canEditAnswers ||
+      Date.now() >= new Date(props.offkai.applicationStartDate).getTime(),
   );
 	const canManageParticipants = computed(
 		() =>
 			props.permissions.canManageDiscordRole ||
 			props.permissions.canManagePayments,
+	);
+	const managementRoute = computed(() =>
+		props.permissions.canManageDiscordRole
+			? `/offkai/${props.offkai.id}/participants/discord`
+			: `/offkai/${props.offkai.id}/participants/payments`,
 	);
 	const showManagementActions = computed(
 		() =>
