@@ -29,7 +29,6 @@ export class ParticipantPaymentRepository {
 							select: {
 								amount: true,
 								collected: true,
-								changeReturned: true,
 							},
 						},
 					},
@@ -59,7 +58,6 @@ export class ParticipantPaymentRepository {
 				),
 				amount: answer.payment?.amount ?? 0,
 				collected: answer.payment?.collected ?? false,
-				changeReturned: answer.payment?.changeReturned ?? false,
 			})),
 		});
 	}
@@ -69,7 +67,6 @@ export class ParticipantPaymentRepository {
 		userId: UserId;
 		amount: PaymentAmount;
 		collected: boolean;
-		changeReturned: boolean;
 	}): Promise<Unbrand<UpdateParticipantPaymentResponse> | null> {
 		const answer = await prisma.offkaiAnswer.findUnique({
 			where: {
@@ -93,12 +90,10 @@ export class ParticipantPaymentRepository {
 				answerId: answer.id,
 				amount: input.amount,
 				collected: input.collected,
-				changeReturned: input.changeReturned,
 			},
 			update: {
 				amount: input.amount,
 				collected: input.collected,
-				changeReturned: input.changeReturned,
 			},
 		});
 
@@ -110,7 +105,6 @@ export class ParticipantPaymentRepository {
 			),
 			amount: payment.amount,
 			collected: payment.collected,
-			changeReturned: payment.changeReturned,
 		};
 	}
 

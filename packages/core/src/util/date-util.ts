@@ -30,6 +30,14 @@ export function format(dateArg: Date | string, includesTime = true) {
 	return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 }
 
+export function formatWithSeconds(dateArg: Date | string) {
+	const date = toDate(dateArg);
+	const base = format(date);
+	const seconds = String(date.getSeconds()).padStart(2, "0");
+
+	return `${base}:${seconds}`;
+}
+
 export function formatWithDay(dateArg: Date | string, includesTime = false) {
 	const date = toDate(dateArg);
 	const day = DAY_OF_WEEK[date.getDay()];

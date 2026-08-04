@@ -113,9 +113,8 @@ model OffkaiAnswer {
 model ParticipantPayment {
   answerId String @id
 
-  amount         Int     @default(0)
-  collected      Boolean @default(false)
-  changeReturned Boolean @default(false)
+  amount    Int     @default(0)
+  collected Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

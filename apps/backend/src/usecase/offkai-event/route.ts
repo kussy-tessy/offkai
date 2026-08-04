@@ -12,6 +12,7 @@ import {
 	GetParticipantPaymentsRequestSchema,
 	ManageOffkaiAnswerRequestSchema,
 	SaveOffkaiAnswerRequestSchema,
+	UpdateOffkaiEventDiscordRoleRequestSchema,
 	UpdateOffkaiEventDiscordRoleMemberRequestSchema,
 	UpdateParticipantPaymentRequestSchema,
 	UserIdSchema,
@@ -25,7 +26,9 @@ import {
 import { saveOffkaiAnswer } from "./answer-command/save-offkai-answer.usecase";
 import { getOffkaiDetail } from "./detail-query/get-offkai-detail.usecase";
 import {
+	getOffkaiEventDiscordRole,
 	getOffkaiEventDiscordRoleMembers,
+	updateOffkaiEventDiscordRole,
 	updateOffkaiEventDiscordRoleMember,
 } from "./discord-role";
 import { createOffkaiEvent } from "./event-management/create-offkai-event.usecase";
@@ -115,6 +118,23 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(request.params);
 		return getOffkaiEventDiscordRoleMembers(input, userId);
+	});
+
+	app.get("/:eventId/discord-role", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(request.params);
+		return getOffkaiEventDiscordRole(input, userId);
+	});
+
+	app.put("/:eventId/discord-role", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const params = request.params as Record<string, unknown>;
+		const body = request.body as Record<string, unknown>;
+		const input = UpdateOffkaiEventDiscordRoleRequestSchema.parse({
+			...body,
+			...params,
+		});
+		return updateOffkaiEventDiscordRole(input, userId);
 	});
 
 	app.put("/:eventId/discord-role-members/:userId", requireUser, async (request) => {

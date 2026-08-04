@@ -182,6 +182,16 @@ export class OffkaiEventRepository {
 		});
 	}
 
+	async updateDiscordRoleId(
+		id: OffkaiEventId,
+		discordRoleId: DiscordRoleId | null,
+	): Promise<void> {
+		await this.prisma.offkaiEvent.update({
+			where: { id },
+			data: { discordRoleId },
+		});
+	}
+
 	async delete(id: string): Promise<void> {
 		await this.prisma.$transaction(async (tx) => {
 			await tx.offkaiAnswerHistory.deleteMany({

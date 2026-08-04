@@ -46,6 +46,9 @@
               <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 p-0">
                 <div class="font-semibold text-slate-800 text-xs">{{ q.questionShort }}</div>
               </th>
+							<th rowspan="3" class="w-44 border-b border-teal-100 px-2 py-1 align-middle text-sm font-semibold text-slate-800">
+								参加表明時刻
+							</th>
             </tr>
             <tr>
               <th class="sticky left-0 z-20 bg-teal-50 p-0 text-right w-24 text-xs font-medium text-slate-600 [box-shadow:1px_0_0_0_theme(colors.teal.100)]">定員</th>
@@ -92,6 +95,9 @@
                 </span>
                 <span v-else class="text-gray-500">―</span>
               </td>
+							<td class="w-44 whitespace-nowrap border-b border-slate-100 px-2 py-1 text-sm text-slate-600">
+								{{ formatWithSeconds(row.createdAt) }}
+							</td>
             </tr>
           </tbody>
         </table>
@@ -135,7 +141,7 @@
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
   import { faPenToSquare, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-  import { format, type OffkaiDetail, type Unbrand } from "@offkai/core";
+  import { format, formatWithSeconds, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";

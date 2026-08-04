@@ -37,6 +37,7 @@ export const AnswerRowSchema = z.object({
 		id: UserIdSchema,
 		displayName: UserNameSchema,
 	}),
+	createdAt: ISODateTimeStringSchema,
 	commitmentAnswers: z.record(
 		QuestionIdSchema,
 		z.enum(["yes", "no"]).nullable(),

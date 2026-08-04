@@ -42,7 +42,6 @@
             </th>
             <th class="w-32 min-w-32 px-2 py-2 text-center">金額</th>
             <th class="w-24 min-w-24 px-2 py-2 text-center">徴収済み</th>
-            <th class="w-32 min-w-32 px-2 py-2 text-center">おつり返却済み</th>
           </tr>
         </thead>
         <tbody>
@@ -94,22 +93,7 @@
                 class="flex justify-center"
                 :value="row.collected"
                 :disabled="row.savingField !== null"
-                :save="value => saveRow(
-                  row,
-                  {
-                    collected: value,
-                    changeReturned: value ? row.changeReturned : false,
-                  },
-                  'collected',
-                )"
-              />
-            </td>
-            <td class="border-b border-slate-100 px-2 py-2 text-center align-middle">
-              <MyAsyncCheckbox
-                class="flex justify-center"
-                :value="row.changeReturned"
-                :disabled="!row.collected || row.savingField !== null"
-                :save="value => saveRow(row, { changeReturned: value }, 'changeReturned')"
+                :save="value => saveRow(row, { collected: value }, 'collected')"
               />
             </td>
           </tr>
@@ -142,7 +126,7 @@
   }>();
 
   type Participant = Unbrand<GetParticipantPaymentsResponse>["participants"][number];
-  type SavingField = "amount" | "collected" | "changeReturned";
+  type SavingField = "amount" | "collected";
   type PaymentRow = Participant & {
     savingField: SavingField | null;
     saved: boolean;
@@ -197,7 +181,7 @@
 
   const saveRow = async (
     row: PaymentRow,
-    changes: Partial<Pick<Participant, "amount" | "collected" | "changeReturned">>,
+    changes: Partial<Pick<Participant, "amount" | "collected">>,
     field: SavingField,
   ) => {
     if (row.savingField !== null) throw new Error("更新中です。");
@@ -210,7 +194,6 @@
         {
           amount: changes.amount ?? row.amount,
           collected: changes.collected ?? row.collected,
-          changeReturned: changes.changeReturned ?? row.changeReturned,
         },
       );
       if (!updated) throw new Error("金銭管理情報を更新できませんでした。");

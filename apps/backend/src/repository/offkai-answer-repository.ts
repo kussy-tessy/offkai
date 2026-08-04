@@ -103,6 +103,7 @@ export class OffkaiAnswerRepository {
 				id: a.user.id,
 				displayName: a.user.name,
 			},
+			createdAt: a.createdAt.toISOString(),
 			commitmentAnswers: this.toCommitmentAnswerRecord(a.commitmentAnswers),
 			preferenceAnswers: canViewPrivateAnswers
 				? this.toPreferenceAnswerRecord(a.preferenceAnswers)
