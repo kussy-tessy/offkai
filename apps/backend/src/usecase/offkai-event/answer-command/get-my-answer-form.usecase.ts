@@ -11,7 +11,10 @@ import {
 	OffkaiAnswerRepository,
 	OffkaiEventRepository,
 } from "../../../repository";
-import { rejectBeforeApplicationStart } from "./application-start";
+import {
+	isApplicationStarted,
+	rejectBeforeApplicationStart,
+} from "./application-start";
 
 export async function getMyAnswerForm(
 	input: GetMyAnswerFormRequest,
@@ -31,14 +34,19 @@ export async function getAnswerForm(
 		userId,
 		event.seriesId,
 	);
-	if (!bypassBusinessRules && !hasSeriesRole(seriesRole, "owner")) {
+	const canBypassParticipationRestrictions =
+		bypassBusinessRules || hasSeriesRole(seriesRole, "owner");
+	const answerRepository = new OffkaiAnswerRepository();
+	const myAnswer = await answerRepository.findByEventAndUser(
+		input.eventId,
+		userId,
+	);
+	if (!canBypassParticipationRestrictions && !myAnswer) {
 		rejectBeforeApplicationStart(event);
 	}
 
-	const answerRepository = new OffkaiAnswerRepository();
-	const [allAnswers, myAnswer, kigurumiOptions] = await Promise.all([
+	const [allAnswers, kigurumiOptions] = await Promise.all([
 		answerRepository.findManyByEventId(input.eventId),
-		answerRepository.findByEventAndUser(input.eventId, userId),
 		new KigurumiRepository().findManyByOwnerUserId(userId),
 	]);
 
@@ -60,6 +68,7 @@ export async function getAnswerForm(
 	}
 
 	const now = new Date();
+	const applicationStarted = isApplicationStarted(event, now);
 
 	const commitmentQuestions = event.commitmentQuestions.map((q) => {
 		const currentCount = counts.get(q.id) ?? 0;
@@ -68,21 +77,29 @@ export async function getAnswerForm(
 			null;
 		const deadlinePassed = isPassed(now, q.deadline);
 		const hasCapacity = currentCount < q.capacity;
-		const canEdit =
-			bypassBusinessRules ||
+		const canEditByQuestionRules =
+			canBypassParticipationRestrictions ||
 			(!deadlinePassed && (hasCapacity || userAnswer === "yes"));
+		const canEdit =
+			canEditByQuestionRules &&
+			(canBypassParticipationRestrictions ||
+				applicationStarted ||
+				userAnswer === "yes");
 		const canSelectYes = canEdit;
-		const disableReason = bypassBusinessRules
+		const disableReason = canBypassParticipationRestrictions
 			? undefined
 			: deadlinePassed
 				? ("deadlinePassed" as const)
-				: !hasCapacity && userAnswer !== "yes"
-					? ("capacityFull" as const)
-					: undefined;
+				: !applicationStarted && userAnswer !== "yes"
+					? ("applicationNotStarted" as const)
+					: !hasCapacity && userAnswer !== "yes"
+						? ("capacityFull" as const)
+						: undefined;
 
 		return {
 			id: q.id,
 			question: q.question,
+			description: q.description,
 			required: q.required,
 			deadline: q.deadline.toISOString(),
 			capacity: q.capacity,
@@ -102,6 +119,7 @@ export async function getAnswerForm(
 		return {
 			id: q.id,
 			question: q.question,
+			description: q.description,
 			required: q.required,
 			answerTemplate: q.answerTemplate,
 			userAnswer,
@@ -109,6 +127,7 @@ export async function getAnswerForm(
 	});
 
 	return {
+		canBypassParticipationRestrictions,
 		event: {
 			id: event.id,
 			title: event.name,

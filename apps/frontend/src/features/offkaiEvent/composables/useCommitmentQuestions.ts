@@ -15,6 +15,14 @@ export type CommitmentQuestionInitializeProps = {
 	questions: (Omit<CommitmentQuestion, "id"> & { id?: string })[];
 };
 
+export const isBlankCommitmentQuestion = (question: CommitmentQuestion) =>
+	question.question.trim() === "" &&
+	question.questionShort.trim() === "" &&
+	question.description.trim() === "" &&
+	question.deadline === "" &&
+	question.capacity === null &&
+	!question.required;
+
 export const useCommitmentQuestions = () => {
 	const questions = ref<CommitmentQuestion[]>([]);
 
@@ -44,6 +52,18 @@ export const useCommitmentQuestions = () => {
 		}
 	};
 
+	const moveQuestion = (id: string, offset: -1 | 1) => {
+		const index = questions.value.findIndex((q) => q.id === id);
+		const destination = index + offset;
+		if (index === -1 || destination < 0 || destination >= questions.value.length) {
+			return;
+		}
+
+		const next = questions.value.slice();
+		[next[index], next[destination]] = [next[destination], next[index]];
+		questions.value = next;
+	};
+
 	const initialize = (props: CommitmentQuestionInitializeProps) => {
 		questions.value = props.questions.map((q) => ({
 			...q,
@@ -58,5 +78,6 @@ export const useCommitmentQuestions = () => {
 		addQuestion,
 		removeQuestion,
 		updateQuestion,
+		moveQuestion,
 	};
 };

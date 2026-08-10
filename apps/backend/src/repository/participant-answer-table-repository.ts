@@ -12,6 +12,7 @@ import { prisma } from "./prisma";
 export class ParticipantAnswerTableRepository {
 	async getPage(
 		eventId: OffkaiEventId,
+		canEditAnswers: boolean,
 	): Promise<Unbrand<GetParticipantAnswerTableResponse>> {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
@@ -42,6 +43,7 @@ export class ParticipantAnswerTableRepository {
 			question: string;
 		}>;
 		return GetParticipantAnswerTableResponseSchema.parse({
+			canEditAnswers,
 			commitmentQuestions: cq.map((q) => ({
 				id: q.id,
 				question: q.questionShort,

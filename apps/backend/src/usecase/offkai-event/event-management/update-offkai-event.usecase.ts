@@ -13,6 +13,29 @@ import { AppError, runBusinessRule } from "../../../app-error";
 import { hasSeriesRole } from "../../../authorization/event-access";
 import { OffkaiEventRepository } from "../../../repository";
 
+export function assignQuestionIds<T>(
+	questions: T[],
+	requestedIds: (QuestionId | undefined)[],
+	existingIds: QuestionId[],
+	generateId: () => QuestionId = () => uuidv7() as QuestionId,
+): (T & { id: QuestionId })[] {
+	const existing = new Set<QuestionId>(existingIds);
+	const retained = new Set<QuestionId>();
+
+	return questions.map((question, index) => {
+		const requestedId = requestedIds[index];
+		if (requestedId && existing.has(requestedId)) {
+			if (retained.has(requestedId)) {
+				throw new AppError("VALIDATION_ERROR", "同じ質問IDが重複しています。");
+			}
+			retained.add(requestedId);
+			return { ...question, id: requestedId };
+		}
+
+		return { ...question, id: generateId() };
+	});
+}
+
 export async function updateOffkaiEvent(
 	params: GetOffkaiEventRequest,
 	input: CreateOffkaiEventRequest,
@@ -51,20 +74,23 @@ export async function updateOffkaiEvent(
 			input.preferenceQuestions.map((question) => ({
 				question: question.question,
 				questionShort: question.question,
+				description: question.description,
 				required: question.required,
 				answerTemplate: question.answerTemplate,
 			})),
 		);
 
-	const nextCommitmentQuestions = commitmentWithoutId.map((question, index) => ({
-		...question,
-		id: event.commitmentQuestions[index]?.id ?? (uuidv7() as QuestionId),
-	}));
+	const nextCommitmentQuestions = assignQuestionIds(
+		commitmentWithoutId,
+		input.commitmentQuestions.map((question) => question.id),
+		event.commitmentQuestions.map((question) => question.id),
+	);
 
-	const nextPreferenceQuestions = preferenceWithoutId.map((question, index) => ({
-		...question,
-		id: event.preferenceQuestions[index]?.id ?? (uuidv7() as QuestionId),
-	}));
+	const nextPreferenceQuestions = assignQuestionIds(
+		preferenceWithoutId,
+		input.preferenceQuestions.map((question) => question.id),
+		event.preferenceQuestions.map((question) => question.id),
+	);
 
 	const updated = runBusinessRule(() => event.edit({
 		name: input.title,

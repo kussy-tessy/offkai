@@ -4,6 +4,7 @@ import {
 	isVisibilityAtLeastAsRestricted,
 	type Unbrand,
 } from "@offkai/core";
+import { watch } from "vue";
 import {
 	isEmpty,
 	useField,
@@ -11,6 +12,7 @@ import {
 } from "@/common/composables";
 import {
 	type CommitmentQuestionInitializeProps,
+	isBlankCommitmentQuestion,
 	useCommitmentQuestions,
 } from "./useCommitmentQuestions";
 import {
@@ -51,6 +53,21 @@ export const useQuestionsForm = () => {
 
 	const { errors, reset, hasAny } = useFieldErrorsComposable();
 
+	const clearQuestionErrors = (prefix: string) => {
+		for (const key of Object.keys(errors.value)) {
+			if (key.startsWith(prefix)) delete errors.value[key];
+		}
+	};
+
+	watch(
+		() => commitment.questions.value.map((question) => question.id).join(","),
+		() => clearQuestionErrors("commitmentQuestions."),
+	);
+	watch(
+		() => preference.questions.value.map((question) => question.id).join(","),
+		() => clearQuestionErrors("preferenceQuestions."),
+	);
+
 	const validate = () => {
 		reset();
 		if (isEmpty(title.value)) {
@@ -83,6 +100,8 @@ export const useQuestionsForm = () => {
 		}
 
 		for (const [index, question] of commitment.questions.value.entries()) {
+			if (isBlankCommitmentQuestion(question)) continue;
+
 			if (isEmpty(question.question)) {
 				errors.value[`commitmentQuestions.${index}.question`] =
 					"参加表明質問を入力してください";
@@ -153,8 +172,11 @@ export const useQuestionsForm = () => {
 		askBringingKigurumi: askBringingKigurumi.value.value,
 		overviewVisibility: overviewVisibility.value.value,
 		participantsVisibility: participantsVisibility.value.value,
-		commitmentQuestions: commitment.questions.value.map((question) => ({
-			question: question.question,
+		commitmentQuestions: commitment.questions.value.filter(
+			(question) => !isBlankCommitmentQuestion(question),
+			).map((question) => ({
+				id: question.id,
+				question: question.question,
 			questionShort: question.questionShort,
 			description: question.description,
 			deadline: question.deadline,
@@ -163,7 +185,9 @@ export const useQuestionsForm = () => {
 		})),
 		preferenceQuestions: preference.questions.value.map((question) => {
 			const base = {
+				id: question.id,
 				question: question.question,
+				description: question.description,
 				required: question.required,
 			};
 

@@ -4,6 +4,7 @@ import {
 	LocalDateTimeMinuteStringSchema,
 	DiscordRoleIdSchema,
 	EventVisibilitySchema,
+	QuestionIdSchema,
 	isVisibilityAtLeastAsRestricted,
 } from "../../schema";
 import { preprocessDatetime } from "../../util";
@@ -23,6 +24,7 @@ export const CreateOffkaiEventRequestSchema = z.object({
 	participantsVisibility: EventVisibilitySchema.default("AUTHENTICATED"),
 	commitmentQuestions: z.array(
 		z.object({
+			id: QuestionIdSchema.optional(),
 			question: z.string().min(1).max(100),
 			questionShort: z.string().min(1).max(100),
 			description: z.string().max(500),
@@ -33,7 +35,9 @@ export const CreateOffkaiEventRequestSchema = z.object({
 	),
 	preferenceQuestions: z.array(
 		z.object({
+			id: QuestionIdSchema.optional(),
 			question: z.string().min(1).max(100),
+			description: z.string().max(500),
 			required: z.boolean().default(false),
 			answerTemplate: z.discriminatedUnion("type", [
 				z.object({

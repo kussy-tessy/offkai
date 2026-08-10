@@ -2,7 +2,9 @@
   <div class="grid gap-2">
     <PreferenceQuestionsItem v-for="(q, index) in questions" :key="q.id" :question="q" :on-update="updateQuestion"
       :on-remove="removeQuestion" :error-question="errors?.[`preferenceQuestions.${index}.question`]"
-      :error-choices="errors?.[`preferenceQuestions.${index}.choices`]" />
+	  :error-description="errors?.[`preferenceQuestions.${index}.description`]"
+      :error-choices="errors?.[`preferenceQuestions.${index}.choices`]" :on-move="moveQuestion"
+      :can-move-up="index > 0" :can-move-down="index < questions.length - 1" />
   </div>
   <div class="mt-2 flex justify-center">
     <MyButton color="secondary" variant="ghost" class="w-[50%]" @click="addQuestion">
@@ -24,7 +26,7 @@
     store: ReturnType<typeof usePreferenceQuestions>
     errors?: FieldErrors
   }>();
-  const { questions, addQuestion, removeQuestion, updateQuestion } = props.store;
+  const { questions, addQuestion, removeQuestion, updateQuestion, moveQuestion } = props.store;
   const errors = toRef(props, 'errors');
 </script>
 

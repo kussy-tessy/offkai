@@ -163,6 +163,7 @@ export type PreferenceQuestionAnswerForm = z.infer<
 
 export const PreferenceQuestionTemplateItemSchema = z.object({
 	question: z.string().min(1).max(100),
+	description: z.string().max(500).default(""),
 	required: z.boolean().default(false),
 	answerTemplate: z.discriminatedUnion("type", [
 		z.object({
@@ -186,6 +187,7 @@ export const PreferenceQuestionSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
 	questionShort: z.string(),
+	description: z.string(),
 	answerTemplate: PreferenceQuestionAnswerFormSchema,
 	required: z.boolean().default(false),
 });

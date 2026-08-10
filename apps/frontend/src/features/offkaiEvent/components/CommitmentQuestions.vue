@@ -5,7 +5,8 @@
       :error-question-short="errors?.[`commitmentQuestions.${index}.questionShort`]"
       :error-description="errors?.[`commitmentQuestions.${index}.description`]"
       :error-deadline="errors?.[`commitmentQuestions.${index}.deadline`]"
-      :error-capacity="errors?.[`commitmentQuestions.${index}.capacity`]" />
+      :error-capacity="errors?.[`commitmentQuestions.${index}.capacity`]" :on-move="moveQuestion"
+      :can-move-up="index > 0" :can-move-down="index < questions.length - 1" />
   </div>
   <div class="mt-2 flex justify-center">
     <MyButton color="secondary" variant="ghost" class="w-[50%]" @click="addQuestion">
@@ -27,7 +28,7 @@
     store: ReturnType<typeof useCommitmentQuestions>
     errors?: FieldErrors
   }>()
-  const { questions, addQuestion, removeQuestion, updateQuestion } = props.store
+  const { questions, addQuestion, removeQuestion, updateQuestion, moveQuestion } = props.store
   const errors = toRef(props, 'errors')
 </script>
 

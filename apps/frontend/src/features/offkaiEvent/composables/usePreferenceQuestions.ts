@@ -4,6 +4,7 @@ import { ref } from "vue";
 export type PreferenceQuestion = {
 	id: string;
 	question: string;
+	description: string;
 	required: boolean;
 	answerTemplate: {
 		type: "free" | "choices" | "choicesIncludingOther";
@@ -22,6 +23,7 @@ export const usePreferenceQuestions = () => {
 		questions.value.push({
 			id: uuidv7(),
 			question: "",
+			description: "",
 			required: false,
 			answerTemplate: { type: "free" },
 		});
@@ -41,10 +43,23 @@ export const usePreferenceQuestions = () => {
 		};
 	};
 
+	const moveQuestion = (id: string, offset: -1 | 1) => {
+		const index = questions.value.findIndex((q) => q.id === id);
+		const destination = index + offset;
+		if (index === -1 || destination < 0 || destination >= questions.value.length) {
+			return;
+		}
+
+		const next = questions.value.slice();
+		[next[index], next[destination]] = [next[destination], next[index]];
+		questions.value = next;
+	};
+
 	const initialize = (props: PreferenceQuestionInitializeProps) => {
 		questions.value = props.questions.map((q) => ({
 			...q,
 			id: q.id ?? uuidv7(),
+			description: q.description ?? "",
 			required: q.required ?? false,
 		}));
 	};
@@ -55,5 +70,6 @@ export const usePreferenceQuestions = () => {
 		addQuestion,
 		removeQuestion,
 		updateQuestion,
+		moveQuestion,
 	};
 };

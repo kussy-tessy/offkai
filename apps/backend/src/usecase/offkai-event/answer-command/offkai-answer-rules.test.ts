@@ -203,3 +203,57 @@ describe("回答の定員ルール", () => {
 		expect(() => existing.edit(params)).not.toThrow();
 	});
 });
+
+describe("業務ルールの強制迂回", () => {
+	it("強制作成では締切と定員を超えて参加回答できる", () => {
+		const params = answerParams({
+			answer: "yes",
+			deadline: new Date(Date.now() - 60_000),
+			capacity: 1,
+			numberOfPeople: 1,
+		});
+		expect(() => OffkaiAnswer.forceCreate({ ...params, userId })).not.toThrow();
+	});
+
+	it("強制作成でも必須の参加可否は未回答にできない", () => {
+		const params = answerParams({
+			answer: null,
+			deadline: new Date(Date.now() + 60_000),
+			capacity: 1,
+			numberOfPeople: 0,
+		});
+		expect(() => OffkaiAnswer.forceCreate({ ...params, userId })).toThrowError(
+			"必須の参加可否を選択してください。",
+		);
+	});
+
+	it("強制編集では締切後でも参加可否を変更できる", () => {
+		const existing = OffkaiAnswer.reconstruct({
+			id: AnswerIdSchema.parse("00000000-0000-4000-8000-000000000017"),
+			eventId,
+			userId,
+			commitmentAnswers: [{ questionId, answer: "no" }],
+			preferenceAnswers: [],
+		});
+		const params = answerParams({
+			answer: "yes",
+			deadline: new Date(Date.now() - 60_000),
+			capacity: 1,
+			numberOfPeople: 1,
+		});
+		expect(() => existing.forceEdit(params)).not.toThrow();
+	});
+
+	it("強制作成でも回答構造の検証は行う", () => {
+		const params = answerParams({
+			answer: "yes",
+			deadline: new Date(Date.now() - 60_000),
+			capacity: 1,
+			numberOfPeople: 1,
+		});
+		params.answer.commitmentAnswers = [];
+		expect(() => OffkaiAnswer.forceCreate({ ...params, userId })).toThrowError(
+			"アンケートと回答が対応していません。",
+		);
+	});
+});

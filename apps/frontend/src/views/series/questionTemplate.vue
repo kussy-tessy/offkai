@@ -79,6 +79,7 @@
     const payload: UpdateSeriesQuestionTemplateRequest = {
       preferenceQuestions: questionStore.questions.value.map((question) => ({
         question: question.question,
+        description: question.description,
         required: question.required,
         answerTemplate:
           question.answerTemplate.type === "free"

@@ -53,6 +53,7 @@ export class OffkaiEventRepository {
 			id: string;
 			question: string;
 			questionShort: string;
+			description?: string;
 			required?: boolean;
 			answerTemplate: PreferenceQuestion["answerTemplate"];
 		};
@@ -91,6 +92,7 @@ export class OffkaiEventRepository {
 					id: q.id as QuestionId,
 					question: q.question,
 					questionShort: q.questionShort,
+					description: q.description ?? "",
 					required: q.required ?? false,
 					answerTemplate: q.answerTemplate,
 				}),

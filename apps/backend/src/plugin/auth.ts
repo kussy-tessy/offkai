@@ -36,7 +36,7 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app) => 
 
   const isProd = process.env.NODE_ENV === "production";
 
-  const cookieName = "offkai_token"; // access token
+  const COOKIE_NAME = "offkai_token"; // access token
 
   // Cookie options
   const baseCookieOptions = {
@@ -55,14 +55,14 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app) => 
     },
 
     setAuthCookie: (reply: FastifyReply, token: string) => {
-      reply.setCookie(cookieName, token, {
+      reply.setCookie(COOKIE_NAME, token, {
         ...baseCookieOptions,
         maxAge: 60 * 60 * 24, // 24h
       });
     },
 
     clearAuthCookie: (reply: FastifyReply) => {
-      reply.clearCookie(cookieName, { ...baseCookieOptions });
+      reply.clearCookie(COOKIE_NAME, { ...baseCookieOptions });
     },
 
     requireUser: async (request: FastifyRequest, _reply: FastifyReply) => {
@@ -74,7 +74,7 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app) => 
     },
 
     resolveOptionalUser: async (request: FastifyRequest) => {
-      if (!request.cookies[cookieName]) return null;
+      if (!request.cookies[COOKIE_NAME]) return null;
       try {
         await request.jwtVerify();
         return request.user.userId;

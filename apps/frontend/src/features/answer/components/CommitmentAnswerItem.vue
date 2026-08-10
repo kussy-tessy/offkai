@@ -8,6 +8,10 @@
       <span v-if="question.required" class="ml-2 text-xs text-red-600">必須</span>
     </div>
 
+    <p v-if="question.description" class="mt-2 text-sm text-gray-600 whitespace-pre-line">
+      {{ question.description }}
+    </p>
+
     <!-- 補足情報 -->
     <div class="grid grid-cols-2 gap-4 mt-3 p-3 bg-white rounded border border-gray-200 text-sm">
       <div>
@@ -45,6 +49,9 @@
       </span>
       <span v-else-if="question.disableReason === 'deadlinePassed'">
         締切を過ぎているため回答対象外です
+      </span>
+      <span v-else-if="question.disableReason === 'applicationNotStarted'">
+        現在は募集期間外のため、参加可否を変更できません
       </span>
     </div>
 

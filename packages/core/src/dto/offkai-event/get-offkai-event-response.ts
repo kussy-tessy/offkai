@@ -35,6 +35,7 @@ export const OffkaiEventResponseSchema = z.object({
 		z.object({
 			id: QuestionIdSchema,
 			question: z.string(),
+			description: z.string(),
 			required: z.boolean().default(false),
 			answerTemplate: z.object({
 				type: z.enum(["free", "choices", "choicesIncludingOther"]),

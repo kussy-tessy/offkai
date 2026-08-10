@@ -13,7 +13,17 @@
       <table class="min-w-max border-collapse text-sm">
         <thead><tr class="bg-slate-100"><th v-for="h in headers" :key="h.key" class="whitespace-nowrap border border-slate-300 px-2 py-1 text-left">{{ h.label }}</th></tr></thead>
         <tbody><tr v-for="participant in data.participants" :key="participant.userId">
-          <td v-for="cell in rowCells(participant)" :key="cell.key" class="whitespace-nowrap border border-slate-300 px-2 py-1 align-top">{{ cell.value }}</td>
+          <td v-for="cell in rowCells(participant)" :key="cell.key" class="whitespace-nowrap border border-slate-300 px-2 py-1 align-top">
+            <template v-if="cell.key === 'name'">
+              <span>{{ cell.value }}</span>
+              <button v-if="data.canEditAnswers" type="button" class="ml-2 text-sky-600 hover:text-sky-800"
+                :aria-label="`${participant.displayName}さんの回答を編集`"
+                @click="router.push(`/offkai/${eventId}/answers/${participant.userId}/edit`)">
+                <FontAwesomeIcon :icon="faPenToSquare" />
+              </button>
+            </template>
+            <template v-else>{{ cell.value }}</template>
+          </td>
         </tr></tbody>
       </table>
     </div>
@@ -21,12 +31,16 @@
 </template>
 <script setup lang="ts">
 import type { GetParticipantAnswerTableResponse, Unbrand } from "@offkai/core";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import MyButton from "@/common/components/MyButton.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 const { eventId } = defineProps<{eventId:string}>();
 type Data=Unbrand<GetParticipantAnswerTableResponse>; type Participant=Data["participants"][number];
 const {get}=useApi(); const {success,error}=useToast();
+const router=useRouter();
 const loading=ref(true), loadError=ref(""); const data=ref<Data|null>(null);
 const headers=computed(()=>data.value ? [
  {key:"name",label:"名前"},

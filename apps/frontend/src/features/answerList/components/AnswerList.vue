@@ -88,12 +88,7 @@
               class="group odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
               <td class="sticky left-0 z-10 group-hover:bg-sky-50 border-b border-slate-100 p-1 text-left w-24 truncate font-medium text-slate-700 text-sm [box-shadow:1px_0_0_0_theme(colors.slate.100)]"
                 :class="rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'">
-                <span>{{ row.user.displayName }}</span>
-				<button v-if="data.viewer.permissions.canEditAnswers" type="button" class="ml-2 text-sky-600 hover:text-sky-800"
-                  :aria-label="`${row.user.displayName}さんの回答を編集`"
-                  @click="router.push(`/offkai/${data.offkai.id}/answers/${row.user.id}/edit`)">
-                  <FontAwesomeIcon :icon="faPenToSquare" />
-                </button>
+				<span>{{ row.user.displayName }}</span>
               </td>
               <td v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 border-b border-slate-100 p-0 text-lg">
                 <span v-if="row.commitmentAnswers[q.id] === 'yes'">
@@ -155,11 +150,10 @@
 
 <script setup lang="ts">
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
-  import { faPenToSquare, faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
+  import { faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import { format, formatWithSeconds, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
-  import { useRouter } from "vue-router";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
 	import { usePreferenceAnswerBadge } from "@/features/answerList/composables/usePreferenceAnswerBadge";
   import OffkaiDetailHeader from "@/features/offkaiDetail/components/OffkaiDetailHeader.vue";
@@ -168,7 +162,6 @@
     data: Unbrand<OffkaiDetail>;
   }>();
 
-  const router = useRouter();
 	const hasAnswered = computed(() => data.viewer.isParticipant);
 	const loginRoute = computed(() => ({
 		path: "/login",

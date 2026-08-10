@@ -15,10 +15,10 @@
 
       <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
         :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages"
-        :allow-empty="isOwnerEdit" />
+        :allow-empty="canBypassParticipationRestrictions" />
       <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
         :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages"
-        :allow-empty="isOwnerEdit" />
+        :allow-empty="canBypassParticipationRestrictions" />
       <BringingKigurumiAnswers v-if="formData.askBringingKigurumi" :options="kigurumiOptions"
         :selected="bringingKigurumis" :can-manage="!isOwnerEdit" :on-change="updateBringingKigurumis"
         :on-options-change="updateKigurumiOptions" />
@@ -74,6 +74,9 @@
   const submitting = ref(false);
 
   const formData = ref<Unbrand<GetMyAnswerFormResponse> | null>(null);
+  const canBypassParticipationRestrictions = computed(
+    () => formData.value?.canBypassParticipationRestrictions === true,
+  );
 
   const { answers: commitmentAnswers, updateAnswer: updateCommitmentAnswer } =
     useCommitmentAnswers([]);
@@ -92,7 +95,7 @@
 
   const commitmentValidationMessages = computed<Record<string, string>>(() => {
     const data = formData.value;
-    if (!data || isOwnerEdit.value) return {};
+    if (!data) return {};
 
     const messages: Record<string, string> = {};
     for (const question of data.commitmentQuestions) {
@@ -107,7 +110,7 @@
 
   const preferenceValidationMessages = computed<Record<string, string>>(() => {
     const data = formData.value;
-    if (!data || isOwnerEdit.value) return {};
+    if (!data) return {};
 
     const messages: Record<string, string> = {};
     for (const question of data.preferenceQuestions) {
@@ -207,7 +210,9 @@
       await put(saveApiPath.value, payload);
       success(isOwnerEdit.value ? "回答を更新しました。" : "回答を送信しました。")
       await router.push(
-        isOwnerEdit.value ? `/offkai/${props.id}/detail` : "/dashboard",
+        isOwnerEdit.value
+          ? `/offkai/${props.id}/participants/answers`
+          : "/dashboard",
       );
     } catch (cause) {
       const message = getApiErrorMessage(cause, "回答の送信に失敗しました。");

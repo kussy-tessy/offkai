@@ -22,5 +22,8 @@ export async function getParticipantAnswerTable(
 			"FORBIDDEN",
 			"このオフ会の回答表を見る権限がありません。",
 		);
-	return new ParticipantAnswerTableRepository().getPage(event.id);
+	return new ParticipantAnswerTableRepository().getPage(
+		event.id,
+		hasSeriesRole(role, "owner"),
+	);
 }

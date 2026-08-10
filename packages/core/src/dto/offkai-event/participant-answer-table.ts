@@ -14,6 +14,7 @@ export type GetParticipantAnswerTableRequest = z.infer<
 	typeof GetParticipantAnswerTableRequestSchema
 >;
 export const GetParticipantAnswerTableResponseSchema = z.object({
+	canEditAnswers: z.boolean(),
 	commitmentQuestions: z.array(QuestionSchema),
 	preferenceQuestions: z.array(QuestionSchema),
 	askBringingKigurumi: z.boolean(),

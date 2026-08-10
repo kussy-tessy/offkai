@@ -51,6 +51,7 @@ export async function createOffkaiEvent(input: CreateOffkaiEventRequest, userId:
 				input.preferenceQuestions.map((question) => ({
 					question: question.question,
 					questionShort: question.question,
+					description: question.description,
 					required: question.required,
 					answerTemplate: question.answerTemplate,
 				}))),

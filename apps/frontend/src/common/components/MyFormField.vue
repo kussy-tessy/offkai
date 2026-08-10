@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-4">
+  <div>
     <label v-if="label" :for="fieldId" class="block text-sm font-medium mb-2">
       <span class="text-teal-800">{{ label }}</span>
       <span v-if="required" class="text-red-500 ml-1">*</span>

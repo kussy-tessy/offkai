@@ -10,7 +10,10 @@ import { OffkaiAnswer } from "@offkai/core";
 import { AppError, runBusinessRule } from "../app-error";
 import { hasSeriesRole } from "../authorization/event-access";
 import { OffkaiAnswerRepository, OffkaiEventRepository } from "../repository";
-import { rejectBeforeApplicationStart } from "../usecase/offkai-event/answer-command/application-start";
+import {
+	rejectBeforeApplicationStart,
+	rejectNewParticipationBeforeApplicationStart,
+} from "../usecase/offkai-event/answer-command/application-start";
 
 export class OffkaiAnswerService {
 	async prepareAnswerEntity(
@@ -26,15 +29,23 @@ export class OffkaiAnswerService {
 			userId,
 			event.seriesId,
 		);
-		if (!hasSeriesRole(seriesRole, "owner")) {
-			rejectBeforeApplicationStart(event);
-		}
-
 		const answerRepository = new OffkaiAnswerRepository();
 		const existing = await answerRepository.findByEventAndUser(
 			event.id,
 			userId,
 		);
+		const isOwner = hasSeriesRole(seriesRole, "owner");
+		if (!isOwner) {
+			if (existing) {
+				rejectNewParticipationBeforeApplicationStart(
+					event,
+					existing.commitmentAnswers,
+					commitmentAnswers,
+				);
+			} else {
+				rejectBeforeApplicationStart(event);
+			}
+		}
 
 		const commitmentQuestionsWithCount =
 			await this.getCommitmentQuestionsWithCount(
@@ -57,11 +68,16 @@ export class OffkaiAnswerService {
 			},
 		};
 
-		return runBusinessRule(() =>
-			existing
+		return runBusinessRule(() => {
+			if (isOwner) {
+				return existing
+					? existing.forceEdit(params)
+					: OffkaiAnswer.forceCreate({ ...params, userId });
+			}
+			return existing
 				? existing.edit(params)
-				: OffkaiAnswer.create({ ...params, userId }),
-		);
+				: OffkaiAnswer.create({ ...params, userId });
+		});
 	}
 
 	async prepareForcedEditAnswerEntity(
@@ -84,22 +100,24 @@ export class OffkaiAnswerService {
 			);
 		}
 
-		return runBusinessRule(() => existing.forceEdit({
-			answer: {
-				commitmentAnswers,
-				preferenceAnswers,
-				bringingKigurumis: event.askBringingKigurumi ? bringingKigurumis : [],
-			},
-			question: {
-				eventId: event.id,
-				askBringingKigurumi: event.askBringingKigurumi,
-				commitmentQuestions: event.commitmentQuestions.map((question) => ({
-					...question,
-					numberOfPeople: 0,
-				})),
-				preferenceQuestions: event.preferenceQuestions,
-			},
-		}));
+		return runBusinessRule(() =>
+			existing.forceEdit({
+				answer: {
+					commitmentAnswers,
+					preferenceAnswers,
+					bringingKigurumis: event.askBringingKigurumi ? bringingKigurumis : [],
+				},
+				question: {
+					eventId: event.id,
+					askBringingKigurumi: event.askBringingKigurumi,
+					commitmentQuestions: event.commitmentQuestions.map((question) => ({
+						...question,
+						numberOfPeople: 0,
+					})),
+					preferenceQuestions: event.preferenceQuestions,
+				},
+			}),
+		);
 	}
 
 	private async getCommitmentQuestionsWithCount(

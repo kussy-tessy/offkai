@@ -20,13 +20,16 @@ export type OffkaiEventHeader = z.infer<typeof OffkaiEventHeaderSchema>;
 export const CommitmentQuestionWithAnswerSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
+	description: z.string(),
 	required: z.boolean().default(false),
 	deadline: ISODateTimeStringSchema,
 	capacity: z.number().nonnegative(),
 	currentCount: z.number().nonnegative(),
 	canSelectYes: z.boolean(),
 	canEdit: z.boolean(),
-	disableReason: z.enum(["deadlinePassed", "capacityFull"]).optional(),
+	disableReason: z
+		.enum(["deadlinePassed", "capacityFull", "applicationNotStarted"])
+		.optional(),
 	userAnswer: z.enum(["yes", "no"]).nullable(),
 });
 export type CommitmentQuestionWithAnswer = z.infer<
@@ -36,6 +39,7 @@ export type CommitmentQuestionWithAnswer = z.infer<
 export const PreferenceQuestionWithAnswerSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
+	description: z.string(),
 	required: z.boolean().default(false),
 	answerTemplate: z.object({
 		type: z.enum(["free", "choices", "choicesIncludingOther"]),
@@ -48,6 +52,7 @@ export type PreferenceQuestionWithAnswer = z.infer<
 >;
 
 export const GetMyAnswerFormResponseSchema = z.object({
+	canBypassParticipationRestrictions: z.boolean().default(false),
 	event: OffkaiEventHeaderSchema,
 	respondent: z
 		.object({

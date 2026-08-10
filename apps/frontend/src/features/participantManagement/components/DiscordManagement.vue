@@ -3,7 +3,7 @@
     <div class="space-y-3 rounded-xl border border-teal-100 bg-teal-50/50 p-4">
       <h2 class="text-lg font-semibold text-slate-800">Discordロール設定</h2>
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <MyFormField v-slot="{ id }" class="mb-0 min-w-0 flex-1" label="参加者に割り当てるロール">
+        <MyFormField v-slot="{ id }" class="min-w-0 flex-1" label="参加者に割り当てるロール">
           <MySelectBox
             :id="id"
             :value="selectedRoleId"
@@ -13,6 +13,7 @@
           />
         </MyFormField>
         <MyButton
+          class="border border-transparent"
           :disabled="loadingConfiguration || savingConfiguration || selectedRoleId === currentRoleId"
           :loading="savingConfiguration"
           @click="saveConfiguration"

@@ -8,6 +8,10 @@
       <span v-if="question.required" class="ml-2 text-xs text-red-600">必須</span>
     </div>
 
+    <p v-if="question.description" class="mt-2 text-sm text-gray-600 whitespace-pre-line">
+      {{ question.description }}
+    </p>
+
     <!-- free -->
     <div v-if="question.answerTemplate.type === 'free'">
       <MyTextbox type="text" :value="value" :on-change="v => onChange(v)" />

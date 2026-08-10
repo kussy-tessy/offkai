@@ -30,7 +30,14 @@
     askBringingKigurumi: false,
 		overviewVisibility: "AUTHENTICATED",
 		participantsVisibility: "AUTHENTICATED",
-    commitmentQuestions: [],
+    commitmentQuestions: [{
+      question: "",
+      questionShort: "",
+      description: "",
+      deadline: "",
+      capacity: null,
+      required: false,
+    }],
     preferenceQuestions: [],
   });
 

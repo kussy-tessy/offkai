@@ -71,6 +71,20 @@ export class OffkaiAnswer {
 		);
 	}
 
+	static forceCreate(params: Params & { userId: UserId }) {
+		OffkaiAnswer.validateAnswerStructure(params);
+		OffkaiAnswer.validateRequiredAnswers(params);
+
+		return new OffkaiAnswer(
+			uuidv7() as AnswerId,
+			params.question.eventId,
+			params.userId,
+			params.answer.commitmentAnswers,
+			params.answer.preferenceAnswers,
+			params.answer.bringingKigurumis,
+		);
+	}
+
 	edit(params: Params) {
 		OffkaiAnswer.validateAnswerStructure(params);
 		OffkaiAnswer.validateAnswerBusinessRules(params, this.commitmentAnswers);
@@ -87,6 +101,7 @@ export class OffkaiAnswer {
 
 	forceEdit(params: Params) {
 		OffkaiAnswer.validateAnswerStructure(params);
+		OffkaiAnswer.validateRequiredAnswers(params);
 
 		return new OffkaiAnswer(
 			this.id,
@@ -149,8 +164,7 @@ export class OffkaiAnswer {
 			}
 
 			const isAnswerUnavailable =
-				now > question.deadline ||
-				question.numberOfPeople >= question.capacity;
+				now > question.deadline || question.numberOfPeople >= question.capacity;
 
 			if (question.required && answer.answer === null && !isAnswerUnavailable) {
 				throw new Error("必須の参加可否を選択してください。");
@@ -203,6 +217,28 @@ export class OffkaiAnswer {
 
 			const value = (answer.answer ?? "").trim();
 			if (value.length === 0) {
+				throw new Error("必須のアンケートを入力してください。");
+			}
+		}
+	}
+
+	private static validateRequiredAnswers(params: Params) {
+		for (const question of params.question.commitmentQuestions) {
+			if (!question.required) continue;
+			const answer = params.answer.commitmentAnswers.find(
+				(a) => a.questionId === question.id,
+			);
+			if (answer?.answer === null) {
+				throw new Error("必須の参加可否を選択してください。");
+			}
+		}
+
+		for (const question of params.question.preferenceQuestions) {
+			if (!question.required) continue;
+			const answer = params.answer.preferenceAnswers.find(
+				(a) => a.questionId === question.id,
+			);
+			if ((answer?.answer ?? "").trim().length === 0) {
 				throw new Error("必須のアンケートを入力してください。");
 			}
 		}

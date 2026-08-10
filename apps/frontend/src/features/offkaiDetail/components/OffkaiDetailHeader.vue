@@ -24,11 +24,7 @@
 
     <MyBadge :icon="faCalendar">開催日：{{ formatPeriodWithDay(offkai.eventPeriod) }}</MyBadge>
     <p v-if="offkai.description" class="text-left text-gray-600 whitespace-pre-line">
-      <template v-for="(part, index) in descriptionParts" :key="index">
-        <a v-if="part.url" :href="part.url" target="_blank" rel="noopener noreferrer"
-          class="break-all text-sky-600 underline hover:text-sky-700">{{ part.text }}</a><template v-else>{{ part.text
-          }}</template>
-      </template>
+      <LinkifiedText :text="offkai.description" />
     </p>
     <hr class="border-teal-200 border-t-2" />
 
@@ -57,6 +53,7 @@
   import { formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
+  import LinkifiedText from "@/common/components/LinkifiedText.vue";
   import MyBadge from "@/common/components/MyBadge.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
@@ -78,35 +75,10 @@
   const canAnswer = computed(
     () =>
       props.permissions.canEditAnswers ||
+      props.hasAnswered ||
       Date.now() >= new Date(props.offkai.applicationStartDate).getTime(),
   );
 
-  const descriptionParts = computed(() => {
-    const parts: Array<{ text: string; url?: string }> = [];
-    const urlPattern = /https?:\/\/[^\s<>"'）】」』、。！？]+/gu;
-    let previousEnd = 0;
-
-    for (const match of props.offkai.description.matchAll(urlPattern)) {
-      const start = match.index;
-      if (start > previousEnd) {
-        parts.push({ text: props.offkai.description.slice(previousEnd, start) });
-      }
-
-      const candidate = match[0];
-      const url = candidate.replace(/[.,!?;:]+$/u, "");
-      parts.push({ text: url, url });
-
-      const trailingText = candidate.slice(url.length);
-      if (trailingText) parts.push({ text: trailingText });
-      previousEnd = start + candidate.length;
-    }
-
-    if (previousEnd < props.offkai.description.length) {
-      parts.push({ text: props.offkai.description.slice(previousEnd) });
-    }
-
-    return parts;
-  });
   const canManageParticipants = computed(
     () =>
       props.permissions.canManageDiscordRole ||
