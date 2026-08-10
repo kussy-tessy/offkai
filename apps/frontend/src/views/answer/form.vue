@@ -14,11 +14,9 @@
       </div>
 
       <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
-        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages"
-        :allow-empty="canBypassParticipationRestrictions" />
+        :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" />
       <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
-        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages"
-        :allow-empty="canBypassParticipationRestrictions" />
+        :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages" />
       <BringingKigurumiAnswers v-if="formData.askBringingKigurumi" :options="kigurumiOptions"
         :selected="bringingKigurumis" :can-manage="!isOwnerEdit" :on-change="updateBringingKigurumis"
         :on-options-change="updateKigurumiOptions" />
@@ -74,9 +72,6 @@
   const submitting = ref(false);
 
   const formData = ref<Unbrand<GetMyAnswerFormResponse> | null>(null);
-  const canBypassParticipationRestrictions = computed(
-    () => formData.value?.canBypassParticipationRestrictions === true,
-  );
 
   const { answers: commitmentAnswers, updateAnswer: updateCommitmentAnswer } =
     useCommitmentAnswers([]);
