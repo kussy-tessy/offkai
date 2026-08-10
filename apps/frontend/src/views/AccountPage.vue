@@ -53,67 +53,89 @@
     <section>
       <h2 class="mb-4 text-lg font-semibold text-slate-900">Discord</h2>
       <div class="max-w-md space-y-4">
-        <form class="space-y-4" @submit.prevent="handleDiscordSubmit">
-          <MyFormField label="Discord ID">
-            <template #default="{ id }">
-              <MyTextBox
-                :id="id"
-                :value="discordUsername"
-                :on-change="v => discordUsername = v"
-                :error="discordUsernameError"
-              />
-            </template>
-          </MyFormField>
-          <div class="flex flex-wrap gap-2">
-            <MyButton type="submit" color="secondary" :loading="savingDiscord" :disabled="savingDiscord">
-              Discord IDを保存する
-            </MyButton>
-            <MyButton
-              type="button"
-              color="red"
-              variant="ghost"
-              :loading="disconnectingDiscord"
-              :disabled="disconnectingDiscord || !user?.discordUsername"
-              @click="handleDiscordDisconnect"
-            >
-              解除する
-            </MyButton>
+        <div v-if="user?.discordUserId" class="flex items-center gap-3">
+          <img
+            v-if="discordProfile?.avatarUrl"
+            :src="discordProfile.avatarUrl"
+            :alt="`${discordProfile.username}のDiscord Avatar`"
+            class="h-12 w-12 rounded-full bg-slate-100 object-cover"
+            referrerpolicy="no-referrer"
+          />
+          <div
+            v-else
+            class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-lg font-semibold text-slate-600"
+            aria-hidden="true"
+          >
+            {{ (discordProfile?.username ?? user.discordUsername ?? "?").slice(0, 1).toUpperCase() }}
           </div>
-        </form>
+          <p class="text-sm text-slate-700">
+            <span class="font-medium">{{ discordProfile?.username ?? user.discordUsername }}</span>
+            と連携済みです。
+          </p>
+        </div>
+        <p v-else class="text-sm text-slate-600">
+          Discordで本人確認し、アカウントを連携します。メッセージの閲覧や送信は行いません。
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <MyButton
+            v-if="!user?.discordUserId"
+            type="button"
+            color="secondary"
+            :loading="connectingDiscord"
+            :disabled="connectingDiscord"
+            @click="handleDiscordConnect"
+          >
+            Discordと連携する
+          </MyButton>
+          <MyButton
+            v-else
+            type="button"
+            color="red"
+            variant="ghost"
+            :loading="disconnectingDiscord"
+            :disabled="disconnectingDiscord"
+            @click="handleDiscordDisconnect"
+          >
+            解除する
+          </MyButton>
+        </div>
       </div>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from "vue";
+  import type { GetMyDiscordProfileResponse } from "@offkai/core";
+  import { onMounted, ref, watch } from "vue";
+  import { useRoute, useRouter } from "vue-router";
   import MyBackLink from "@/common/components/MyBackLink.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyFormField from "@/common/components/MyFormField.vue";
   import MyTextBox from "@/common/components/MyTextbox.vue";
-  import { getApiErrorMessage, useAuth, useToast } from "@/common/composables";
+  import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables";
 
   const { user, updateName, changePassword, connectDiscord, disconnectDiscord } = useAuth();
+  const { get } = useApi();
   const { success, error } = useToast();
+  const route = useRoute();
+  const router = useRouter();
 
   const name = ref(user.value?.name ?? "");
   const currentPassword = ref("");
   const newPassword = ref("");
-  const discordUsername = ref(user.value?.discordUsername ?? "");
 
   const nameError = ref("");
   const currentPasswordError = ref("");
   const newPasswordError = ref("");
-  const discordUsernameError = ref("");
 
   const savingName = ref(false);
   const savingPassword = ref(false);
-  const savingDiscord = ref(false);
+  const connectingDiscord = ref(false);
   const disconnectingDiscord = ref(false);
+  const discordProfile = ref<GetMyDiscordProfileResponse | null>(null);
 
   watch(user, (value) => {
     name.value = value?.name ?? "";
-    discordUsername.value = value?.discordUsername ?? "";
   });
 
   const handleNameSubmit = async () => {
@@ -157,36 +179,16 @@
     }
   };
 
-  const handleDiscordSubmit = async () => {
-    discordUsernameError.value = "";
-    const trimmedDiscordUsername = discordUsername.value.trim();
-
-    if (!trimmedDiscordUsername) {
-      discordUsernameError.value = "必須です";
-      return;
-    }
-
-    if (!/^(?!.*\.\.)[a-z0-9._]{2,32}$/.test(trimmedDiscordUsername)) {
-      discordUsernameError.value = "2〜32文字の英小文字・数字・_・.で入力してください";
-      return;
-    }
-
-    savingDiscord.value = true;
-    try {
-      await connectDiscord(trimmedDiscordUsername);
-      success("Discord IDを保存しました。");
-    } catch (cause) {
-      error(getApiErrorMessage(cause, "Discord IDの保存に失敗しました。"));
-    } finally {
-      savingDiscord.value = false;
-    }
+  const handleDiscordConnect = () => {
+    connectingDiscord.value = true;
+    connectDiscord();
   };
 
   const handleDiscordDisconnect = async () => {
     disconnectingDiscord.value = true;
     try {
       await disconnectDiscord();
-      discordUsername.value = "";
+      discordProfile.value = null;
       success("Discord連携を解除しました。");
     } catch (cause) {
       error(getApiErrorMessage(cause, "Discord連携の解除に失敗しました。"));
@@ -194,4 +196,34 @@
       disconnectingDiscord.value = false;
     }
   };
+
+  onMounted(() => {
+    if (user.value?.discordUserId) {
+      void get<GetMyDiscordProfileResponse>("/me/discord-profile")
+        .then((profile) => {
+          discordProfile.value = profile;
+        })
+        .catch(() => {
+          discordProfile.value = null;
+        });
+    }
+
+    const result = typeof route.query.discord === "string" ? route.query.discord : null;
+    if (!result) return;
+
+    if (result === "connected") {
+      success("Discordアカウントを連携しました。");
+    } else if (result === "cancelled") {
+      error("Discord連携がキャンセルされました。");
+    } else if (result === "conflict") {
+      error("このDiscordアカウントは別のユーザーに連携されています。");
+    } else if (result === "invalid_state") {
+      error("Discord連携の有効期限が切れました。もう一度お試しください。");
+    } else {
+      error("Discord連携に失敗しました。もう一度お試しください。");
+    }
+
+    const { discord: _discord, ...query } = route.query;
+    void router.replace({ query });
+  });
 </script>

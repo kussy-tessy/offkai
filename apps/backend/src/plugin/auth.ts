@@ -12,7 +12,7 @@ declare module "fastify" {
       setAuthCookie: (reply: FastifyReply, token: string) => void;
       clearAuthCookie: (reply: FastifyReply) => void;
       requireUser: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-			resolveOptionalUser: (request: FastifyRequest) => Promise<UserId | null>;
+      resolveOptionalUser: (request: FastifyRequest) => Promise<UserId | null>;
     };
   }
 }
@@ -73,15 +73,15 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (app) => 
       }
     },
 
-		resolveOptionalUser: async (request: FastifyRequest) => {
-			if (!request.cookies[cookieName]) return null;
-			try {
-				await request.jwtVerify();
-				return request.user.userId;
-			} catch {
-				return null;
-			}
-		},
+    resolveOptionalUser: async (request: FastifyRequest) => {
+      if (!request.cookies[cookieName]) return null;
+      try {
+        await request.jwtVerify();
+        return request.user.userId;
+      } catch {
+        return null;
+      }
+    },
   });
 };
 

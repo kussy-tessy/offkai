@@ -1,7 +1,7 @@
 import {
-	isVisibilityAtLeastAsRestricted,
 	type CreateOffkaiEventRequest,
 	type EventVisibility,
+	isVisibilityAtLeastAsRestricted,
 	type Unbrand,
 } from "@offkai/core";
 import {

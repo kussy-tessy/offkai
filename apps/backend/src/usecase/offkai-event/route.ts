@@ -10,6 +10,7 @@ import {
 	GetOffkaiEventDiscordRoleMembersRequestSchema,
 	GetOffkaiEventRequestSchema,
 	GetParticipantPaymentsRequestSchema,
+	GetParticipantAnswerTableRequestSchema,
 	ManageOffkaiAnswerRequestSchema,
 	SaveOffkaiAnswerRequestSchema,
 	UpdateOffkaiEventDiscordRoleRequestSchema,
@@ -36,7 +37,11 @@ import { deleteOffkaiEvent } from "./event-management/delete-offkai-event.usecas
 import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.usecase";
 import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
 import { updateOffkaiEvent } from "./event-management/update-offkai-event.usecase";
-import { getParticipantPayments, updateParticipantPayment } from "./participant-payment";
+import {
+	getParticipantPayments,
+	updateParticipantPayment,
+} from "./participant-payment";
+import { getParticipantAnswerTable } from "./participant-answer-table";
 import {
 	createPhotoShare,
 	deletePhotoShare,
@@ -69,13 +74,17 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return reply.code(201).send(created);
 	});
 
-	app.put("/:eventId/photo-shares/:photoShareId", requireUser, async (request) => {
-		const userId = UserIdSchema.parse(request.user.userId);
-		const params = request.params as Record<string, unknown>;
-		const body = request.body as Record<string, unknown>;
-		const input = UpdatePhotoShareRequestSchema.parse({ ...body, ...params });
-		return updatePhotoShare(input, userId);
-	});
+	app.put(
+		"/:eventId/photo-shares/:photoShareId",
+		requireUser,
+		async (request) => {
+			const userId = UserIdSchema.parse(request.user.userId);
+			const params = request.params as Record<string, unknown>;
+			const body = request.body as Record<string, unknown>;
+			const input = UpdatePhotoShareRequestSchema.parse({ ...body, ...params });
+			return updatePhotoShare(input, userId);
+		},
+	);
 
 	app.delete(
 		"/:eventId/photo-shares/:photoShareId",
@@ -116,13 +125,17 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 
 	app.get("/:eventId/discord-role-members", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
-		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(request.params);
+		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(
+			request.params,
+		);
 		return getOffkaiEventDiscordRoleMembers(input, userId);
 	});
 
 	app.get("/:eventId/discord-role", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
-		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(request.params);
+		const input = GetOffkaiEventDiscordRoleMembersRequestSchema.parse(
+			request.params,
+		);
 		return getOffkaiEventDiscordRole(input, userId);
 	});
 
@@ -137,22 +150,37 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return updateOffkaiEventDiscordRole(input, userId);
 	});
 
-	app.put("/:eventId/discord-role-members/:userId", requireUser, async (request) => {
-		const ownerUserId = UserIdSchema.parse(request.user.userId);
-		const params = request.params as Record<string, unknown>;
-		const body = request.body as Record<string, unknown>;
-		const input = UpdateOffkaiEventDiscordRoleMemberRequestSchema.parse({
-			...body,
-			...params,
-		});
-		return updateOffkaiEventDiscordRoleMember(input, ownerUserId);
-	});
+	app.put(
+		"/:eventId/discord-role-members/:userId",
+		requireUser,
+		async (request) => {
+			const ownerUserId = UserIdSchema.parse(request.user.userId);
+			const params = request.params as Record<string, unknown>;
+			const body = request.body as Record<string, unknown>;
+			const input = UpdateOffkaiEventDiscordRoleMemberRequestSchema.parse({
+				...body,
+				...params,
+			});
+			return updateOffkaiEventDiscordRoleMember(input, ownerUserId);
+		},
+	);
 
 	app.get("/:eventId/participant-payments", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const input = GetParticipantPaymentsRequestSchema.parse(request.params);
 		return getParticipantPayments(input, userId);
 	});
+	app.get(
+		"/:eventId/participant-answer-table",
+		requireUser,
+		async (request) => {
+			const userId = UserIdSchema.parse(request.user.userId);
+			const input = GetParticipantAnswerTableRequestSchema.parse(
+				request.params,
+			);
+			return getParticipantAnswerTable(input, userId);
+		},
+	);
 
 	app.put(
 		"/:eventId/participant-payments/:userId",

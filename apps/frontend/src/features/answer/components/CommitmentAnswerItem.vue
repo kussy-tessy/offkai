@@ -16,7 +16,7 @@
       </div>
       <div>
         <span class="font-semibold text-gray-700">定員</span>
-        <p class="text-gray-600">{{ question.currentCount }} / {{ question.capacity }}名</p>
+        <p class="text-gray-600">{{ question.currentCount + (value === "yes" ? 1 : 0) }} / {{ question.capacity }}名</p>
       </div>
     </div>
 
@@ -41,10 +41,10 @@
     <!-- 無効理由 -->
     <div v-if="question.disableReason" class="text-sm text-red-600 mt-3">
       <span v-if="question.disableReason === 'capacityFull'">
-        定員に達しています
+        定員に達しているため回答対象外です
       </span>
       <span v-else-if="question.disableReason === 'deadlinePassed'">
-        締切を過ぎています
+        締切を過ぎているため回答対象外です
       </span>
     </div>
 

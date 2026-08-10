@@ -12,16 +12,6 @@
       <MyTextBox :id="id" :value="name" :on-change="v => name = v" :error="errors.name" placeholder="例: くっしー" />
     </MyFormField>
 
-    <MyFormField v-slot="{ id }" label="Discord ID">
-      <MyTextBox
-        :id="id"
-        :value="discordUsername"
-        :on-change="v => discordUsername = v"
-        :error="errors.discordUsername"
-        placeholder="例: kussy_tessy"
-      />
-    </MyFormField>
-
     <MyFormField v-slot="{ id }" label="パスワード">
       <MyTextBox :id="id" type="password" :value="password" :on-change="v => password = v" :error="errors.password" />
     </MyFormField>
@@ -33,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-  import { DiscordUsernameSchema, UserLoginIdSchema } from "@offkai/core"
+  import { UserLoginIdSchema } from "@offkai/core"
   import { ref } from "vue"
   import MyButton from "@/common/components/MyButton.vue"
   import MyFormField from "@/common/components/MyFormField.vue"
@@ -45,13 +35,11 @@
       loginId: string
       name: string
       password: string
-      discordUsername: string | null
     }) => Promise<void>
   }>()
 
   const loginId = ref("")
   const name = ref("")
-  const discordUsername = ref("")
   const password = ref("")
 
   const { errors, reset, hasAny } = useFieldErrorsComposable()
@@ -64,7 +52,6 @@
     reset()
 
     const normalizedLoginId = loginId.value.trim()
-    const normalizedDiscordUsername = discordUsername.value.trim().toLowerCase()
 
     if (isEmpty(normalizedLoginId)) {
       errors.value.loginId = "必須です"
@@ -72,12 +59,6 @@
       errors.value.loginId = "半角英数字と_のみ使用できます"
     }
     if (isEmpty(name)) errors.value.name = "必須です"
-    if (
-      normalizedDiscordUsername &&
-      !DiscordUsernameSchema.safeParse(normalizedDiscordUsername).success
-    ) {
-      errors.value.discordUsername = "2〜32文字の英小文字・数字・_・.で入力してください"
-    }
     if (isEmpty(password)) errors.value.password = "必須です"
 
     return !hasAny()
@@ -89,7 +70,6 @@
       loginId: loginId.value.trim(),
       name: name.value,
       password: password.value,
-      discordUsername: discordUsername.value.trim().toLowerCase() || null,
     })
   }
 </script>

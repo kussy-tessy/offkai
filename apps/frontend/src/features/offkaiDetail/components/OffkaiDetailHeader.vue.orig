@@ -2,21 +2,36 @@
   <header class="pb-8 mb-8 text-center space-y-4">
     <div class="flex flex-wrap items-start justify-center gap-2">
       <h1 class="text-4xl font-bold tracking-tight">{{ offkai.title }}</h1>
-      <div v-if="showManagementActions" class="flex items-center gap-1">
-        <button v-if="permissions.canEditEvent" type="button"
+		<div v-if="showManagementActions" class="flex items-center gap-1">
+        <button
+			v-if="permissions.canEditEvent"
+          type="button"
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-          aria-label="オフ会を編集する" title="オフ会を編集する" @click="router.push(`/offkai/${offkai.id}/edit`)">
+          aria-label="オフ会を編集する"
+          title="オフ会を編集する"
+          @click="router.push(`/offkai/${offkai.id}/edit`)"
+        >
           <FontAwesomeIcon :icon="faPenToSquare" class="text-lg" />
         </button>
-        <button v-if="canManageParticipants" type="button"
+        <button
+			v-if="canManageParticipants"
+          type="button"
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-          aria-label="参加者を管理する" title="参加者を管理する" @click="router.push(managementRoute)">
+          aria-label="参加者を管理する"
+          title="参加者を管理する"
+          @click="router.push(managementRoute)"
+        >
           <FontAwesomeIcon :icon="faUserGear" class="text-lg" />
         </button>
-        <span v-if="permissions.canDeleteEvent" class="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
-        <button v-if="permissions.canDeleteEvent" type="button"
+			<span v-if="permissions.canDeleteEvent" class="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
+        <button
+			v-if="permissions.canDeleteEvent"
+          type="button"
           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          aria-label="オフ会を削除する" title="オフ会を削除する" @click="confirmDeleteOpen = true">
+          aria-label="オフ会を削除する"
+          title="オフ会を削除する"
+          @click="confirmDeleteOpen = true"
+        >
           <FontAwesomeIcon :icon="faTrash" class="text-lg" />
         </button>
       </div>
@@ -25,16 +40,24 @@
     <MyBadge :icon="faCalendar">開催日：{{ formatPeriodWithDay(offkai.eventPeriod) }}</MyBadge>
     <p v-if="offkai.description" class="text-left text-gray-600 whitespace-pre-line">
       <template v-for="(part, index) in descriptionParts" :key="index">
-        <a v-if="part.url" :href="part.url" target="_blank" rel="noopener noreferrer"
-          class="break-all text-sky-600 underline hover:text-sky-700">{{ part.text }}</a><template v-else>{{ part.text
-          }}</template>
+        <a
+          v-if="part.url"
+          :href="part.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="break-all text-sky-600 underline hover:text-sky-700"
+        >{{ part.text }}</a><template v-else>{{ part.text }}</template>
       </template>
     </p>
     <hr class="border-teal-200 border-t-2" />
 
     <div class="flex flex-col items-center gap-2 pt-2">
-      <MyButton :color="canAnswer ? 'primary' : 'gray'" size="lg" :disabled="!canAnswer"
-        @click="router.push(`/offkai/${offkai.id}/join`)">
+      <MyButton
+        :color="canAnswer ? 'primary' : 'gray'"
+        size="lg"
+        :disabled="!canAnswer"
+        @click="router.push(`/offkai/${offkai.id}/join`)"
+      >
         <FontAwesomeIcon :icon="faPen" class="mr-2" />
         {{ hasAnswered ? '参加表明を編集する' : '参加する' }}
       </MyButton>
@@ -43,12 +66,23 @@
       </p>
     </div>
 
-    <RouteTabs v-if="hasAnswered" class="pt-2" label="オフ会コンテンツ" :items="contentTabs" />
+    <RouteTabs
+      v-if="hasAnswered"
+      class="pt-2"
+      label="オフ会コンテンツ"
+      :items="contentTabs"
+    />
   </header>
 
-  <MyConfirmDialog v-model:open="confirmDeleteOpen" title="オフ会を削除しますか？"
-    :message="`「${offkai.title}」を削除します。回答データも削除され、この操作は元に戻せません。`" confirm-label="削除する" confirm-color="red"
-    :loading="deleting" @confirm="deleteEvent" />
+  <MyConfirmDialog
+    v-model:open="confirmDeleteOpen"
+    title="オフ会を削除しますか？"
+    :message="`「${offkai.title}」を削除します。回答データも削除され、この操作は元に戻せません。`"
+    confirm-label="削除する"
+    confirm-color="red"
+    :loading="deleting"
+    @confirm="deleteEvent"
+  />
 </template>
 
 <script setup lang="ts">
@@ -60,14 +94,14 @@
   import MyBadge from "@/common/components/MyBadge.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
-  import type { RouteTabItem } from "@/common/components/RouteTabs.types";
   import RouteTabs from "@/common/components/RouteTabs.vue";
+  import type { RouteTabItem } from "@/common/components/RouteTabs.types";
   import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 
   const props = defineProps<{
     offkai: Unbrand<OffkaiDetail>["offkai"];
     hasAnswered: boolean;
-    permissions: Unbrand<OffkaiDetail>["viewer"]["permissions"];
+		permissions: Unbrand<OffkaiDetail>["viewer"]["permissions"];
   }>();
 
   const router = useRouter();
@@ -80,49 +114,22 @@
       props.permissions.canEditAnswers ||
       Date.now() >= new Date(props.offkai.applicationStartDate).getTime(),
   );
-
-  const descriptionParts = computed(() => {
-    const parts: Array<{ text: string; url?: string }> = [];
-    const urlPattern = /https?:\/\/[^\s<>"'）】」』、。！？]+/gu;
-    let previousEnd = 0;
-
-    for (const match of props.offkai.description.matchAll(urlPattern)) {
-      const start = match.index;
-      if (start > previousEnd) {
-        parts.push({ text: props.offkai.description.slice(previousEnd, start) });
-      }
-
-      const candidate = match[0];
-      const url = candidate.replace(/[.,!?;:]+$/u, "");
-      parts.push({ text: url, url });
-
-      const trailingText = candidate.slice(url.length);
-      if (trailingText) parts.push({ text: trailingText });
-      previousEnd = start + candidate.length;
-    }
-
-    if (previousEnd < props.offkai.description.length) {
-      parts.push({ text: props.offkai.description.slice(previousEnd) });
-    }
-
-    return parts;
-  });
-  const canManageParticipants = computed(
-    () =>
-      props.permissions.canManageDiscordRole ||
-      props.permissions.canManagePayments,
-  );
-  const managementRoute = computed(() =>
-    props.permissions.canManageDiscordRole
-      ? `/offkai/${props.offkai.id}/participants/discord`
-      : `/offkai/${props.offkai.id}/participants/payments`,
-  );
-  const showManagementActions = computed(
-    () =>
-      props.permissions.canEditEvent ||
-      props.permissions.canDeleteEvent ||
-      canManageParticipants.value,
-  );
+	const canManageParticipants = computed(
+		() =>
+			props.permissions.canManageDiscordRole ||
+			props.permissions.canManagePayments,
+	);
+	const managementRoute = computed(() =>
+		props.permissions.canManageDiscordRole
+			? `/offkai/${props.offkai.id}/participants/discord`
+			: `/offkai/${props.offkai.id}/participants/payments`,
+	);
+	const showManagementActions = computed(
+		() =>
+			props.permissions.canEditEvent ||
+			props.permissions.canDeleteEvent ||
+			canManageParticipants.value,
+	);
 
   const contentTabs = computed<RouteTabItem[]>(() => [
     {

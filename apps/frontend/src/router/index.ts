@@ -8,12 +8,14 @@ import CreateAnswer from "../views/answer/form.vue";
 import AnswerList from "../views/answerList/detail.vue";
 import Account from "../views/AccountPage.vue";
 import Dashboard from "../views/dashboard/Dashboard.vue";
+import DiscordOnboarding from "../views/DiscordOnboardingPage.vue";
 import Login from "../views/LoginPage.vue";
 import CreateOffkaiEvent from "../views/offkaiEvent/create.vue";
 import EditOffkaiEvent from "../views/offkaiEvent/edit.vue";
 import Participants from "../views/offkaiEvent/participants.vue";
 import DiscordManagement from "@/features/participantManagement/components/DiscordManagement.vue";
 import PaymentManagement from "@/features/participantManagement/components/PaymentManagement.vue";
+import ParticipantAnswerTable from "@/features/participantManagement/components/ParticipantAnswerTable.vue";
 import PhotoShare from "../views/photoShare/index.vue";
 import QuestionTemplate from "../views/series/questionTemplate.vue";
 import Signup from "../views/SignupPage.vue";
@@ -22,6 +24,11 @@ const requiresAuth = { meta: { requiresAuth: true } };
 const routes = [
 	{ path: "/dashboard", component: Dashboard, ...requiresAuth },
 	{ path: "/account", component: Account, ...requiresAuth },
+	{
+		path: "/onboarding/discord",
+		component: DiscordOnboarding,
+		...requiresAuth,
+	},
 	{
 		path: "/offkai/create",
 		component: CreateOffkaiEvent,
@@ -81,6 +88,13 @@ const routes = [
 			{
 				path: "payments",
 				component: PaymentManagement,
+				props: (route: RouteLocationGeneric) => ({
+					eventId: String(route.params.id),
+				}),
+			},
+			{
+				path: "answers",
+				component: ParticipantAnswerTable,
 				props: (route: RouteLocationGeneric) => ({
 					eventId: String(route.params.id),
 				}),

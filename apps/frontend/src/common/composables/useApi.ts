@@ -5,6 +5,10 @@ import { ref } from "vue";
 const BASE_URL =
 	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
+export function getApiBaseUrl(): string {
+	return new URL(BASE_URL, window.location.origin).toString().replace(/\/$/, "");
+}
+
 let apiClient: AxiosInstance | null = null;
 
 // axiosインスタンス生成（シングルトン）

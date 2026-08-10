@@ -1,6 +1,6 @@
 import type { GetMeResponse } from "@offkai/core";
 import { ref } from "vue";
-import { useApi } from "./useApi";
+import { getApiBaseUrl, useApi } from "./useApi";
 
 const user = ref<GetMeResponse | null>(null);
 const loading = ref(false);
@@ -40,10 +40,10 @@ async function changePassword(currentPassword: string, newPassword: string) {
   await put("/me/password", { currentPassword, newPassword });
 }
 
-async function connectDiscord(discordUsername: string) {
-  const { put } = useApi();
-  const data = await put<GetMeResponse>("/me/discord", { discordUsername });
-  user.value = data;
+function connectDiscord(flow?: "onboarding") {
+  const url = new URL(`${getApiBaseUrl()}/auth/discord`);
+  if (flow) url.searchParams.set("flow", flow);
+  window.location.assign(url);
 }
 
 async function disconnectDiscord() {

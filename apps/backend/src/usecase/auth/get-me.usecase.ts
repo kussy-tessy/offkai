@@ -1,5 +1,5 @@
 import type { GetMeResponse, Unbrand, UserId } from "@offkai/core";
-import { UserRepository, prisma } from "../../repository";
+import { prisma, UserRepository } from "../../repository";
 
 export async function getMe(
 	userId: UserId,

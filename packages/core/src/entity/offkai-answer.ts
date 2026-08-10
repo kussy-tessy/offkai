@@ -148,7 +148,11 @@ export class OffkaiAnswer {
 				throw new Error("予期せぬエラー");
 			}
 
-			if (question.required && answer.answer === null) {
+			const isAnswerUnavailable =
+				now > question.deadline ||
+				question.numberOfPeople >= question.capacity;
+
+			if (question.required && answer.answer === null && !isAnswerUnavailable) {
 				throw new Error("必須の参加可否を選択してください。");
 			}
 
@@ -156,6 +160,21 @@ export class OffkaiAnswer {
 			const isAnswerChanged = nowAnswer
 				? nowAnswer.answer !== answer.answer
 				: true;
+			const decreasesParticipation =
+				nowAnswer?.answer === "yes" && answer.answer !== "yes";
+
+			if (!nowAnswer && answer.answer !== null && now > question.deadline) {
+				throw new Error("締切を過ぎています。");
+			}
+
+			if (
+				isAnswerChanged &&
+				question.numberOfPeople >= question.capacity &&
+				!decreasesParticipation &&
+				(nowAnswer !== undefined || answer.answer !== null)
+			) {
+				throw new Error("締切人数に到達しました。");
+			}
 
 			if (nowAnswer && isAnswerChanged && now > question.deadline) {
 				throw new Error("締切を過ぎてから参加可否は変更できません。");

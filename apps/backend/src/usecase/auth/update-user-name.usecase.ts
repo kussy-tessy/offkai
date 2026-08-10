@@ -1,4 +1,4 @@
-import { type GetMeResponse, type Unbrand, type UserId } from "@offkai/core";
+import type { GetMeResponse, Unbrand, UserId } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../app-error";
 import { UserRepository } from "../../repository";
 import { getMe } from "./get-me.usecase";

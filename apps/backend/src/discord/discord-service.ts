@@ -14,6 +14,11 @@ export type DiscordRole = {
   position: number;
 };
 
+export type DiscordUserProfile = {
+  username: string;
+  avatarUrl: string;
+};
+
 type DiscordServiceOptions = {
   client?: DiscordClient;
   token?: string;
@@ -46,6 +51,10 @@ export class DiscordService {
 		string,
 		{ value: boolean; expiresAt: number }
 	>();
+  private readonly userProfileCache = new Map<
+    Snowflake,
+    { value: DiscordUserProfile | null; expiresAt: number }
+  >();
   private readyPromise?: Promise<DiscordClient<true>>;
 
   constructor(options: DiscordServiceOptions = {}) {
@@ -179,6 +188,33 @@ export class DiscordService {
     );
 
     return result;
+  }
+
+  async getUserProfile(userId: Snowflake): Promise<DiscordUserProfile | null> {
+    const cached = this.userProfileCache.get(userId);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    if (cached) this.userProfileCache.delete(userId);
+
+    const client = await this.getReadyClient();
+    const user = await this.withDiscordErrorHandling(async () => {
+      try {
+        return await client.users.fetch(userId);
+      } catch (cause) {
+        if (getDiscordErrorCode(cause) === 10013) return null;
+        throw cause;
+      }
+    });
+    const value = user
+      ? {
+          username: user.username,
+          avatarUrl: user.displayAvatarURL({ size: 128 }),
+        }
+      : null;
+    this.userProfileCache.set(userId, {
+      value,
+      expiresAt: Date.now() + this.cacheTtlMs,
+    });
+    return value;
   }
 
   async memberHasRole(input: DiscordGuildMemberRoleInput): Promise<boolean> {

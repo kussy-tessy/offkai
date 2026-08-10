@@ -18,7 +18,7 @@
     try {
       await post("/auth/register", payload)
       await fetchMe()
-      router.push("/")
+      router.push("/onboarding/discord")
     } catch (cause) {
       error(getApiErrorMessage(cause, "ユーザー登録に失敗しました。"))
     }

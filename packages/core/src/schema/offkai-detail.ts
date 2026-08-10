@@ -5,6 +5,7 @@ import {
 	ISODateTimeStringSchema,
 	LocalDatePeriodStringSchema,
 	OffkaiEventIdSchema,
+	PreferenceQuestionAnswerFormSchema,
 	QuestionIdSchema,
 	SeriesRoleSchema,
 	UserIdSchema,
@@ -26,6 +27,7 @@ export type CommitmentQuestionHeader = z.infer<
 export const PreferenceQuestionHeaderSchema = z.object({
 	id: QuestionIdSchema,
 	question: z.string(),
+	answerTemplate: PreferenceQuestionAnswerFormSchema,
 	required: z.boolean().default(false),
 });
 export type PreferenceQuestionHeader = z.infer<

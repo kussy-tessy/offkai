@@ -1,5 +1,25 @@
 <template>
   <main class="space-y-6">
+    <section
+      v-if="user && !user.discordUserId"
+      class="flex flex-col gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-slate-700 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <p class="font-medium text-slate-900">Discordアカウントを連携しませんか？</p>
+        <p class="mt-1 text-sm">
+          参加しているサーバー限定のオフ会情報を閲覧できるようになります。
+        </p>
+      </div>
+      <MyButton
+        class="shrink-0"
+        color="secondary"
+        size="sm"
+        @click="router.push('/onboarding/discord')"
+      >
+        Discordと連携する
+      </MyButton>
+    </section>
+
     <div v-if="user?.isSeriesOwner" class="flex justify-end">
       <div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
         <MyButton color="secondary" variant="ghost" @click="router.push('/series/question-template')">
@@ -19,7 +39,7 @@
         参加または作成したオフ会がまだありません。
       </div>
       <div v-else class="space-y-3">
-        <OffkaiEventCard v-for="event in events" :key="event.id" :event="event" @deleted="removeEvent" />
+        <OffkaiEventCard v-for="event in events" :key="event.id" :event="event" />
       </div>
     </section>
   </main>
@@ -35,8 +55,4 @@
   const router = useRouter();
   const { user } = useAuth();
   const { events, loading } = useMyOffkaiEvents();
-
-  const removeEvent = (eventId: string) => {
-    events.value = events.value.filter((event) => event.id !== eventId);
-  };
 </script>

@@ -1,7 +1,6 @@
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
 	ChangePasswordRequestSchema,
-	ConnectDiscordRequestSchema,
-	DiscordUsernameSchema,
 	UpdateUserNameRequestSchema,
 	User,
 	UserLoginIdSchema,
@@ -9,21 +8,30 @@ import {
 import bcrypt from "bcryptjs";
 import type { FastifyPluginAsync } from "fastify";
 import { AppError, runBusinessRule } from "../app-error";
-import { discordService } from "../discord";
-import { OffkaiEventRepository, UserRepository } from "../repository";
+import { UserRepository } from "../repository";
 import {
 	changePassword,
 	connectDiscord,
 	disconnectDiscord,
+	getMyDiscordProfile,
 	getMe,
 	updateUserName,
 } from "../usecase";
+import {
+	getDiscordAuthorizationUrl,
+	getDiscordOAuthFrontendUrl,
+	getDiscordUserFromCode,
+} from "./discord-oauth";
+
+const DISCORD_OAUTH_STATE_COOKIE = "offkai_discord_oauth_state";
+const DISCORD_OAUTH_FLOW_COOKIE = "offkai_discord_oauth_flow";
+const DISCORD_OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
+type DiscordOAuthFlow = "account" | "onboarding";
 
 type RegisterBody = {
 	loginId: string;
 	password: string;
 	name: string;
-	discordUsername?: string | null;
 };
 
 type LoginBody = {
@@ -38,21 +46,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		const loginId = (body.loginId ?? "").trim();
 		const password = body.password ?? "";
 		const name = (body.name ?? "").trim();
-		const discordUsernameInput = (body.discordUsername ?? "")
-			.trim()
-			.toLowerCase();
-		const discordUsername = discordUsernameInput || null;
 		const loginIdValidation = UserLoginIdSchema.safeParse(loginId);
-		const discordUsernameValidation = discordUsername
-			? DiscordUsernameSchema.safeParse(discordUsername)
-			: null;
 
-		if (
-			!loginIdValidation.success ||
-			!password ||
-			!name ||
-			(discordUsernameValidation && !discordUsernameValidation.success)
-		) {
+		if (!loginIdValidation.success || !password || !name) {
 			throw new AppError(
 				"VALIDATION_ERROR",
 				"ログインID、表示名、パスワードを入力してください。",
@@ -70,30 +66,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			);
 		}
 
-		const discordUserId = discordUsername
-			? await resolveDiscordUserId(discordUsername)
-			: null;
-
-		if (discordUsername && !discordUserId) {
-			throw new AppError(
-				"VALIDATION_ERROR",
-				"Discordメンバーが見つかりません。",
-			);
-		}
-
-		if (discordUsername) {
-			const [linkedUserByUsername, linkedUserByUserId] = await Promise.all([
-				repository.findByDiscordUsername(discordUsername),
-				discordUserId ? repository.findByDiscordUserId(discordUserId) : null,
-			]);
-			if (linkedUserByUsername || linkedUserByUserId) {
-				throw new AppError(
-					"CONFLICT",
-					"このDiscordアカウントはすでに連携されています。",
-				);
-			}
-		}
-
 		const passwordHash = await bcrypt.hash(password, 12);
 		const user = await repository.create(
 			runBusinessRule(() =>
@@ -101,8 +73,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 					loginId: normalizedLoginId,
 					name,
 					passwordHash,
-					discordUsername,
-					discordUserId,
+					discordUsername: null,
+					discordUserId: null,
 				}),
 			),
 		);
@@ -192,14 +164,84 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		},
 	);
 
-	app.put(
-		"/me/discord",
+	app.get(
+		"/auth/discord",
 		{ preHandler: app.auth.requireUser },
-		async (request) => {
-			const userId = request.user.userId;
-			const body = ConnectDiscordRequestSchema.parse(request.body);
+		async (request, reply) => {
+			const query = request.query as { flow?: unknown };
+			const flow: DiscordOAuthFlow =
+				query.flow === "onboarding" ? "onboarding" : "account";
+			const state = randomBytes(32).toString("base64url");
+			const cookieOptions = {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "lax" as const,
+				path: "/api/auth/discord",
+				maxAge: DISCORD_OAUTH_STATE_MAX_AGE_SECONDS,
+			};
+			reply.setCookie(DISCORD_OAUTH_STATE_COOKIE, state, cookieOptions);
+			reply.setCookie(DISCORD_OAUTH_FLOW_COOKIE, flow, cookieOptions);
+			return reply.redirect(getDiscordAuthorizationUrl(state));
+		},
+	);
 
-			return connectDiscord(userId, body.discordUsername);
+	app.get(
+		"/auth/discord/callback",
+		{ preHandler: app.auth.requireUser },
+		async (request, reply) => {
+			const frontendUrl = getDiscordOAuthFrontendUrl();
+			const query = request.query as {
+				code?: unknown;
+				state?: unknown;
+				error?: unknown;
+			};
+			const cookieState = request.cookies[DISCORD_OAUTH_STATE_COOKIE];
+			const flow: DiscordOAuthFlow =
+				request.cookies[DISCORD_OAUTH_FLOW_COOKIE] === "onboarding"
+					? "onboarding"
+					: "account";
+			const returnedState =
+				typeof query.state === "string" ? query.state : undefined;
+
+			reply.clearCookie(DISCORD_OAUTH_STATE_COOKIE, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "lax",
+				path: "/api/auth/discord",
+			});
+			reply.clearCookie(DISCORD_OAUTH_FLOW_COOKIE, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "lax",
+				path: "/api/auth/discord",
+			});
+
+			if (!statesMatch(cookieState, returnedState)) {
+				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "invalid_state"));
+			}
+
+			if (typeof query.error === "string") {
+				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "cancelled"));
+			}
+			if (typeof query.code !== "string" || query.code.length === 0) {
+				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+			}
+
+			try {
+				const discordUser = await getDiscordUserFromCode(query.code);
+				await connectDiscord(
+					request.user.userId,
+					discordUser.username,
+					discordUser.id,
+				);
+				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "connected"));
+			} catch (error) {
+				if (error instanceof AppError && error.code === "CONFLICT") {
+					return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "conflict"));
+				}
+				request.log.error({ err: error }, "Discord OAuth callback failed");
+				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+			}
 		},
 	);
 
@@ -211,6 +253,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
 			return disconnectDiscord(userId);
 		},
+	);
+
+	app.get(
+		"/me/discord-profile",
+		{ preHandler: app.auth.requireUser },
+		async (request) => getMyDiscordProfile(request.user.userId),
 	);
 };
 
@@ -225,25 +273,27 @@ function toAuthUserResponse(user: User) {
 	};
 }
 
-async function resolveDiscordUserId(
-	discordUsername: string,
-): Promise<string | null> {
-	const guildIds =
-		await new OffkaiEventRepository().findAllSeriesDiscordGuildIds();
-	if (guildIds.length === 0) {
-		throw new AppError(
-			"VALIDATION_ERROR",
-			"DiscordギルドIDが設定されていません。",
-		);
-	}
+function statesMatch(
+	cookieState: string | undefined,
+	returnedState: string | undefined,
+): boolean {
+	if (!cookieState || !returnedState) return false;
+	const cookieBuffer = Buffer.from(cookieState);
+	const returnedBuffer = Buffer.from(returnedState);
+	return (
+		cookieBuffer.length === returnedBuffer.length &&
+		timingSafeEqual(cookieBuffer, returnedBuffer)
+	);
+}
 
-	for (const guildId of guildIds) {
-		const discordUserId = await discordService.getUserIdByUsername({
-			guildId,
-			username: discordUsername,
-		});
-		if (discordUserId) return discordUserId;
+function discordOAuthResultUrl(
+	frontendUrl: string,
+	flow: DiscordOAuthFlow,
+	result: string,
+): string {
+	if (flow === "onboarding") {
+		const path = result === "connected" ? "/dashboard" : "/onboarding/discord";
+		return `${frontendUrl}${path}?discord=${encodeURIComponent(result)}`;
 	}
-
-	return null;
+	return `${frontendUrl}/account?discord=${encodeURIComponent(result)}`;
 }

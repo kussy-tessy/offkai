@@ -96,7 +96,7 @@
 
     const messages: Record<string, string> = {};
     for (const question of data.commitmentQuestions) {
-      if (!question.required) continue;
+      if (!question.required || !question.canEdit) continue;
       const answer = commitmentAnswers.value[question.id];
       if (answer !== "yes" && answer !== "no") {
         messages[question.id] = "選択してください";

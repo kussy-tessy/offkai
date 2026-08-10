@@ -20,6 +20,8 @@ services:
       - .:/workspace
     ports: ["3000:3000", "5173:5173"]
     depends_on: [db]
+    security_opt:
+      - seccomp=unconfined
 
 volumes:
   db_data:

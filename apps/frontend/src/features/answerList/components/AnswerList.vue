@@ -24,7 +24,16 @@
 			</RouterLink>
 			してください。
 		</p>
-		<p v-else class="mt-1 text-sm">{{ participantsAccessMessage }}</p>
+		<p v-else class="mt-1 text-sm">
+			{{ participantsAccessMessage }}
+			<RouterLink
+				v-if="data.participantsAccess.reason === 'DISCORD_NOT_CONNECTED'"
+				to="/onboarding/discord"
+				class="ml-1 font-medium text-teal-700 underline underline-offset-2 hover:text-teal-800"
+			>
+				Discordと連携する
+			</RouterLink>
+		</p>
 	</section>
 
   <div v-else-if="data.answers.length === 0" class="py-16 flex flex-col items-center gap-3 text-gray-400">
@@ -127,7 +136,14 @@
             class="odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
             <td class="border-b border-slate-100 p-2 w-24 font-medium text-slate-700">{{ row.user.displayName }}</td>
             <td class="border-b border-slate-100 p-2 text-gray-700 whitespace-pre-line">
-              {{ selectedAnswer(row) }}
+              <span
+				v-if="isChoiceQuestion && selectedAnswer(row) !== '―'"
+				class="inline-flex rounded-full border px-2.5 py-1 text-sm font-medium leading-tight"
+				:class="badgeClass(selectedAnswer(row))"
+			  >
+				{{ selectedAnswer(row) }}
+			  </span>
+			  <template v-else>{{ selectedAnswer(row) }}</template>
             </td>
           </tr>
         </tbody>
@@ -145,6 +161,7 @@
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
+	import { usePreferenceAnswerBadge } from "@/features/answerList/composables/usePreferenceAnswerBadge";
   import OffkaiDetailHeader from "@/features/offkaiDetail/components/OffkaiDetailHeader.vue";
 
   const { data } = defineProps<{
@@ -191,6 +208,15 @@
     }
     return options;
   });
+	const selectedPreferenceQuestion = computed(
+		() =>
+			data.preferenceQuestions?.find(
+				(question) => question.id === selectedPreferenceId.value,
+			) ?? null,
+	);
+	const { isChoiceQuestion, badgeClass } = usePreferenceAnswerBadge(
+		selectedPreferenceQuestion,
+	);
 
 	const selectedAnswer = (
 		row: NonNullable<Unbrand<OffkaiDetail>["answers"]>[number],

@@ -1,4 +1,8 @@
-import { faComments, faCoins } from "@fortawesome/free-solid-svg-icons";
+import {
+	faComments,
+	faCoins,
+	faTable,
+} from "@fortawesome/free-solid-svg-icons";
 import type { RouteTabItem } from "@/common/components/RouteTabs.types";
 
 export const createParticipantManagementTabs = (
@@ -13,5 +17,10 @@ export const createParticipantManagementTabs = (
 		label: "金銭管理",
 		to: `/offkai/${eventId}/participants/payments`,
 		icon: faCoins,
+	},
+	{
+		label: "回答表",
+		to: `/offkai/${eventId}/participants/answers`,
+		icon: faTable,
 	},
 ];

@@ -63,20 +63,22 @@ export async function getAnswerForm(
 
 	const commitmentQuestions = event.commitmentQuestions.map((q) => {
 		const currentCount = counts.get(q.id) ?? 0;
-		const deadlinePassed = isPassed(now, q.deadline);
-		const canEdit = bypassBusinessRules || !deadlinePassed;
-		const hasCapacity = currentCount < q.capacity;
-		const canSelectYes = bypassBusinessRules || (canEdit && hasCapacity);
-		const disableReason = bypassBusinessRules
-			? undefined
-			: !canEdit
-				? ("deadlinePassed" as const)
-				: !hasCapacity
-					? ("capacityFull" as const)
-					: undefined;
 		const userAnswer =
 			myAnswer?.commitmentAnswers.find((a) => a.questionId === q.id)?.answer ??
 			null;
+		const deadlinePassed = isPassed(now, q.deadline);
+		const hasCapacity = currentCount < q.capacity;
+		const canEdit =
+			bypassBusinessRules ||
+			(!deadlinePassed && (hasCapacity || userAnswer === "yes"));
+		const canSelectYes = canEdit;
+		const disableReason = bypassBusinessRules
+			? undefined
+			: deadlinePassed
+				? ("deadlinePassed" as const)
+				: !hasCapacity && userAnswer !== "yes"
+					? ("capacityFull" as const)
+					: undefined;
 
 		return {
 			id: q.id,
