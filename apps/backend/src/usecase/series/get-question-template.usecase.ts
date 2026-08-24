@@ -1,7 +1,4 @@
-import type {
-	GetSeriesQuestionTemplateResponse,
-	UserId,
-} from "@offkai/core";
+import type { GetSeriesQuestionTemplateResponse, UserId } from "@offkai/core";
 import { SeriesRepository } from "../../repository";
 
 export async function getQuestionTemplate(

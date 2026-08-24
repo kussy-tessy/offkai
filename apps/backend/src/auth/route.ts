@@ -1,32 +1,42 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
 	ChangePasswordRequestSchema,
+	SetPasswordCredentialRequestSchema,
 	UpdateUserNameRequestSchema,
 	User,
+	type UserId,
 	UserLoginIdSchema,
 } from "@offkai/core";
 import bcrypt from "bcryptjs";
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { AppError, runBusinessRule } from "../app-error";
-import { UserRepository } from "../repository";
+import { AuthSessionRepository, UserRepository } from "../repository";
 import {
 	changePassword,
 	connectDiscord,
 	disconnectDiscord,
-	getMyDiscordProfile,
 	getMe,
+	getMyDiscordProfile,
 	updateUserName,
 } from "../usecase";
+import { setPasswordCredential } from "../usecase/auth/set-password-credential.usecase";
 import {
 	getDiscordAuthorizationUrl,
 	getDiscordOAuthFrontendUrl,
 	getDiscordUserFromCode,
 } from "./discord-oauth";
+import {
+	createRefreshToken,
+	hashRefreshToken,
+	parseRefreshToken,
+	refreshTokenExpiresAt,
+} from "./refresh-token";
 
 const DISCORD_OAUTH_STATE_COOKIE = "offkai_discord_oauth_state";
 const DISCORD_OAUTH_FLOW_COOKIE = "offkai_discord_oauth_flow";
+const REFRESH_TOKEN_COOKIE = "offkai_refresh_token";
 const DISCORD_OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
-type DiscordOAuthFlow = "account" | "onboarding";
+type DiscordOAuthFlow = "login" | "account" | "onboarding";
 
 type RegisterBody = {
 	loginId: string;
@@ -40,6 +50,21 @@ type LoginBody = {
 };
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
+	const authSessions = new AuthSessionRepository();
+
+	async function issueSession(userId: UserId, reply: FastifyReply) {
+		const refreshToken = createRefreshToken();
+		await authSessions.create({
+			id: refreshToken.sessionId,
+			userId,
+			refreshTokenHash: hashRefreshToken(refreshToken.secret),
+			expiresAt: refreshTokenExpiresAt(),
+		});
+		const accessToken = await app.auth.signAccessToken({ userId });
+		app.auth.setAuthCookie(reply, accessToken);
+		app.auth.setRefreshCookie(reply, refreshToken.value);
+	}
+
 	app.post("/auth/register", async (request, reply) => {
 		const body = (request.body ?? {}) as RegisterBody;
 
@@ -69,18 +94,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		const passwordHash = await bcrypt.hash(password, 12);
 		const user = await repository.create(
 			runBusinessRule(() =>
-				User.create({
+				User.createWithPassword({
 					loginId: normalizedLoginId,
 					name,
 					passwordHash,
-					discordUsername: null,
-					discordUserId: null,
 				}),
 			),
 		);
 
-		const token = await app.auth.signAccessToken({ userId: user.id });
-		app.auth.setAuthCookie(reply, token);
+		await issueSession(user.id, reply);
 
 		reply.send({ ok: true, user: toAuthUserResponse(user) });
 	});
@@ -108,7 +130,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			);
 		}
 
-		const ok = await bcrypt.compare(password, user.passwordHash);
+		const ok = user.passwordHash
+			? await bcrypt.compare(password, user.passwordHash)
+			: false;
 		if (!ok) {
 			throw new AppError(
 				"INVALID_CREDENTIALS",
@@ -116,14 +140,49 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			);
 		}
 
-		const token = await app.auth.signAccessToken({ userId: user.id });
-		app.auth.setAuthCookie(reply, token);
+		await issueSession(user.id, reply);
 
 		reply.send({ ok: true, user: toAuthUserResponse(user) });
 	});
 
-	app.post("/auth/logout", async (_request, reply) => {
+	app.post("/auth/refresh", async (request, reply) => {
+		assertTrustedOrigin(request.headers.origin);
+		const currentToken = parseRefreshToken(
+			request.cookies[REFRESH_TOKEN_COOKIE],
+		);
+		if (!currentToken) return rejectRefresh();
+
+		const userId = await authSessions.findUserId(currentToken.sessionId);
+		if (!userId) return rejectRefresh();
+
+		const nextToken = createRefreshToken(currentToken.sessionId);
+		const rotated = await authSessions.rotate({
+			id: currentToken.sessionId,
+			currentTokenHash: hashRefreshToken(currentToken.secret),
+			newTokenHash: hashRefreshToken(nextToken.secret),
+			expiresAt: refreshTokenExpiresAt(),
+		});
+		if (!rotated) return rejectRefresh();
+
+		const accessToken = await app.auth.signAccessToken({ userId });
+		app.auth.setAuthCookie(reply, accessToken);
+		app.auth.setRefreshCookie(reply, nextToken.value);
+		return reply.send({ ok: true });
+	});
+
+	app.post("/auth/logout", async (request, reply) => {
+		assertTrustedOrigin(request.headers.origin);
+		const refreshToken = parseRefreshToken(
+			request.cookies[REFRESH_TOKEN_COOKIE],
+		);
+		if (refreshToken) {
+			await authSessions.revoke(
+				refreshToken.sessionId,
+				hashRefreshToken(refreshToken.secret),
+			);
+		}
 		app.auth.clearAuthCookie(reply);
+		app.auth.clearRefreshCookie(reply);
 		reply.send({ ok: true });
 	});
 
@@ -155,95 +214,144 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	app.put(
 		"/me/password",
 		{ preHandler: app.auth.requireUser },
-		async (request) => {
+		async (request, reply) => {
 			const userId = request.user.userId;
 			const body = ChangePasswordRequestSchema.parse(request.body);
 
 			await changePassword(userId, body.currentPassword, body.newPassword);
+			await authSessions.revokeAllForUser(userId);
+			app.auth.clearAuthCookie(reply);
+			app.auth.clearRefreshCookie(reply);
 			return { ok: true };
 		},
 	);
 
-	app.get(
-		"/auth/discord",
+	app.post(
+		"/me/password-credential",
 		{ preHandler: app.auth.requireUser },
-		async (request, reply) => {
-			const query = request.query as { flow?: unknown };
-			const flow: DiscordOAuthFlow =
-				query.flow === "onboarding" ? "onboarding" : "account";
-			const state = randomBytes(32).toString("base64url");
-			const cookieOptions = {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax" as const,
-				path: "/api/auth/discord",
-				maxAge: DISCORD_OAUTH_STATE_MAX_AGE_SECONDS,
-			};
-			reply.setCookie(DISCORD_OAUTH_STATE_COOKIE, state, cookieOptions);
-			reply.setCookie(DISCORD_OAUTH_FLOW_COOKIE, flow, cookieOptions);
-			return reply.redirect(getDiscordAuthorizationUrl(state));
+		async (request) => {
+			const body = SetPasswordCredentialRequestSchema.parse(request.body);
+			return setPasswordCredential(
+				request.user.userId,
+				body.loginId.toLowerCase(),
+				body.password,
+			);
 		},
 	);
 
-	app.get(
-		"/auth/discord/callback",
-		{ preHandler: app.auth.requireUser },
-		async (request, reply) => {
-			const frontendUrl = getDiscordOAuthFrontendUrl();
-			const query = request.query as {
-				code?: unknown;
-				state?: unknown;
-				error?: unknown;
-			};
-			const cookieState = request.cookies[DISCORD_OAUTH_STATE_COOKIE];
-			const flow: DiscordOAuthFlow =
-				request.cookies[DISCORD_OAUTH_FLOW_COOKIE] === "onboarding"
-					? "onboarding"
-					: "account";
-			const returnedState =
-				typeof query.state === "string" ? query.state : undefined;
+	app.get("/auth/discord", async (request, reply) => {
+		const query = request.query as { flow?: unknown };
+		const flow: DiscordOAuthFlow =
+			query.flow === "onboarding"
+				? "onboarding"
+				: query.flow === "account"
+					? "account"
+					: "login";
+		if (flow !== "login" && !(await app.auth.resolveOptionalUser(request))) {
+			throw new AppError("UNAUTHORIZED", "ログインが必要です。");
+		}
+		const state = randomBytes(32).toString("base64url");
+		const cookieOptions = {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax" as const,
+			path: "/api/auth/discord",
+			maxAge: DISCORD_OAUTH_STATE_MAX_AGE_SECONDS,
+		};
+		reply.setCookie(DISCORD_OAUTH_STATE_COOKIE, state, cookieOptions);
+		reply.setCookie(DISCORD_OAUTH_FLOW_COOKIE, flow, cookieOptions);
+		return reply.redirect(getDiscordAuthorizationUrl(state));
+	});
 
-			reply.clearCookie(DISCORD_OAUTH_STATE_COOKIE, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax",
-				path: "/api/auth/discord",
-			});
-			reply.clearCookie(DISCORD_OAUTH_FLOW_COOKIE, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax",
-				path: "/api/auth/discord",
-			});
+	app.get("/auth/discord/callback", async (request, reply) => {
+		const frontendUrl = getDiscordOAuthFrontendUrl();
+		const query = request.query as {
+			code?: unknown;
+			state?: unknown;
+			error?: unknown;
+		};
+		const cookieState = request.cookies[DISCORD_OAUTH_STATE_COOKIE];
+		const rawFlow = request.cookies[DISCORD_OAUTH_FLOW_COOKIE];
+		const flow: DiscordOAuthFlow =
+			rawFlow === "onboarding"
+				? "onboarding"
+				: rawFlow === "account"
+					? "account"
+					: "login";
+		const returnedState =
+			typeof query.state === "string" ? query.state : undefined;
 
-			if (!statesMatch(cookieState, returnedState)) {
-				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "invalid_state"));
-			}
+		reply.clearCookie(DISCORD_OAUTH_STATE_COOKIE, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/api/auth/discord",
+		});
+		reply.clearCookie(DISCORD_OAUTH_FLOW_COOKIE, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/api/auth/discord",
+		});
 
-			if (typeof query.error === "string") {
-				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "cancelled"));
-			}
-			if (typeof query.code !== "string" || query.code.length === 0) {
-				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
-			}
+		if (!statesMatch(cookieState, returnedState)) {
+			return reply.redirect(
+				discordOAuthResultUrl(frontendUrl, flow, "invalid_state"),
+			);
+		}
 
-			try {
-				const discordUser = await getDiscordUserFromCode(query.code);
-				await connectDiscord(
-					request.user.userId,
-					discordUser.username,
-					discordUser.id,
-				);
-				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "connected"));
-			} catch (error) {
-				if (error instanceof AppError && error.code === "CONFLICT") {
-					return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "conflict"));
+		if (typeof query.error === "string") {
+			return reply.redirect(
+				discordOAuthResultUrl(frontendUrl, flow, "cancelled"),
+			);
+		}
+		if (typeof query.code !== "string" || query.code.length === 0) {
+			return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+		}
+
+		try {
+			const discordUser = await getDiscordUserFromCode(query.code);
+			const currentUserId = await app.auth.resolveOptionalUser(request);
+			if (flow === "login") {
+				const repository = new UserRepository();
+				let user = await repository.findByDiscordUserId(discordUser.id);
+				if (user) {
+					user = await repository.save(
+						user.connectDiscord(discordUser.username, discordUser.id),
+					);
+				} else {
+					user = await repository.create(
+						runBusinessRule(() =>
+							User.createWithDiscord({
+								name: discordUser.displayName,
+								discordUsername: discordUser.username,
+								discordUserId: discordUser.id,
+							}),
+						),
+					);
 				}
-				request.log.error({ err: error }, "Discord OAuth callback failed");
-				return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+				await issueSession(user.id, reply);
+				return reply.redirect(`${frontendUrl}/dashboard?discord=logged_in`);
 			}
-		},
-	);
+			if (!currentUserId) {
+				return reply.redirect(
+					discordOAuthResultUrl(frontendUrl, flow, "login_required"),
+				);
+			}
+			await connectDiscord(currentUserId, discordUser.username, discordUser.id);
+			return reply.redirect(
+				discordOAuthResultUrl(frontendUrl, flow, "connected"),
+			);
+		} catch (error) {
+			if (error instanceof AppError && error.code === "CONFLICT") {
+				return reply.redirect(
+					discordOAuthResultUrl(frontendUrl, flow, "conflict"),
+				);
+			}
+			request.log.error({ err: error }, "Discord OAuth callback failed");
+			return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+		}
+	});
 
 	app.delete(
 		"/me/discord",
@@ -261,6 +369,22 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		async (request) => getMyDiscordProfile(request.user.userId),
 	);
 };
+
+function assertTrustedOrigin(origin: string | undefined): void {
+	if (!origin) return;
+	const trustedOrigins = new Set([
+		"http://localhost:5173",
+		"https://off.kg-misskey.net",
+		process.env.FRONTEND_URL,
+	]);
+	if (!trustedOrigins.has(origin)) {
+		throw new AppError("FORBIDDEN", "許可されていないリクエスト元です。");
+	}
+}
+
+function rejectRefresh(): never {
+	throw new AppError("UNAUTHORIZED", "ログインが必要です。");
+}
 
 function toAuthUserResponse(user: User) {
 	return {
@@ -295,5 +419,7 @@ function discordOAuthResultUrl(
 		const path = result === "connected" ? "/dashboard" : "/onboarding/discord";
 		return `${frontendUrl}${path}?discord=${encodeURIComponent(result)}`;
 	}
+	if (flow === "login")
+		return `${frontendUrl}/login?discord=${encodeURIComponent(result)}`;
 	return `${frontendUrl}/account?discord=${encodeURIComponent(result)}`;
 }

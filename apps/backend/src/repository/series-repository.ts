@@ -28,9 +28,7 @@ export class SeriesRepository {
 		});
 	}
 
-	async saveQuestionTemplate(
-		template: SeriesQuestionTemplate,
-	): Promise<void> {
+	async saveQuestionTemplate(template: SeriesQuestionTemplate): Promise<void> {
 		await this.prisma.series.update({
 			where: { id: template.seriesId },
 			data: {
@@ -52,7 +50,10 @@ export class SeriesRepository {
 		});
 
 		if (!member) {
-			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
+			throw new AppError(
+				"SERIES_NOT_FOUND",
+				"管理対象のシリーズが見つかりません。",
+			);
 		}
 
 		return member;

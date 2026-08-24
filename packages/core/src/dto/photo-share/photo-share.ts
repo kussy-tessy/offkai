@@ -27,9 +27,7 @@ export type PhotoShareView = z.infer<typeof PhotoShareViewSchema>;
 export const PhotoShareRouteParamsSchema = z.object({
 	eventId: OffkaiEventIdSchema,
 });
-export type PhotoShareRouteParams = z.infer<
-	typeof PhotoShareRouteParamsSchema
->;
+export type PhotoShareRouteParams = z.infer<typeof PhotoShareRouteParamsSchema>;
 
 export const PhotoShareItemRouteParamsSchema = z.object({
 	eventId: OffkaiEventIdSchema,
@@ -39,16 +37,20 @@ export type PhotoShareItemRouteParams = z.infer<
 	typeof PhotoShareItemRouteParamsSchema
 >;
 
-export const CreatePhotoShareRequestSchema = PhotoShareRouteParamsSchema.extend({
-	url: PhotoShareUrlSchema,
-	...PhotoShareMetadataSchema.shape,
-}).strict();
+export const CreatePhotoShareRequestSchema = PhotoShareRouteParamsSchema.extend(
+	{
+		url: PhotoShareUrlSchema,
+		...PhotoShareMetadataSchema.shape,
+	},
+).strict();
 export type CreatePhotoShareRequest = z.infer<
 	typeof CreatePhotoShareRequestSchema
 >;
 
 export const UpdatePhotoShareRequestSchema =
-	PhotoShareItemRouteParamsSchema.extend(PhotoShareMetadataSchema.shape).strict();
+	PhotoShareItemRouteParamsSchema.extend(
+		PhotoShareMetadataSchema.shape,
+	).strict();
 export type UpdatePhotoShareRequest = z.infer<
 	typeof UpdatePhotoShareRequestSchema
 >;

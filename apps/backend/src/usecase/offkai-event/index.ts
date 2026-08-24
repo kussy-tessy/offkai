@@ -5,3 +5,4 @@ export * from "./event-management";
 export * from "./photo-sharing";
 export * from "./participant-payment";
 export * from "./route";
+export * from "./finance";

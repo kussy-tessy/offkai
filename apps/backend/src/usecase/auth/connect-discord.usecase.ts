@@ -10,9 +10,8 @@ export async function connectDiscord(
 ): Promise<Unbrand<GetMeResponse>> {
 	const repository = new UserRepository();
 
-	const [user, linkedUserByUsername, linkedUserByUserId] = await Promise.all([
+	const [user, linkedUserByUserId] = await Promise.all([
 		repository.findById(userId),
-		repository.findByDiscordUsername(discordUsername),
 		repository.findByDiscordUserId(discordUserId),
 	]);
 
@@ -23,15 +22,6 @@ export async function connectDiscord(
 	if (
 		linkedUserByUserId?.id !== undefined &&
 		linkedUserByUserId.id !== user.id
-	) {
-		throw new AppError(
-			"CONFLICT",
-			"このDiscordアカウントはすでに連携されています。",
-		);
-	}
-	if (
-		linkedUserByUsername?.id !== undefined &&
-		linkedUserByUsername.id !== user.id
 	) {
 		throw new AppError(
 			"CONFLICT",
@@ -59,6 +49,12 @@ export async function disconnectDiscord(
 
 	if (!user) {
 		throw new AppError("UNAUTHORIZED", "ログインが必要です。");
+	}
+	if (!user.passwordHash) {
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"Discord連携を解除する前にログインIDとパスワードを設定してください。",
+		);
 	}
 
 	await repository.save(user.disconnectDiscord());

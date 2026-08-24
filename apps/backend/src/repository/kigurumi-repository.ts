@@ -29,7 +29,10 @@ export class KigurumiRepository {
 		}));
 	}
 
-	async create(input: CreateKigurumiRequest, ownerUserId: UserId): Promise<Kigurumi> {
+	async create(
+		input: CreateKigurumiRequest,
+		ownerUserId: UserId,
+	): Promise<Kigurumi> {
 		const record = await this.prisma.kigurumi.create({
 			data: {
 				ownerUserId,
@@ -53,10 +56,16 @@ export class KigurumiRepository {
 		});
 
 		if (!record) {
-			throw new AppError("KIGURUMI_NOT_FOUND", "着ぐるみさんが見つかりません。");
+			throw new AppError(
+				"KIGURUMI_NOT_FOUND",
+				"着ぐるみさんが見つかりません。",
+			);
 		}
 		if (record.ownerUserId !== ownerUserId) {
-			throw new AppError("FORBIDDEN", "この着ぐるみさんを削除する権限がありません。");
+			throw new AppError(
+				"FORBIDDEN",
+				"この着ぐるみさんを削除する権限がありません。",
+			);
 		}
 
 		await this.prisma.kigurumi.delete({ where: { id } });

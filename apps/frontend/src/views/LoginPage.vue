@@ -1,9 +1,10 @@
 <template>
-  <Login :handleSubmit="handleSubmit" />
+  <Login :handleSubmit="handleSubmit" :handleDiscordLogin="loginWithDiscord" />
 </template>
 
 <script setup lang="ts">
-	import { useRoute, useRouter } from "vue-router"
+  import { onMounted } from "vue"
+  import { useRoute, useRouter } from "vue-router"
   import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables"
   import Login from "@/features/auth/components/Login.vue"
 
@@ -11,7 +12,7 @@
 
   const router = useRouter()
 	const route = useRoute()
-  const { fetchMe } = useAuth()
+  const { fetchMe, loginWithDiscord } = useAuth()
   const { error: showError } = useToast()
 
   const handleSubmit = async (payload: any) => {
@@ -32,4 +33,17 @@
       ))
     }
   }
+
+  onMounted(() => {
+    const result = typeof route.query.discord === "string" ? route.query.discord : null
+    if (!result) return
+    const messages: Record<string, string> = {
+      cancelled: "Discordログインがキャンセルされました。",
+      invalid_state: "Discordログインの有効期限が切れました。もう一度お試しください。",
+      failed: "Discordログインに失敗しました。もう一度お試しください。",
+    }
+    if (messages[result]) showError(messages[result])
+    const { discord: _discord, ...query } = route.query
+    void router.replace({ query })
+  })
 </script>

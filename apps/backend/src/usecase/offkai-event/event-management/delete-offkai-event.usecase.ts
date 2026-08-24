@@ -9,7 +9,10 @@ export async function deleteOffkaiEvent(
 ) {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(params.id);
-	const seriesRole = await repository.findSeriesMemberRole(userId, event.seriesId);
+	const seriesRole = await repository.findSeriesMemberRole(
+		userId,
+		event.seriesId,
+	);
 
 	if (!hasSeriesRole(seriesRole, "owner")) {
 		throw new AppError("FORBIDDEN", "このオフ会を削除する権限がありません。");

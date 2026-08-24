@@ -43,7 +43,10 @@ export async function updateOffkaiEvent(
 ) {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(params.id);
-	const seriesRole = await repository.findSeriesMemberRole(userId, event.seriesId);
+	const seriesRole = await repository.findSeriesMemberRole(
+		userId,
+		event.seriesId,
+	);
 
 	if (!hasSeriesRole(seriesRole, "owner")) {
 		throw new AppError("FORBIDDEN", "このオフ会を編集する権限がありません。");
@@ -92,23 +95,25 @@ export async function updateOffkaiEvent(
 		event.preferenceQuestions.map((question) => question.id),
 	);
 
-	const updated = runBusinessRule(() => event.edit({
-		name: input.title,
-		eventPeriod: EventPeriodSchema.parse({
-			startDate: new Date(input.eventPeriod.startDate),
-			endDate: new Date(input.eventPeriod.endDate),
+	const updated = runBusinessRule(() =>
+		event.edit({
+			name: input.title,
+			eventPeriod: EventPeriodSchema.parse({
+				startDate: new Date(input.eventPeriod.startDate),
+				endDate: new Date(input.eventPeriod.endDate),
+			}),
+			applicationStartDate: ApplicationStartDateSchema.parse(
+				new Date(input.applicationStartDate),
+			),
+			description: input.description,
+			discordRoleId: input.discordRoleId,
+			askBringingKigurumi: input.askBringingKigurumi,
+			overviewVisibility: input.overviewVisibility,
+			participantsVisibility: input.participantsVisibility,
+			commitmentQuestions: nextCommitmentQuestions,
+			preferenceQuestions: nextPreferenceQuestions,
 		}),
-		applicationStartDate: ApplicationStartDateSchema.parse(
-			new Date(input.applicationStartDate),
-		),
-		description: input.description,
-		discordRoleId: input.discordRoleId,
-		askBringingKigurumi: input.askBringingKigurumi,
-		overviewVisibility: input.overviewVisibility,
-		participantsVisibility: input.participantsVisibility,
-		commitmentQuestions: nextCommitmentQuestions,
-		preferenceQuestions: nextPreferenceQuestions,
-	}));
+	);
 
 	await repository.save(updated);
 	return updated;

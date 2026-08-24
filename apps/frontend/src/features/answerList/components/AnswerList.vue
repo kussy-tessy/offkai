@@ -131,13 +131,14 @@
             class="odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
             <td class="border-b border-slate-100 p-2 w-24 font-medium text-slate-700">{{ row.user.displayName }}</td>
             <td class="border-b border-slate-100 p-2 text-gray-700 whitespace-pre-line">
-              <span
-				v-if="isChoiceQuestion && selectedAnswer(row) !== '―'"
-				class="inline-flex rounded-full border px-2.5 py-1 text-sm font-medium leading-tight"
-				:class="badgeClass(selectedAnswer(row))"
-			  >
-				{{ selectedAnswer(row) }}
-			  </span>
+			  <MyBadge
+					v-if="isChoiceQuestion && selectedAnswer(row) !== '―'"
+					size="sm"
+					variant="custom"
+					:class="badgeClass(selectedAnswer(row))"
+				  >
+					{{ selectedAnswer(row) }}
+				  </MyBadge>
 			  <template v-else>{{ selectedAnswer(row) }}</template>
             </td>
           </tr>
@@ -152,8 +153,9 @@
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
   import { faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-  import { format, formatWithSeconds, type OffkaiDetail, type Unbrand } from "@offkai/core";
+  import { formatWithSeconds, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
+  import MyBadge from "@/common/components/MyBadge.vue";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
 	import { usePreferenceAnswerBadge } from "@/features/answerList/composables/usePreferenceAnswerBadge";
   import OffkaiDetailHeader from "@/features/offkaiDetail/components/OffkaiDetailHeader.vue";

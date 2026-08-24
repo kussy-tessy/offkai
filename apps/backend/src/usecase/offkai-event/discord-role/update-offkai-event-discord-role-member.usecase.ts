@@ -34,7 +34,9 @@ export async function updateOffkaiEventDiscordRoleMember(
 		);
 	}
 
-	const discordGuildId = await repository.findSeriesDiscordGuildId(event.seriesId);
+	const discordGuildId = await repository.findSeriesDiscordGuildId(
+		event.seriesId,
+	);
 	if (!discordGuildId) {
 		throw new AppError(
 			"VALIDATION_ERROR",

@@ -15,6 +15,9 @@ export async function changePassword(
 		throw new AppError("UNAUTHORIZED", "ログインが必要です。");
 	}
 
+	if (!user.passwordHash) {
+		throw new AppError("VALIDATION_ERROR", "パスワードが未設定です。");
+	}
 	const ok = await bcrypt.compare(currentPassword, user.passwordHash);
 	if (!ok) {
 		throw new AppError(

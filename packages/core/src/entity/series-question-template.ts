@@ -1,7 +1,4 @@
-import type {
-	OffkaiSeriesId,
-	PreferenceQuestionTemplateItem,
-} from "../schema";
+import type { OffkaiSeriesId, PreferenceQuestionTemplateItem } from "../schema";
 
 export class SeriesQuestionTemplate {
 	private constructor(

@@ -31,7 +31,7 @@
           <p class="text-xs text-slate-500">
             <span class="text-sm font-medium text-slate-900">{{ share.uploader.displayName }}さん</span>
             <span class="mx-1">·</span>
-            {{ formatDateTime(share.createdAt) }}
+            {{ format(share.createdAt) }}
           </p>
           <a
             :href="share.url"
@@ -118,6 +118,7 @@
   } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import {
+    format,
     type Unbrand,
     type UpdatePhotoDownloadStatusResponse,
     UpdatePhotoShareRequestSchema,
@@ -239,12 +240,4 @@
     showError(getApiErrorMessage(downloadStatusError.value ?? cause, "ダウンロード状態の更新に失敗しました。"));
   };
 
-  const formatDateTime = (value: string) => new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 </script>
-

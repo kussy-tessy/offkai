@@ -17,7 +17,7 @@
     <div class="flex flex-col gap-4 md:flex-row md:gap-1">
       <MyFormField v-slot="{ id }" label="締切" class="w-full md:w-[50%]">
         <MyDatePicker :id="id" type="date" :value="question.deadline" :on-change="v => onUpdate(question.id, { deadline: v })"
-          :includes-time="true" :error="errorDeadline" />
+          :includes-time="true" :initial-time="{ hours: 23, minutes: 59 }" :error="errorDeadline" />
       </MyFormField>
       <MyFormField v-slot="{ id }" label="定員" class="w-full md:w-[50%]">
         <MyTextbox :id="id" type="text" inputmode="numeric" :value="question.capacity ?? ''" placeholder="定員"

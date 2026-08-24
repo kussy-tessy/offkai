@@ -22,7 +22,10 @@ export async function getParticipantPayments(
 		event.seriesId,
 	);
 	if (!hasSeriesRole(seriesRole, "staff")) {
-		throw new AppError("FORBIDDEN", "このオフ会の金銭を管理する権限がありません。");
+		throw new AppError(
+			"FORBIDDEN",
+			"このオフ会の金銭を管理する権限がありません。",
+		);
 	}
 
 	return new ParticipantPaymentRepository().getPage(event.id);

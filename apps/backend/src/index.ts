@@ -53,6 +53,7 @@ app.setNotFoundHandler((req, reply) => {
 });
 
 app.setErrorHandler((error, _request, reply) => {
+	console.error(error);
 	if (error instanceof ZodError) {
 		return reply.code(400).send({
 			code: "VALIDATION_ERROR",

@@ -1,7 +1,6 @@
 import {
-	CommitmentAnswerSchema,
-	GetParticipantPaymentsResponseSchema,
 	type GetParticipantPaymentsResponse,
+	GetParticipantPaymentsResponseSchema,
 	type OffkaiEventId,
 	type PaymentAmount,
 	type Unbrand,
@@ -9,6 +8,7 @@ import {
 	type UserId,
 } from "@offkai/core";
 import { AppError } from "../app-error";
+import { toDomainCommitmentAnswer } from "./commitment-mapper";
 import { prisma } from "./prisma";
 
 export class ParticipantPaymentRepository {
@@ -18,13 +18,20 @@ export class ParticipantPaymentRepository {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			select: {
-				commitmentQuestions: true,
+				commitmentQuestions: {
+					where: { archivedAt: null },
+					orderBy: { sortOrder: "asc" },
+					select: { id: true, questionShort: true },
+				},
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					select: {
 						userId: true,
-						commitmentAnswers: true,
-						user: { select: { name: true } },
+						respondentName: true,
+						commitmentAnswers: {
+							where: { question: { archivedAt: null } },
+							select: { questionId: true, answer: true },
+						},
 						payment: {
 							select: {
 								amount: true,
@@ -40,10 +47,7 @@ export class ParticipantPaymentRepository {
 			throw new AppError("EVENT_NOT_FOUND", "オフ会が見つかりません。");
 		}
 
-		const questions = event.commitmentQuestions as Array<{
-			id: string;
-			questionShort: string;
-		}>;
+		const questions = event.commitmentQuestions;
 
 		return GetParticipantPaymentsResponseSchema.parse({
 			commitmentQuestions: questions.map((question) => ({
@@ -52,7 +56,7 @@ export class ParticipantPaymentRepository {
 			})),
 			participants: event.answers.map((answer) => ({
 				userId: answer.userId,
-				displayName: answer.user.name,
+				displayName: answer.respondentName,
 				commitmentAnswers: this.toCommitmentAnswerRecord(
 					answer.commitmentAnswers,
 				),
@@ -78,8 +82,11 @@ export class ParticipantPaymentRepository {
 			select: {
 				id: true,
 				userId: true,
-				commitmentAnswers: true,
-				user: { select: { name: true } },
+				respondentName: true,
+				commitmentAnswers: {
+					where: { question: { archivedAt: null } },
+					select: { questionId: true, answer: true },
+				},
 			},
 		});
 		if (!answer) return null;
@@ -99,7 +106,7 @@ export class ParticipantPaymentRepository {
 
 		return {
 			userId: answer.userId,
-			displayName: answer.user.name,
+			displayName: answer.respondentName,
 			commitmentAnswers: this.toCommitmentAnswerRecord(
 				answer.commitmentAnswers,
 			),
@@ -108,8 +115,10 @@ export class ParticipantPaymentRepository {
 		};
 	}
 
-	private toCommitmentAnswerRecord(value: unknown) {
-		const answers = CommitmentAnswerSchema.array().parse(value);
+	private toCommitmentAnswerRecord(
+		value: Array<{ questionId: string; answer: boolean | null }>,
+	) {
+		const answers = value.map(toDomainCommitmentAnswer);
 		return Object.fromEntries(
 			answers.map((answer) => [answer.questionId, answer.answer]),
 		);

@@ -11,7 +11,7 @@
 
   const props = withDefaults(defineProps<{
     onClick?: (event: MouseEvent) => void
-    color?: "primary" | "secondary" | "gray" | "red"
+    color?: "primary" | "secondary" | "gray" | "red" | "discord"
     variant?: "solid" | "ghost"
     size?: "sm" | "md" | "lg"
     loading?: boolean
@@ -39,6 +39,10 @@
     red: {
       solid: "bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 shadow-lg shadow-red-500/50",
       ghost: "border border-red-500 text-red-500 hover:bg-red-50 focus:ring-red-500",
+    },
+    discord: {
+      solid: "bg-[#5865F2] hover:bg-[#4752C4] text-white focus:ring-[#5865F2] shadow-lg shadow-[#5865F2]/40",
+      ghost: "border border-[#5865F2] text-[#5865F2] hover:bg-[#5865F2]/10 focus:ring-[#5865F2]",
     },
   } as const
 

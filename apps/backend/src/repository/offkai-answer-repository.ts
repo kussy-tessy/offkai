@@ -4,7 +4,6 @@ import {
 	type BringingKigurumi,
 	BringingKigurumiSchema,
 	type CommitmentAnswer,
-	CommitmentAnswerSchema,
 	type CommitmentQuestionHeader,
 	OffkaiAnswer,
 	type OffkaiDetail,
@@ -18,6 +17,10 @@ import {
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
 import { AppError } from "../app-error";
+import {
+	toDomainCommitmentAnswer,
+	toPersistenceCommitmentAnswer,
+} from "./commitment-mapper";
 import { prisma } from "./prisma";
 
 export class OffkaiAnswerRepository {
@@ -30,16 +33,44 @@ export class OffkaiAnswerRepository {
 	async findManyByEventId(
 		eventId: OffkaiEventId,
 	): Promise<
-		Array<{ id: string; userId: string; commitmentAnswers: unknown }>
+		Array<{ id: string; userId: string; commitmentAnswers: CommitmentAnswer[] }>
 	> {
-		return this.prisma.offkaiAnswer.findMany({
-			where: { eventId },
-			select: {
-				id: true,
-				userId: true,
-				commitmentAnswers: true,
+		return this.prisma.offkaiAnswer
+			.findMany({
+				where: { eventId },
+				select: {
+					id: true,
+					userId: true,
+					commitmentAnswers: {
+						where: { question: { archivedAt: null } },
+						select: { questionId: true, answer: true },
+						orderBy: { question: { sortOrder: "asc" } },
+					},
+				},
+			})
+			.then((records) =>
+				records.map((record) => ({
+					...record,
+					commitmentAnswers: record.commitmentAnswers.map(
+						toDomainCommitmentAnswer,
+					),
+				})),
+			);
+	}
+
+	async findUserIdsAnsweredYes(
+		eventId: OffkaiEventId,
+		questionId: string,
+	): Promise<UserId[]> {
+		const answers = await this.prisma.commitmentAnswer.findMany({
+			where: {
+				questionId,
+				answer: true,
+				answerRecord: { eventId },
 			},
+			select: { answerRecord: { select: { userId: true } } },
 		});
+		return answers.map((answer) => answer.answerRecord.userId as UserId);
 	}
 
 	async findByEventAndUser(
@@ -53,6 +84,13 @@ export class OffkaiAnswerRepository {
 					userId,
 				},
 			},
+			include: {
+				commitmentAnswers: {
+					where: { question: { archivedAt: null } },
+					select: { questionId: true, answer: true },
+					orderBy: { question: { sortOrder: "asc" } },
+				},
+			},
 		});
 
 		if (!record) return null;
@@ -61,8 +99,7 @@ export class OffkaiAnswerRepository {
 			id: record.id as AnswerId,
 			eventId: record.eventId as OffkaiEventId,
 			userId: record.userId as UserId,
-			commitmentAnswers:
-				record.commitmentAnswers as unknown as CommitmentAnswer[],
+			commitmentAnswers: record.commitmentAnswers.map(toDomainCommitmentAnswer),
 			preferenceAnswers:
 				record.preferenceAnswers as unknown as PreferenceAnswer[],
 			bringingKigurumis:
@@ -78,10 +115,17 @@ export class OffkaiAnswerRepository {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			include: {
+				commitmentQuestions: {
+					where: { archivedAt: null },
+					orderBy: { sortOrder: "asc" },
+				},
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					include: {
-						user: true,
+						commitmentAnswers: {
+							where: { question: { archivedAt: null } },
+							select: { questionId: true, answer: true },
+						},
 					},
 				},
 			},
@@ -91,8 +135,14 @@ export class OffkaiAnswerRepository {
 			throw new AppError("EVENT_NOT_FOUND", "オフ会が見つかりません。");
 		}
 
-		const commitmentQuestions =
-			event.commitmentQuestions as CommitmentQuestionHeader[];
+		const commitmentQuestions: Omit<CommitmentQuestionHeader, "yesCount">[] =
+			event.commitmentQuestions.map((question) => ({
+				id: question.id as CommitmentQuestionHeader["id"],
+				questionShort: question.questionShort,
+				deadline: question.deadline.toISOString(),
+				capacity: question.capacity as CommitmentQuestionHeader["capacity"],
+				required: question.required,
+			}));
 
 		const preferenceQuestions =
 			event.preferenceQuestions as PreferenceQuestionHeader[];
@@ -100,8 +150,8 @@ export class OffkaiAnswerRepository {
 		const canViewPrivateAnswers = viewer.permissions.canViewPrivateAnswers;
 		const answerRows: Unbrand<AnswerRow>[] = event.answers.map((a) => ({
 			user: {
-				id: a.user.id,
-				displayName: a.user.name,
+				id: a.userId,
+				displayName: a.respondentName,
 			},
 			createdAt: a.createdAt.toISOString(),
 			commitmentAnswers: this.toCommitmentAnswerRecord(a.commitmentAnswers),
@@ -112,12 +162,14 @@ export class OffkaiAnswerRepository {
 				? this.toBringingKigurumis(a.bringingKigurumis)
 				: null,
 		}));
-		const commitmentQuestionsWithCounts = commitmentQuestions.map((question) => ({
-			...question,
-			yesCount: answerRows.filter(
-				(answer) => answer.commitmentAnswers[question.id] === "yes",
-			).length,
-		}));
+		const commitmentQuestionsWithCounts = commitmentQuestions.map(
+			(question) => ({
+				...question,
+				yesCount: answerRows.filter(
+					(answer) => answer.commitmentAnswers[question.id] === "yes",
+				).length,
+			}),
+		);
 
 		const result: Unbrand<OffkaiDetail> = {
 			offkai: {
@@ -147,7 +199,6 @@ export class OffkaiAnswerRepository {
 			eventId: answer.eventId,
 			userId: answer.userId,
 			updatedBy,
-			commitmentAnswers: answer.commitmentAnswers,
 			preferenceAnswers: answer.preferenceAnswers,
 			bringingKigurumis: answer.bringingKigurumis,
 		};
@@ -160,6 +211,12 @@ export class OffkaiAnswerRepository {
 						userId: props.userId,
 					},
 				},
+				include: {
+					commitmentAnswers: {
+						select: { questionId: true, answer: true },
+						orderBy: { question: { sortOrder: "asc" } },
+					},
+				},
 			});
 
 			if (existing) {
@@ -168,8 +225,9 @@ export class OffkaiAnswerRepository {
 						offkaiAnswerId: existing.id,
 						eventId: existing.eventId,
 						userId: existing.userId,
-						commitmentAnswers:
-							existing.commitmentAnswers as unknown as CommitmentAnswer[],
+						commitmentAnswers: existing.commitmentAnswers.map(
+							toDomainCommitmentAnswer,
+						),
 						preferenceAnswers:
 							existing.preferenceAnswers as unknown as PreferenceAnswer[],
 						bringingKigurumis:
@@ -178,10 +236,33 @@ export class OffkaiAnswerRepository {
 				});
 			}
 
+			const respondentName = existing
+				? existing.respondentName
+				: (
+						await tx.user.findUniqueOrThrow({
+							where: { id: props.userId },
+							select: { name: true },
+						})
+					).name;
+
 			await tx.offkaiAnswer.upsert({
 				where: { id: props.id },
-				create: props,
+				create: { ...props, respondentName },
 				update: props,
+			});
+
+			await tx.commitmentAnswer.deleteMany({
+				where: {
+					answerId: props.id,
+					question: { archivedAt: null },
+				},
+			});
+			await tx.commitmentAnswer.createMany({
+				data: answer.commitmentAnswers.map((item) => ({
+					answerId: props.id,
+					questionId: item.questionId,
+					answer: toPersistenceCommitmentAnswer(item.answer),
+				})),
 			});
 		});
 	}
@@ -193,9 +274,9 @@ export class OffkaiAnswerRepository {
 	}
 
 	private toCommitmentAnswerRecord(
-		value: unknown,
+		value: Array<{ questionId: string; answer: boolean | null }>,
 	): AnswerRow["commitmentAnswers"] {
-		const items = CommitmentAnswerSchema.array().parse(value);
+		const items = value.map(toDomainCommitmentAnswer);
 		return Object.fromEntries(items.map((i) => [i.questionId, i.answer]));
 	}
 

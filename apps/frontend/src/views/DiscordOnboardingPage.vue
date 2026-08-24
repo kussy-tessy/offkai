@@ -37,7 +37,7 @@
   import { onMounted, ref } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
-  import { useAuth, useToast } from "@/common/composables";
+  import { getApiErrorMessage, useAuth, useToast } from "@/common/composables";
 
   const { user, connectDiscord } = useAuth();
   const { error } = useToast();
@@ -45,9 +45,14 @@
   const router = useRouter();
   const connecting = ref(false);
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     connecting.value = true;
-    connectDiscord("onboarding");
+    try {
+      await connectDiscord("onboarding");
+    } catch (cause) {
+      connecting.value = false;
+      error(getApiErrorMessage(cause, "Discord連携を開始できませんでした。"));
+    }
   };
 
   onMounted(() => {

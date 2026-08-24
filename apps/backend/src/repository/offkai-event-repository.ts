@@ -1,27 +1,25 @@
 import {
 	type ApplicationStartDate,
-	type Capacity,
 	type DiscordGuildId,
 	type DiscordRoleId,
 	type DiscordUserId,
 	type DiscordUsername,
-	type CommitmentQuestion,
-	type Deadline,
-	type EventVisibility,
 	EventPeriodSchema,
+	type EventVisibility,
 	OffkaiEvent,
 	type OffkaiEventId,
 	type OffkaiEventSummary,
 	type OffkaiSeriesId,
 	type PreferenceQuestion,
 	type QuestionId,
-	SeriesRoleSchema,
 	type SeriesRole,
+	SeriesRoleSchema,
 	type UserId,
 	type UserName,
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
 import { AppError } from "../app-error";
+import { toDomainCommitmentQuestion } from "./commitment-mapper";
 import { prisma } from "./prisma";
 
 export class OffkaiEventRepository {
@@ -34,21 +32,18 @@ export class OffkaiEventRepository {
 	async findById(id: string): Promise<OffkaiEvent> {
 		const record = await this.prisma.offkaiEvent.findUnique({
 			where: { id },
+			include: {
+				commitmentQuestions: {
+					where: { archivedAt: null },
+					orderBy: { sortOrder: "asc" },
+				},
+			},
 		});
 
 		if (!record) {
 			throw new AppError("EVENT_NOT_FOUND", "オフ会が見つかりません。");
 		}
 
-		type RawCommitmentQuestion = {
-			id: string;
-			question: string;
-			questionShort: string;
-			deadline: string;
-			description: string;
-			capacity: number;
-			required?: boolean;
-		};
 		type RawPreferenceQuestion = {
 			id: string;
 			question: string;
@@ -57,8 +52,6 @@ export class OffkaiEventRepository {
 			required?: boolean;
 			answerTemplate: PreferenceQuestion["answerTemplate"];
 		};
-		const rawCommitmentQuestions =
-			record.commitmentQuestions as unknown as RawCommitmentQuestion[];
 		const rawPreferenceQuestions =
 			record.preferenceQuestions as unknown as RawPreferenceQuestion[];
 
@@ -76,16 +69,8 @@ export class OffkaiEventRepository {
 			askBringingKigurumi: record.askBringingKigurumi,
 			overviewVisibility: record.overviewVisibility as EventVisibility,
 			participantsVisibility: record.participantsVisibility as EventVisibility,
-			commitmentQuestions: rawCommitmentQuestions.map(
-				(q): CommitmentQuestion => ({
-					id: q.id as QuestionId,
-					question: q.question,
-					questionShort: q.questionShort,
-					deadline: new Date(q.deadline) as Deadline,
-					description: q.description,
-					capacity: q.capacity as Capacity,
-					required: q.required ?? false,
-				}),
+			commitmentQuestions: record.commitmentQuestions.map(
+				toDomainCommitmentQuestion,
 			),
 			preferenceQuestions: rawPreferenceQuestions.map(
 				(q): PreferenceQuestion => ({
@@ -173,14 +158,69 @@ export class OffkaiEventRepository {
 			askBringingKigurumi: event.askBringingKigurumi,
 			overviewVisibility: event.overviewVisibility,
 			participantsVisibility: event.participantsVisibility,
-			commitmentQuestions: event.commitmentQuestions,
 			preferenceQuestions: event.preferenceQuestions,
 		};
 
-		await this.prisma.offkaiEvent.upsert({
-			where: { id: props.id },
-			create: props,
-			update: props,
+		await this.prisma.$transaction(async (tx) => {
+			await tx.offkaiEvent.upsert({
+				where: { id: props.id },
+				create: props,
+				update: props,
+			});
+
+			const activeQuestionIds = event.commitmentQuestions.map((q) => q.id);
+			await tx.commitmentQuestion.updateMany({
+				where: {
+					eventId: event.id,
+					archivedAt: null,
+					id: { notIn: activeQuestionIds },
+				},
+				data: { archivedAt: new Date() },
+			});
+
+			for (const [sortOrder, question] of event.commitmentQuestions.entries()) {
+				await tx.commitmentQuestion.upsert({
+					where: { id: question.id },
+					create: {
+						id: question.id,
+						eventId: event.id,
+						question: question.question,
+						questionShort: question.questionShort,
+						deadline: question.deadline,
+						description: question.description,
+						capacity: question.capacity,
+						required: question.required,
+						sortOrder,
+					},
+					update: {
+						question: question.question,
+						questionShort: question.questionShort,
+						deadline: question.deadline,
+						description: question.description,
+						capacity: question.capacity,
+						required: question.required,
+						sortOrder,
+						archivedAt: null,
+					},
+				});
+			}
+
+			const eventAnswers = await tx.offkaiAnswer.findMany({
+				where: { eventId: event.id },
+				select: { id: true },
+			});
+			if (eventAnswers.length > 0 && activeQuestionIds.length > 0) {
+				await tx.commitmentAnswer.createMany({
+					data: eventAnswers.flatMap((answer) =>
+						activeQuestionIds.map((questionId) => ({
+							answerId: answer.id,
+							questionId,
+							answer: null,
+						})),
+					),
+					skipDuplicates: true,
+				});
+			}
 		});
 	}
 
@@ -214,11 +254,13 @@ export class OffkaiEventRepository {
 			select: { seriesId: true },
 		});
 		if (!member) {
-			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
+			throw new AppError(
+				"SERIES_NOT_FOUND",
+				"管理対象のシリーズが見つかりません。",
+			);
 		}
 		return member.seriesId as OffkaiSeriesId;
 	}
-
 
 	async findAllSeriesDiscordGuildIds(): Promise<DiscordGuildId[]> {
 		const series = await this.prisma.series.findMany({
@@ -231,7 +273,9 @@ export class OffkaiEventRepository {
 		);
 	}
 
-	async findOwnerSeriesDiscordGuildIds(userId: UserId): Promise<DiscordGuildId[]> {
+	async findOwnerSeriesDiscordGuildIds(
+		userId: UserId,
+	): Promise<DiscordGuildId[]> {
 		const members = await this.prisma.seriesMember.findMany({
 			where: { userId, role: "owner" },
 			select: {
@@ -241,15 +285,22 @@ export class OffkaiEventRepository {
 			},
 		});
 		if (members.length === 0) {
-			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
+			throw new AppError(
+				"SERIES_NOT_FOUND",
+				"管理対象のシリーズが見つかりません。",
+			);
 		}
 
 		return members.flatMap((member) =>
-			member.series.discordGuildId ? [member.series.discordGuildId as DiscordGuildId] : [],
+			member.series.discordGuildId
+				? [member.series.discordGuildId as DiscordGuildId]
+				: [],
 		);
 	}
 
-	async findOwnerSeriesDiscordGuildId(userId: UserId): Promise<DiscordGuildId | null> {
+	async findOwnerSeriesDiscordGuildId(
+		userId: UserId,
+	): Promise<DiscordGuildId | null> {
 		const member = await this.prisma.seriesMember.findFirst({
 			where: { userId, role: "owner" },
 			select: {
@@ -259,13 +310,18 @@ export class OffkaiEventRepository {
 			},
 		});
 		if (!member) {
-			throw new AppError("SERIES_NOT_FOUND", "管理対象のシリーズが見つかりません。");
+			throw new AppError(
+				"SERIES_NOT_FOUND",
+				"管理対象のシリーズが見つかりません。",
+			);
 		}
 
 		return member.series.discordGuildId as DiscordGuildId | null;
 	}
 
-	async findSeriesDiscordGuildId(seriesId: OffkaiSeriesId): Promise<DiscordGuildId | null> {
+	async findSeriesDiscordGuildId(
+		seriesId: OffkaiSeriesId,
+	): Promise<DiscordGuildId | null> {
 		const series = await this.prisma.series.findUnique({
 			where: { id: seriesId },
 			select: { discordGuildId: true },
@@ -277,17 +333,20 @@ export class OffkaiEventRepository {
 		return series.discordGuildId as DiscordGuildId | null;
 	}
 
-	async findRespondentUsersByEventId(eventId: OffkaiEventId): Promise<OffkaiEventRespondentUser[]> {
+	async findRespondentUsersByEventId(
+		eventId: OffkaiEventId,
+	): Promise<OffkaiEventRespondentUser[]> {
 		const records = await this.prisma.offkaiAnswer.findMany({
 			where: { eventId },
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 			select: {
+				respondentName: true,
 				user: {
 					select: {
 						id: true,
-						name: true,
-						discordUsername: true,
-						discordUserId: true,
+						discordIdentity: {
+							select: { username: true, discordUserId: true },
+						},
 					},
 				},
 			},
@@ -295,10 +354,42 @@ export class OffkaiEventRepository {
 
 		return records.map((record) => ({
 			userId: record.user.id as UserId,
-			displayName: record.user.name as UserName,
-			discordUsername: record.user.discordUsername as DiscordUsername | null,
-			discordUserId: record.user.discordUserId as DiscordUserId | null,
+			displayName: record.respondentName as UserName,
+			discordUsername: record.user.discordIdentity
+				?.username as DiscordUsername | null,
+			discordUserId: record.user.discordIdentity
+				?.discordUserId as DiscordUserId | null,
 		}));
+	}
+
+	async findCommitmentQuestionsForFinance(eventId: OffkaiEventId): Promise<
+		Array<{
+			id: QuestionId;
+			questionShort: string;
+			archived: boolean;
+		}>
+	> {
+		const questions = await this.prisma.commitmentQuestion.findMany({
+			where: { eventId },
+			orderBy: { sortOrder: "asc" },
+			select: { id: true, questionShort: true, archivedAt: true },
+		});
+		return questions.map((question) => ({
+			id: question.id as QuestionId,
+			questionShort: question.questionShort,
+			archived: question.archivedAt !== null,
+		}));
+	}
+
+	async findCommitmentQuestionState(
+		eventId: OffkaiEventId,
+		questionId: QuestionId,
+	): Promise<{ archived: boolean } | null> {
+		const question = await this.prisma.commitmentQuestion.findFirst({
+			where: { id: questionId, eventId },
+			select: { archivedAt: true },
+		});
+		return question ? { archived: question.archivedAt !== null } : null;
 	}
 
 	async findRespondentUserByEventAndUser(
@@ -313,12 +404,13 @@ export class OffkaiEventRepository {
 				},
 			},
 			select: {
+				respondentName: true,
 				user: {
 					select: {
 						id: true,
-						name: true,
-						discordUsername: true,
-						discordUserId: true,
+						discordIdentity: {
+							select: { username: true, discordUserId: true },
+						},
 					},
 				},
 			},
@@ -328,9 +420,11 @@ export class OffkaiEventRepository {
 
 		return {
 			userId: record.user.id as UserId,
-			displayName: record.user.name as UserName,
-			discordUsername: record.user.discordUsername as DiscordUsername | null,
-			discordUserId: record.user.discordUserId as DiscordUserId | null,
+			displayName: record.respondentName as UserName,
+			discordUsername: record.user.discordIdentity
+				?.username as DiscordUsername | null,
+			discordUserId: record.user.discordIdentity
+				?.discordUserId as DiscordUserId | null,
 		};
 	}
 
@@ -351,7 +445,10 @@ export class OffkaiEventRepository {
 		return member ? SeriesRoleSchema.parse(member.role) : null;
 	}
 
-	async isParticipant(eventId: OffkaiEventId, userId: UserId): Promise<boolean> {
+	async isParticipant(
+		eventId: OffkaiEventId,
+		userId: UserId,
+	): Promise<boolean> {
 		const answer = await this.prisma.offkaiAnswer.findUnique({
 			where: { eventId_userId: { eventId, userId } },
 			select: { id: true },

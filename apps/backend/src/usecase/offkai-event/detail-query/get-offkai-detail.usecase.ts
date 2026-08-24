@@ -26,10 +26,10 @@ export async function getOffkaiDetail(
 	const event = await eventRepository.findById(input.eventId);
 	const [seriesRole, isParticipant, user] = userId
 		? await Promise.all([
-			eventRepository.findSeriesMemberRole(userId, event.seriesId),
-			eventRepository.isParticipant(event.id, userId),
-			new UserRepository().findById(userId),
-		])
+				eventRepository.findSeriesMemberRole(userId, event.seriesId),
+				eventRepository.isParticipant(event.id, userId),
+				new UserRepository().findById(userId),
+			])
 		: [null, false, null];
 
 	let discordMembership: DiscordMembershipStatus = "NOT_CHECKED";

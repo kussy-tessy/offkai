@@ -14,104 +14,137 @@ import {
 export class User {
 	private constructor(
 		readonly id: UserId,
-		readonly loginId: UserLoginId,
 		readonly name: UserName,
-		readonly passwordHash: string,
+		readonly loginId: UserLoginId | null,
+		readonly passwordHash: string | null,
 		readonly discordUsername: DiscordUsername | null,
 		readonly discordUserId: DiscordUserId | null,
 		readonly createdAt: Date,
-	) {}
+	) {
+		if (!passwordHash && !discordUserId)
+			throw new Error("ログイン手段が必要です");
+		if ((loginId === null) !== (passwordHash === null)) {
+			throw new Error("ログインIDとパスワードは同時に設定してください");
+		}
+	}
 
 	static reconstruct(params: {
 		id: UserId;
-		loginId: string;
 		name: string;
-		passwordHash: string;
+		loginId: string | null;
+		passwordHash: string | null;
 		discordUsername: string | null;
 		discordUserId: string | null;
 		createdAt: Date;
 	}): User {
 		return new User(
 			params.id,
-			UserLoginIdSchema.parse(params.loginId),
 			UserNameSchema.parse(params.name),
-			validatePasswordHash(params.passwordHash),
-			params.discordUsername === null ? null : DiscordUsernameSchema.parse(params.discordUsername),
-			params.discordUserId === null ? null : DiscordUserIdSchema.parse(params.discordUserId),
+			params.loginId === null ? null : UserLoginIdSchema.parse(params.loginId),
+			params.passwordHash === null
+				? null
+				: validatePasswordHash(params.passwordHash),
+			params.discordUsername === null
+				? null
+				: DiscordUsernameSchema.parse(params.discordUsername),
+			params.discordUserId === null
+				? null
+				: DiscordUserIdSchema.parse(params.discordUserId),
 			params.createdAt,
 		);
 	}
 
-	static create(params: {
+	static createWithPassword(params: {
 		loginId: string;
 		name: string;
 		passwordHash: string;
-		discordUsername?: string | null;
-		discordUserId?: string | null;
 	}): User {
 		return new User(
 			uuidv7() as UserId,
-			UserLoginIdSchema.parse(params.loginId),
 			UserNameSchema.parse(params.name),
+			UserLoginIdSchema.parse(params.loginId),
 			validatePasswordHash(params.passwordHash),
-			params.discordUsername == null ? null : DiscordUsernameSchema.parse(params.discordUsername),
-			params.discordUserId == null ? null : DiscordUserIdSchema.parse(params.discordUserId),
+			null,
+			null,
+			new Date(),
+		);
+	}
+
+	static createWithDiscord(params: {
+		name: string;
+		discordUsername: string;
+		discordUserId: string;
+	}): User {
+		return new User(
+			uuidv7() as UserId,
+			UserNameSchema.parse(params.name),
+			null,
+			null,
+			DiscordUsernameSchema.parse(params.discordUsername),
+			DiscordUserIdSchema.parse(params.discordUserId),
 			new Date(),
 		);
 	}
 
 	changeName(name: string): User {
-		return new User(
-			this.id,
-			this.loginId,
-			UserNameSchema.parse(name),
-			this.passwordHash,
-			this.discordUsername,
-			this.discordUserId,
-			this.createdAt,
-		);
+		return this.copy({ name: UserNameSchema.parse(name) });
+	}
+
+	setPasswordCredential(loginId: string, passwordHash: string): User {
+		return this.copy({
+			loginId: UserLoginIdSchema.parse(loginId),
+			passwordHash: validatePasswordHash(passwordHash),
+		});
 	}
 
 	changePasswordHash(passwordHash: string): User {
-		return new User(
-			this.id,
-			this.loginId,
-			this.name,
-			validatePasswordHash(passwordHash),
-			this.discordUsername,
-			this.discordUserId,
-			this.createdAt,
-		);
+		if (!this.loginId || !this.passwordHash)
+			throw new Error("パスワードが未設定です");
+		return this.copy({ passwordHash: validatePasswordHash(passwordHash) });
 	}
 
 	connectDiscord(discordUsername: string, discordUserId: string): User {
-		return new User(
-			this.id,
-			this.loginId,
-			this.name,
-			this.passwordHash,
-			DiscordUsernameSchema.parse(discordUsername),
-			DiscordUserIdSchema.parse(discordUserId),
-			this.createdAt,
-		);
+		return this.copy({
+			discordUsername: DiscordUsernameSchema.parse(discordUsername),
+			discordUserId: DiscordUserIdSchema.parse(discordUserId),
+		});
 	}
 
 	disconnectDiscord(): User {
+		if (!this.passwordHash)
+			throw new Error("最後のログイン手段は解除できません");
+		return this.copy({ discordUsername: null, discordUserId: null });
+	}
+
+	private copy(
+		changes: Partial<{
+			name: UserName;
+			loginId: UserLoginId | null;
+			passwordHash: string | null;
+			discordUsername: DiscordUsername | null;
+			discordUserId: DiscordUserId | null;
+		}>,
+	): User {
 		return new User(
 			this.id,
-			this.loginId,
-			this.name,
-			this.passwordHash,
-			null,
-			null,
+			changes.name ?? this.name,
+			changes.loginId !== undefined ? changes.loginId : this.loginId,
+			changes.passwordHash !== undefined
+				? changes.passwordHash
+				: this.passwordHash,
+			changes.discordUsername !== undefined
+				? changes.discordUsername
+				: this.discordUsername,
+			changes.discordUserId !== undefined
+				? changes.discordUserId
+				: this.discordUserId,
 			this.createdAt,
 		);
 	}
 }
 
 function validatePasswordHash(passwordHash: string): string {
-	if (passwordHash.length === 0) {
+	if (passwordHash.length === 0)
 		throw new Error("パスワードハッシュが不正です");
-	}
 	return passwordHash;
 }

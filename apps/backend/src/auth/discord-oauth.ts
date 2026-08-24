@@ -12,6 +12,8 @@ type DiscordOAuthConfig = {
 export type DiscordOAuthUser = {
 	id: string;
 	username: string;
+	displayName: string;
+	avatarHash: string | null;
 };
 
 export function getDiscordAuthorizationUrl(state: string): string {
@@ -75,6 +77,8 @@ export async function getDiscordUserFromCode(
 	const userBody = (await userResponse.json()) as {
 		id?: unknown;
 		username?: unknown;
+		global_name?: unknown;
+		avatar?: unknown;
 	};
 	const id = DiscordUserIdSchema.safeParse(userBody.id);
 	const username = DiscordUsernameSchema.safeParse(userBody.username);
@@ -85,7 +89,16 @@ export async function getDiscordUserFromCode(
 		);
 	}
 
-	return { id: id.data, username: username.data };
+	const displayName =
+		typeof userBody.global_name === "string" && userBody.global_name.trim()
+			? userBody.global_name.trim()
+			: username.data;
+	return {
+		id: id.data,
+		username: username.data,
+		displayName,
+		avatarHash: typeof userBody.avatar === "string" ? userBody.avatar : null,
+	};
 }
 
 export function getDiscordOAuthFrontendUrl(): string {

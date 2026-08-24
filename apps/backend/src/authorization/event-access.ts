@@ -27,7 +27,9 @@ export function hasSeriesRole(
 	actualRole: SeriesRole | null,
 	requiredRole: SeriesRole,
 ): boolean {
-	return actualRole !== null && roleLevels[actualRole] >= roleLevels[requiredRole];
+	return (
+		actualRole !== null && roleLevels[actualRole] >= roleLevels[requiredRole]
+	);
 }
 
 export function evaluateEventVisibility(

@@ -15,19 +15,33 @@ export async function getOffkaiEventDiscordRoleMembers(
 ): Promise<Unbrand<GetOffkaiEventDiscordRoleMembersResponse>> {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(input.eventId);
-	const seriesRole = await repository.findSeriesMemberRole(ownerUserId, event.seriesId);
+	const seriesRole = await repository.findSeriesMemberRole(
+		ownerUserId,
+		event.seriesId,
+	);
 
 	if (!hasSeriesRole(seriesRole, "staff")) {
-		throw new AppError("FORBIDDEN", "このオフ会のDiscordロールを管理する権限がありません。");
+		throw new AppError(
+			"FORBIDDEN",
+			"このオフ会のDiscordロールを管理する権限がありません。",
+		);
 	}
 
 	if (!event.discordRoleId) {
-		throw new AppError("VALIDATION_ERROR", "Discordロールが設定されていません。");
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"Discordロールが設定されていません。",
+		);
 	}
 
-	const discordGuildId = await repository.findSeriesDiscordGuildId(event.seriesId);
+	const discordGuildId = await repository.findSeriesDiscordGuildId(
+		event.seriesId,
+	);
 	if (!discordGuildId) {
-		throw new AppError("VALIDATION_ERROR", "DiscordギルドIDが設定されていません。");
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"DiscordギルドIDが設定されていません。",
+		);
 	}
 
 	const roles = await discordService.listRoles(discordGuildId);
@@ -44,12 +58,14 @@ export async function getOffkaiEventDiscordRoleMembers(
 			),
 		),
 	];
-	const memberRoleProfiles = await discordService.getMemberRoleProfilesByUserIds({
-		guildId: discordGuildId,
-		roleId: event.discordRoleId,
-		userIds: discordUserIds,
-	});
-	const members: Unbrand<GetOffkaiEventDiscordRoleMembersResponse>["members"] = [];
+	const memberRoleProfiles =
+		await discordService.getMemberRoleProfilesByUserIds({
+			guildId: discordGuildId,
+			roleId: event.discordRoleId,
+			userIds: discordUserIds,
+		});
+	const members: Unbrand<GetOffkaiEventDiscordRoleMembersResponse>["members"] =
+		[];
 
 	for (const respondent of respondents) {
 		if (!respondent.discordUserId) {

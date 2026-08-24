@@ -172,17 +172,17 @@ export const useQuestionsForm = () => {
 		askBringingKigurumi: askBringingKigurumi.value.value,
 		overviewVisibility: overviewVisibility.value.value,
 		participantsVisibility: participantsVisibility.value.value,
-		commitmentQuestions: commitment.questions.value.filter(
-			(question) => !isBlankCommitmentQuestion(question),
-			).map((question) => ({
+		commitmentQuestions: commitment.questions.value
+			.filter((question) => !isBlankCommitmentQuestion(question))
+			.map((question) => ({
 				id: question.id,
 				question: question.question,
-			questionShort: question.questionShort,
-			description: question.description,
-			deadline: question.deadline,
-			capacity: question.capacity as number,
-			required: question.required,
-		})),
+				questionShort: question.questionShort,
+				description: question.description,
+				deadline: question.deadline,
+				capacity: question.capacity as number,
+				required: question.required,
+			})),
 		preferenceQuestions: preference.questions.value.map((question) => {
 			const base = {
 				id: question.id,

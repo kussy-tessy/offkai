@@ -14,13 +14,15 @@ enum EventVisibility {
   PARTICIPANTS
 }
 
+enum RefundRoundingUnit {
+  TEN
+  HUNDRED
+  FIVE_HUNDRED
+}
+
 model User {
-  id           String @id @default(uuid(7))
-  loginId      String @unique
-  name         String
-  passwordHash String
-  discordUsername    String? @unique
-  discordUserId      String? @unique
+  id   String @id @default(uuid(7))
+  name String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -31,12 +33,55 @@ model User {
   photoShares           OffkaiPhotoShare[]    @relation("PhotoShareUploader")
   photoDownloadStatuses PhotoDownloadStatus[]
   kigurumis             Kigurumi[]            @relation("KigurumiOwner")
+  authSessions          AuthSession[]
+  passwordCredential    PasswordCredential?
+  discordIdentity       DiscordIdentity?
+}
+
+model PasswordCredential {
+  userId       String @id
+  loginId      String @unique
+  passwordHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DiscordIdentity {
+  userId        String @id
+  discordUserId String @unique
+  username      String
+  displayName   String?
+  avatarHash    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuthSession {
+  id               String    @id
+  userId           String
+  refreshTokenHash String
+  expiresAt        DateTime
+  lastUsedAt       DateTime  @default(now())
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Series {
-  id                         String @id @default(uuid(7))
+  id                         String  @id @default(uuid(7))
   name                       String
-  preferenceQuestionTemplate Json   @default("[]")
+  preferenceQuestionTemplate Json    @default("[]")
   discordGuildId             String?
 
   createdAt DateTime @default(now())
@@ -67,33 +112,57 @@ model OffkaiEvent {
   name        String
   description String?
 
-  eventStartDate       DateTime @db.Date
-  eventEndDate         DateTime @db.Date
-  applicationStartDate DateTime
-  discordRoleId        String?
-  askBringingKigurumi Boolean @default(false)
+  eventStartDate         DateTime        @db.Date
+  eventEndDate           DateTime        @db.Date
+  applicationStartDate   DateTime
+  discordRoleId          String?
+  askBringingKigurumi    Boolean         @default(false)
   overviewVisibility     EventVisibility @default(AUTHENTICATED)
   participantsVisibility EventVisibility @default(AUTHENTICATED)
 
-  commitmentQuestions Json
   preferenceQuestions Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  series      Series             @relation(fields: [seriesId], references: [id])
-  answers     OffkaiAnswer[]
-  photoShares OffkaiPhotoShare[]
+  series              Series               @relation(fields: [seriesId], references: [id])
+  answers             OffkaiAnswer[]
+  commitmentQuestions CommitmentQuestion[]
+  finance             EventFinance?
+  photoShares         OffkaiPhotoShare[]
+}
+
+model CommitmentQuestion {
+  id      String @id
+  eventId String
+
+  question      String
+  questionShort String
+  deadline      DateTime
+  description   String
+  capacity      Int
+  required      Boolean   @default(false)
+  sortOrder     Int
+  archivedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  event                OffkaiEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  answers              CommitmentAnswer[]
+  settlementCategories SettlementCategory[]
+
+  @@index([eventId, archivedAt, sortOrder])
 }
 
 model OffkaiAnswer {
   id String @id @default(uuid(7))
 
-  eventId   String
-  userId    String
-  updatedBy String
+  eventId        String
+  userId         String
+  respondentName String
+  updatedBy      String
 
-  commitmentAnswers Json
   preferenceAnswers Json
   bringingKigurumis Json @default("[]")
 
@@ -104,10 +173,158 @@ model OffkaiAnswer {
   user    User        @relation("AnswerOwner", fields: [userId], references: [id])
   updater User        @relation("AnswerUpdater", fields: [updatedBy], references: [id])
 
-  histories OffkaiAnswerHistory[]
-  payment   ParticipantPayment?
+  histories                   OffkaiAnswerHistory[]
+  commitmentAnswers           CommitmentAnswer[]
+  settlementCategoryMembers   SettlementCategoryMember[]
+  settlementExpenseRecipients SettlementExpenseRecipient[]
+  finance                     ParticipantFinance?
+  payment                     ParticipantPayment?
 
   @@unique([eventId, userId])
+}
+
+model EventFinance {
+  eventId String @id
+
+  refundRoundingUnit     RefundRoundingUnit @default(TEN)
+  feeCalculationLockedAt DateTime?
+  collectionStartedAt    DateTime?
+  refundLockedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  event      OffkaiEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  categories SettlementCategory[]
+}
+
+model SettlementCategory {
+  id      String @id @default(uuid(7))
+  eventId String
+
+  name                       String
+  baseParticipationFeeAmount Int     @default(0)
+  commitmentQuestionId       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  finance            EventFinance               @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+  commitmentQuestion CommitmentQuestion?        @relation(fields: [commitmentQuestionId], references: [id], onDelete: Restrict)
+  members            SettlementCategoryMember[]
+  expenses           SettlementExpense[]
+  incomes            SettlementIncome[]
+
+  @@unique([eventId, name])
+  @@index([commitmentQuestionId])
+}
+
+model SettlementCategoryMember {
+  categoryId String
+  answerId   String
+
+  amountOverride Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  category SettlementCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  answer   OffkaiAnswer       @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, answerId])
+  @@index([answerId])
+}
+
+model SettlementExpense {
+  id         String @id @default(uuid(7))
+  categoryId String
+
+  title  String
+  amount Int
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  category   SettlementCategory           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  recipients SettlementExpenseRecipient[]
+
+  @@index([categoryId, createdAt])
+}
+
+model SettlementExpenseRecipient {
+  expenseId String
+  answerId  String
+  amount    Int
+
+  expense SettlementExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  answer  OffkaiAnswer      @relation(fields: [answerId], references: [id], onDelete: Restrict)
+
+  @@id([expenseId, answerId])
+  @@index([answerId])
+}
+
+model SettlementIncome {
+  id         String @id @default(uuid(7))
+  categoryId String
+
+  title  String
+  amount Int
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  category SettlementCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([categoryId, createdAt])
+}
+
+model ParticipantFinance {
+  answerId String @id
+
+  chargeAmount Int       @default(0)
+  note         String?
+  collectedAt  DateTime?
+
+  refundAmount       Int?
+  refundCalculatedAt DateTime?
+  refundedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  answer       OffkaiAnswer             @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  extraCharges ParticipantExtraCharge[]
+}
+
+model ParticipantExtraCharge {
+  id       String @id @default(uuid(7))
+  answerId String
+
+  title  String
+  amount Int
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  participantFinance ParticipantFinance @relation(fields: [answerId], references: [answerId], onDelete: Cascade)
+
+  @@index([answerId])
+}
+
+model CommitmentAnswer {
+  answerId   String
+  questionId String
+
+  answer Boolean?
+
+  answerRecord OffkaiAnswer       @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  question     CommitmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([answerId, questionId])
+  @@index([questionId, answer])
 }
 
 model ParticipantPayment {

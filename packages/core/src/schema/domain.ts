@@ -62,7 +62,8 @@ const EventVisibilityLevel: Record<EventVisibility, number> = {
 export const isVisibilityAtLeastAsRestricted = (
 	visibility: EventVisibility,
 	baseVisibility: EventVisibility,
-): boolean => EventVisibilityLevel[visibility] >= EventVisibilityLevel[baseVisibility];
+): boolean =>
+	EventVisibilityLevel[visibility] >= EventVisibilityLevel[baseVisibility];
 
 export const OffkaiEventIdSchema = z.string().uuid().brand("OffkaiEventId");
 export type OffkaiEventId = z.infer<typeof OffkaiEventIdSchema>;
@@ -111,6 +112,34 @@ export const PaymentAmountSchema = z
 	.max(2_147_483_647)
 	.brand("PaymentAmount");
 export type PaymentAmount = z.infer<typeof PaymentAmountSchema>;
+
+export const SettlementCategoryIdSchema = z
+	.string()
+	.uuid()
+	.brand("SettlementCategoryId");
+export type SettlementCategoryId = z.infer<typeof SettlementCategoryIdSchema>;
+
+export const ExtraChargeIdSchema = z.string().uuid().brand("ExtraChargeId");
+export type ExtraChargeId = z.infer<typeof ExtraChargeIdSchema>;
+
+export const SettlementExpenseIdSchema = z
+	.string()
+	.uuid()
+	.brand("SettlementExpenseId");
+export type SettlementExpenseId = z.infer<typeof SettlementExpenseIdSchema>;
+
+export const SettlementIncomeIdSchema = z
+	.string()
+	.uuid()
+	.brand("SettlementIncomeId");
+export type SettlementIncomeId = z.infer<typeof SettlementIncomeIdSchema>;
+
+export const RefundRoundingUnitSchema = z.union([
+	z.literal(10),
+	z.literal(100),
+	z.literal(500),
+]);
+export type RefundRoundingUnit = z.infer<typeof RefundRoundingUnitSchema>;
 
 export const DeadlineSchema = z.date().brand("Deadline");
 export type Deadline = z.infer<typeof DeadlineSchema>;

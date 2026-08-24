@@ -55,7 +55,11 @@ export const useCommitmentQuestions = () => {
 	const moveQuestion = (id: string, offset: -1 | 1) => {
 		const index = questions.value.findIndex((q) => q.id === id);
 		const destination = index + offset;
-		if (index === -1 || destination < 0 || destination >= questions.value.length) {
+		if (
+			index === -1 ||
+			destination < 0 ||
+			destination >= questions.value.length
+		) {
 			return;
 		}
 

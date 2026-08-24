@@ -4,7 +4,11 @@ import {
 	UserIdSchema,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
-import { createKigurumi, deleteKigurumi, getMyKigurumis } from "./kigurumi.usecase";
+import {
+	createKigurumi,
+	deleteKigurumi,
+	getMyKigurumis,
+} from "./kigurumi.usecase";
 
 export const kigurumiRoute: FastifyPluginAsync = async (app) => {
 	app.addHook("preHandler", app.auth.requireUser);

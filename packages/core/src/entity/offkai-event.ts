@@ -26,7 +26,7 @@ export class OffkaiEvent {
 		readonly participantsVisibility: EventVisibility,
 		readonly commitmentQuestions: CommitmentQuestion[],
 		readonly preferenceQuestions: PreferenceQuestion[],
-	) { }
+	) {}
 
 	static reconstruct(params: {
 		id: OffkaiEventId;

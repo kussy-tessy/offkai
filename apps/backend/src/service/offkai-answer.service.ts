@@ -136,12 +136,7 @@ export class OffkaiAnswerService {
 		for (const record of allAnswers) {
 			if (record.userId === userId) continue;
 
-			const answers = record.commitmentAnswers as unknown as {
-				questionId: string;
-				answer: "yes" | "no" | null;
-			}[];
-
-			for (const answer of answers) {
+			for (const answer of record.commitmentAnswers) {
 				if (answer.answer !== "yes") continue;
 				const current = counts.get(answer.questionId) ?? 0;
 				counts.set(answer.questionId, current + 1);

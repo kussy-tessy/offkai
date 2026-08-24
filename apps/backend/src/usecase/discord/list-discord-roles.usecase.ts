@@ -9,7 +9,10 @@ export async function listDiscordRoles(
 	const repository = new OffkaiEventRepository();
 	const discordGuildId = await repository.findOwnerSeriesDiscordGuildId(userId);
 	if (!discordGuildId) {
-		throw new AppError("VALIDATION_ERROR", "DiscordギルドIDが設定されていません。");
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"DiscordギルドIDが設定されていません。",
+		);
 	}
 
 	const roles = await discordService.listRoles(discordGuildId);

@@ -4,7 +4,7 @@ import type {
 	Unbrand,
 	UserId,
 } from "@offkai/core";
-import { format, isPassed } from "@offkai/core";
+import { formatForForm, isPassed } from "@offkai/core";
 import { hasSeriesRole } from "../../../authorization/event-access";
 import {
 	KigurumiRepository,
@@ -57,11 +57,7 @@ export async function getAnswerForm(
 	}
 	for (const record of allAnswers) {
 		if (record.userId === userId) continue;
-		const answers = record.commitmentAnswers as Array<{
-			questionId: string;
-			answer: "yes" | "no" | null;
-		}>;
-		for (const answer of answers) {
+		for (const answer of record.commitmentAnswers) {
 			if (answer.answer !== "yes") continue;
 			counts.set(answer.questionId, (counts.get(answer.questionId) ?? 0) + 1);
 		}
@@ -132,8 +128,8 @@ export async function getAnswerForm(
 			id: event.id,
 			title: event.name,
 			eventPeriod: {
-				startDate: format(event.eventPeriod.startDate, false),
-				endDate: format(event.eventPeriod.endDate, false),
+				startDate: formatForForm(event.eventPeriod.startDate, false),
+				endDate: formatForForm(event.eventPeriod.endDate, false),
 			},
 		},
 		commitmentQuestions,

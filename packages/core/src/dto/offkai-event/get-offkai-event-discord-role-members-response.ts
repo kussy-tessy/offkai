@@ -1,5 +1,10 @@
 import z from "zod";
-import { DiscordRoleIdSchema, DiscordUserIdSchema, UserIdSchema, UserNameSchema } from "../../schema";
+import {
+	DiscordRoleIdSchema,
+	DiscordUserIdSchema,
+	UserIdSchema,
+	UserNameSchema,
+} from "../../schema";
 
 export const DiscordRoleMemberUnavailableReasonSchema = z.enum([
 	"DISCORD_NOT_CONNECTED",

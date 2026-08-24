@@ -1,13 +1,13 @@
 import {
 	BringingKigurumiSchema,
-	CommitmentAnswerSchema,
-	GetParticipantAnswerTableResponseSchema,
-	PreferenceAnswerSchema,
 	type GetParticipantAnswerTableResponse,
+	GetParticipantAnswerTableResponseSchema,
 	type OffkaiEventId,
+	PreferenceAnswerSchema,
 	type Unbrand,
 } from "@offkai/core";
 import { AppError } from "../app-error";
+import { toDomainCommitmentAnswer } from "./commitment-mapper";
 import { prisma } from "./prisma";
 export class ParticipantAnswerTableRepository {
 	async getPage(
@@ -17,27 +17,31 @@ export class ParticipantAnswerTableRepository {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
 			select: {
-				commitmentQuestions: true,
+				commitmentQuestions: {
+					where: { archivedAt: null },
+					orderBy: { sortOrder: "asc" },
+					select: { id: true, questionShort: true },
+				},
 				preferenceQuestions: true,
 				askBringingKigurumi: true,
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					select: {
 						userId: true,
-						commitmentAnswers: true,
+						respondentName: true,
+						commitmentAnswers: {
+							where: { question: { archivedAt: null } },
+							select: { questionId: true, answer: true },
+						},
 						preferenceAnswers: true,
 						bringingKigurumis: true,
-						user: { select: { name: true } },
 					},
 				},
 			},
 		});
 		if (!event)
 			throw new AppError("EVENT_NOT_FOUND", "オフ会が見つかりません。");
-		const cq = event.commitmentQuestions as Array<{
-			id: string;
-			questionShort: string;
-		}>;
+		const cq = event.commitmentQuestions;
 		const pq = event.preferenceQuestions as Array<{
 			id: string;
 			question: string;
@@ -52,10 +56,10 @@ export class ParticipantAnswerTableRepository {
 			askBringingKigurumi: event.askBringingKigurumi,
 			participants: event.answers.map((a) => ({
 				userId: a.userId,
-				displayName: a.user.name,
+				displayName: a.respondentName,
 				commitmentAnswers: Object.fromEntries(
-					CommitmentAnswerSchema.array()
-						.parse(a.commitmentAnswers)
+					a.commitmentAnswers
+						.map(toDomainCommitmentAnswer)
 						.map((x) => [x.questionId, x.answer]),
 				),
 				preferenceAnswers: Object.fromEntries(

@@ -6,10 +6,15 @@ const BASE_URL =
 	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
 export function getApiBaseUrl(): string {
-	return new URL(BASE_URL, window.location.origin).toString().replace(/\/$/, "");
+	return new URL(BASE_URL, window.location.origin)
+		.toString()
+		.replace(/\/$/, "");
 }
 
 let apiClient: AxiosInstance | null = null;
+let refreshPromise: Promise<void> | null = null;
+
+type RetryableRequestConfig = AxiosRequestConfig & { _authRetry?: boolean };
 
 // axiosインスタンス生成（シングルトン）
 function createClient(): AxiosInstance {
@@ -19,6 +24,11 @@ function createClient(): AxiosInstance {
 		headers: {
 			"Content-Type": "application/json",
 		},
+		withCredentials: true,
+	});
+	const refreshClient = axios.create({
+		baseURL: BASE_URL,
+		timeout: 10000,
 		withCredentials: true,
 	});
 
@@ -43,10 +53,32 @@ function createClient(): AxiosInstance {
 			}
 			return response;
 		},
-		(error) => {
+		async (error) => {
 			console.error("[API Error]", error);
-			// エラーを素通しにしてコール元で処理
-			return Promise.reject(error);
+			const status = error.response?.status;
+			const config = error.config as RetryableRequestConfig | undefined;
+			const isAuthEndpoint = config?.url?.startsWith("/auth/") ?? false;
+
+			if (status !== 401 || !config || config._authRetry || isAuthEndpoint) {
+				return Promise.reject(error);
+			}
+
+			config._authRetry = true;
+			if (!refreshPromise) {
+				refreshPromise = refreshClient
+					.post("/auth/refresh")
+					.then(() => undefined)
+					.finally(() => {
+						refreshPromise = null;
+					});
+			}
+
+			try {
+				await refreshPromise;
+				return instance.request(config);
+			} catch {
+				return Promise.reject(error);
+			}
 		},
 	);
 

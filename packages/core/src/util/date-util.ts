@@ -3,54 +3,87 @@ export function isPassed(target: Date, reference: Date) {
 }
 
 const DAY_OF_WEEK = ["日", "月", "火", "水", "木", "金", "土"] as const;
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-function toDate(dateArg: Date | string) {
-	if (dateArg instanceof Date) return dateArg;
+type DateParts = {
+	year: number;
+	month: number;
+	day: number;
+	hours: number;
+	minutes: number;
+	seconds: number;
+	dayOfWeek: number;
+};
 
-	const match = dateArg.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-	if (!match) return new Date(dateArg);
+function getJstParts(dateArg: Date | string): DateParts {
+	if (typeof dateArg === "string") {
+		const local = dateArg.match(
+			/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/,
+		);
+		if (local) {
+			const [, year, month, day, hours = "0", minutes = "0", seconds = "0"] =
+				local;
+			return {
+				year: Number(year),
+				month: Number(month),
+				day: Number(day),
+				hours: Number(hours),
+				minutes: Number(minutes),
+				seconds: Number(seconds),
+				dayOfWeek: new Date(
+					Date.UTC(Number(year), Number(month) - 1, Number(day)),
+				).getUTCDay(),
+			};
+		}
+	}
 
-	const [, y, m, d] = match;
-	return new Date(Number(y), Number(m) - 1, Number(d));
+	const instant = dateArg instanceof Date ? dateArg : new Date(dateArg);
+	const jst = new Date(instant.getTime() + JST_OFFSET_MS);
+	return {
+		year: jst.getUTCFullYear(),
+		month: jst.getUTCMonth() + 1,
+		day: jst.getUTCDate(),
+		hours: jst.getUTCHours(),
+		minutes: jst.getUTCMinutes(),
+		seconds: jst.getUTCSeconds(),
+		dayOfWeek: jst.getUTCDay(),
+	};
 }
 
 export function format(dateArg: Date | string, includesTime = true) {
-	const date = toDate(dateArg);
-	const yyyy = date.getFullYear();
-	const mm = String(date.getMonth() + 1).padStart(2, "0");
-	const dd = String(date.getDate()).padStart(2, "0");
+	const { year, month, day, hours, minutes } = getJstParts(dateArg);
+	const mm = String(month).padStart(2, "0");
+	const dd = String(day).padStart(2, "0");
 
 	if (!includesTime) {
-		return `${yyyy}-${mm}-${dd}`;
+		return `${year}/${mm}/${dd}`;
 	}
 
-	const hh = String(date.getHours()).padStart(2, "0");
-	const mi = String(date.getMinutes()).padStart(2, "0");
+	const hh = String(hours).padStart(2, "0");
+	const mi = String(minutes).padStart(2, "0");
 
-	return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+	return `${year}/${mm}/${dd} ${hh}:${mi}`;
+}
+
+/** Format a JST value for date and datetime form fields. */
+export function formatForForm(dateArg: Date | string, includesTime = true) {
+	return format(dateArg, includesTime).replace(/\//g, "-");
 }
 
 export function formatWithSeconds(dateArg: Date | string) {
-	const date = toDate(dateArg);
-	const base = format(date);
-	const seconds = String(date.getSeconds()).padStart(2, "0");
+	const base = format(dateArg);
+	const seconds = String(getJstParts(dateArg).seconds).padStart(2, "0");
 
 	return `${base}:${seconds}`;
 }
 
 export function formatWithDay(dateArg: Date | string, includesTime = false) {
-	const date = toDate(dateArg);
-	const day = DAY_OF_WEEK[date.getDay()];
-
-	if (includesTime) {
-		const dateOnly = format(date, false);
-		const hh = String(date.getHours()).padStart(2, "0");
-		const mi = String(date.getMinutes()).padStart(2, "0");
-		return `${dateOnly}（${day}） ${hh}:${mi}`;
-	}
-
-	const base = format(date, includesTime);
-	return `${base}（${day}）`;
+	const { dayOfWeek } = getJstParts(dateArg);
+	const formatted = format(dateArg, includesTime);
+	const [date, time] = formatted.split(" ");
+	return time
+		? `${date}（${DAY_OF_WEEK[dayOfWeek]}） ${time}`
+		: `${date}（${DAY_OF_WEEK[dayOfWeek]}）`;
 }
 
 export function formatPeriodWithDay(

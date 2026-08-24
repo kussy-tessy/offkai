@@ -21,7 +21,7 @@
 
     <section class="border-b border-slate-200 pb-8">
       <h2 class="mb-4 text-lg font-semibold text-slate-900">パスワード</h2>
-      <form class="max-w-md space-y-4" @submit.prevent="handlePasswordSubmit">
+      <form v-if="user?.loginId" class="max-w-md space-y-4" @submit.prevent="handlePasswordSubmit">
         <MyFormField label="現在のパスワード" required>
           <template #default="{ id }">
             <MyTextBox
@@ -46,6 +46,29 @@
         </MyFormField>
         <MyButton type="submit" color="primary" :loading="savingPassword" :disabled="savingPassword">
           パスワードを変更する
+        </MyButton>
+      </form>
+      <form v-else class="max-w-md space-y-4" @submit.prevent="handleCredentialSubmit">
+        <p class="text-sm text-slate-600">
+          ログインIDとパスワードを設定すると、Discordを使えない場合でもログインできます。
+        </p>
+        <MyFormField label="ログインID" required>
+          <template #default="{ id }">
+            <MyTextBox :id="id" :value="newLoginId" :on-change="v => newLoginId = v" :error="newLoginIdError" />
+          </template>
+        </MyFormField>
+        <MyFormField label="パスワード" required>
+          <template #default="{ id }">
+            <MyTextBox :id="id" type="password" :value="credentialPassword" :on-change="v => credentialPassword = v" :error="credentialPasswordError" />
+          </template>
+        </MyFormField>
+        <MyFormField label="パスワード（確認）" required>
+          <template #default="{ id }">
+            <MyTextBox :id="id" type="password" :value="credentialPasswordConfirmation" :on-change="v => credentialPasswordConfirmation = v" :error="credentialPasswordConfirmationError" />
+          </template>
+        </MyFormField>
+        <MyButton type="submit" color="primary" :loading="savingCredential" :disabled="savingCredential">
+          ログインIDとパスワードを設定する
         </MyButton>
       </form>
     </section>
@@ -93,19 +116,22 @@
             color="red"
             variant="ghost"
             :loading="disconnectingDiscord"
-            :disabled="disconnectingDiscord"
+            :disabled="disconnectingDiscord || !user?.loginId"
             @click="handleDiscordDisconnect"
           >
             解除する
           </MyButton>
         </div>
+        <p v-if="user?.discordUserId && !user.loginId" class="text-sm text-slate-600">
+          Discord連携を解除するには、先にログインIDとパスワードを設定してください。
+        </p>
       </div>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-  import type { GetMyDiscordProfileResponse } from "@offkai/core";
+  import { type GetMyDiscordProfileResponse, UserLoginIdSchema } from "@offkai/core";
   import { onMounted, ref, watch } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import MyBackLink from "@/common/components/MyBackLink.vue";
@@ -114,7 +140,7 @@
   import MyTextBox from "@/common/components/MyTextbox.vue";
   import { getApiErrorMessage, useApi, useAuth, useToast } from "@/common/composables";
 
-  const { user, updateName, changePassword, connectDiscord, disconnectDiscord } = useAuth();
+  const { user, updateName, changePassword, setPasswordCredential, connectDiscord, disconnectDiscord } = useAuth();
   const { get } = useApi();
   const { success, error } = useToast();
   const route = useRoute();
@@ -123,13 +149,20 @@
   const name = ref(user.value?.name ?? "");
   const currentPassword = ref("");
   const newPassword = ref("");
+  const newLoginId = ref("");
+  const credentialPassword = ref("");
+  const credentialPasswordConfirmation = ref("");
 
   const nameError = ref("");
   const currentPasswordError = ref("");
   const newPasswordError = ref("");
+  const newLoginIdError = ref("");
+  const credentialPasswordError = ref("");
+  const credentialPasswordConfirmationError = ref("");
 
   const savingName = ref(false);
   const savingPassword = ref(false);
+  const savingCredential = ref(false);
   const connectingDiscord = ref(false);
   const disconnectingDiscord = ref(false);
   const discordProfile = ref<GetMyDiscordProfileResponse | null>(null);
@@ -172,6 +205,7 @@
       currentPassword.value = "";
       newPassword.value = "";
       success("パスワードを変更しました。");
+      await router.push("/login");
     } catch (cause) {
       error(getApiErrorMessage(cause, "パスワードの変更に失敗しました。"));
     } finally {
@@ -179,9 +213,41 @@
     }
   };
 
-  const handleDiscordConnect = () => {
+  const handleCredentialSubmit = async () => {
+    newLoginIdError.value = "";
+    credentialPasswordError.value = "";
+    credentialPasswordConfirmationError.value = "";
+    const loginId = newLoginId.value.trim().toLowerCase();
+    if (!UserLoginIdSchema.safeParse(loginId).success) {
+      newLoginIdError.value = "半角英数字と_のみ使用できます";
+    }
+    if (!credentialPassword.value) credentialPasswordError.value = "必須です";
+    if (credentialPassword.value !== credentialPasswordConfirmation.value) {
+      credentialPasswordConfirmationError.value = "パスワードが一致しません";
+    }
+    if (newLoginIdError.value || credentialPasswordError.value || credentialPasswordConfirmationError.value) return;
+
+    savingCredential.value = true;
+    try {
+      await setPasswordCredential(loginId, credentialPassword.value);
+      credentialPassword.value = "";
+      credentialPasswordConfirmation.value = "";
+      success("ログインIDとパスワードを設定しました。");
+    } catch (cause) {
+      error(getApiErrorMessage(cause, "ログインIDとパスワードの設定に失敗しました。"));
+    } finally {
+      savingCredential.value = false;
+    }
+  };
+
+  const handleDiscordConnect = async () => {
     connectingDiscord.value = true;
-    connectDiscord();
+    try {
+      await connectDiscord();
+    } catch (cause) {
+      connectingDiscord.value = false;
+      error(getApiErrorMessage(cause, "Discord連携を開始できませんでした。"));
+    }
   };
 
   const handleDiscordDisconnect = async () => {

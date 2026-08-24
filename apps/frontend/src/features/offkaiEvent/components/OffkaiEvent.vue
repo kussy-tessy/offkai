@@ -21,7 +21,7 @@
 
     <MyFormField v-slot="{ id }" label="募集開始日時">
       <MyDatePicker :id="id" type="date" :value="applicationStartDate.value" :on-change="applicationStartDate.set"
-        :error="errors.applicationStartDate" :includes-time="true" />
+        :error="errors.applicationStartDate" :includes-time="true" :initial-time="{ hours: 0, minutes: 0 }" />
     </MyFormField>
 
     <MyFormField v-slot="{ id }" label="説明">
