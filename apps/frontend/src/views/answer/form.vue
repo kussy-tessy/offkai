@@ -13,6 +13,11 @@
         </p>
       </div>
 
+      <div v-if="isGuestEdit" class="max-w-md">
+        <label for="guest-name" class="mb-1 block text-sm font-semibold text-slate-700">ゲスト名</label>
+        <MyTextbox id="guest-name" :value="guestName" :on-change="(value) => guestName = value" required />
+      </div>
+
       <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
         :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" />
       <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
@@ -42,6 +47,7 @@
   import { computed, onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
   import MyButton from "@/common/components/MyButton.vue";
+  import MyTextbox from "@/common/components/MyTextbox.vue";
   import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
   import BringingKigurumiAnswers from "@/features/answer/components/BringingKigurumiAnswers.vue";
   import CommitmentAnswers from "@/features/answer/components/CommitmentAnswers.vue";
@@ -54,18 +60,30 @@
   const props = defineProps<{
     id: string;
     userId?: string;
+    answerId?: string;
+    createGuest?: boolean;
   }>();
-  const isOwnerEdit = computed(() => Boolean(props.userId));
+  const isGuestEdit = computed(() => Boolean(props.answerId || props.createGuest));
+  const isOwnerEdit = computed(() => Boolean(props.userId) || isGuestEdit.value);
+  const guestName = ref("");
   const formApiPath = computed(() =>
-    props.userId
+    props.answerId
+      ? `/offkai-event/${props.id}/guest-answers/${props.answerId}/form`
+      : props.createGuest
+        ? `/offkai-event/${props.id}/guest-answer-form`
+        : props.userId
       ? `/offkai-event/${props.id}/answers/${props.userId}/form`
       : `/offkai-event/${props.id}/my-answer-form`,
   );
   const saveApiPath = computed(() =>
-    props.userId ? `/offkai-event/${props.id}/answers/${props.userId}` : `/offkai-event/${props.id}/answers`,
+    props.answerId
+      ? `/offkai-event/${props.id}/guest-answers/${props.answerId}`
+      : props.createGuest
+        ? `/offkai-event/${props.id}/guest-answers`
+        : props.userId ? `/offkai-event/${props.id}/answers/${props.userId}` : `/offkai-event/${props.id}/answers`,
   );
 
-  const { get, put, loading } = useApi();
+  const { get, post, put, loading } = useApi();
   const { success, error } = useToast();
   const router = useRouter();
   const errorMessage = ref<string | null>(null);
@@ -164,6 +182,7 @@
         return;
       }
       formData.value = data;
+      guestName.value = data.respondent?.isGuest ? data.respondent.displayName : "";
       hydrateAnswers(data);
     } catch (cause) {
       errorMessage.value = getApiErrorMessage(cause, "回答フォームの取得に失敗しました。");
@@ -202,12 +221,20 @@
           : [],
       };
 
-      await put(saveApiPath.value, payload);
+      if (isGuestEdit.value && !guestName.value.trim()) {
+        errorMessage.value = "ゲスト名を入力してください。";
+        return;
+      }
+      const requestPayload = isGuestEdit.value
+        ? { ...payload, respondentName: guestName.value.trim(), answerId: props.answerId }
+        : payload;
+      if (props.createGuest) await post(saveApiPath.value, requestPayload);
+      else await put(saveApiPath.value, requestPayload);
       success(isOwnerEdit.value ? "回答を更新しました。" : "回答を送信しました。")
       await router.push(
         isOwnerEdit.value
           ? `/offkai/${props.id}/participants/answers`
-          : "/dashboard",
+          : `/offkai/${props.id}/answers`,
       );
     } catch (cause) {
       const message = getApiErrorMessage(cause, "回答の送信に失敗しました。");

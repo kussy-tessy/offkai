@@ -18,7 +18,6 @@
       <OffkaiDetailHeader
         :offkai="detail.offkai"
         :has-answered="true"
-				:permissions="detail.viewer.permissions"
       />
 
       <p class="text-sm text-slate-600">

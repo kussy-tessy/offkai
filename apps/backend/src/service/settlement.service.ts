@@ -1,8 +1,8 @@
 import {
-	GetEventSettlementResponseSchema,
-	SettlementCalculator,
 	type GetEventSettlementResponse,
+	GetEventSettlementResponseSchema,
 	type OffkaiEventId,
+	SettlementCalculator,
 	type Unbrand,
 } from "@offkai/core";
 import {
@@ -25,7 +25,7 @@ export class SettlementPageAssembler {
 	): Promise<Unbrand<GetEventSettlementResponse>> {
 		const [finance, participants, expenses, incomes] = await Promise.all([
 			this.financeRepository.findByEventId(eventId),
-			this.eventRepository.findRespondentUsersByEventId(eventId),
+			this.eventRepository.findParticipantsByEventId(eventId),
 			this.expenseRepository.findManyByEventId(eventId),
 			this.incomeRepository.findManyByEventId(eventId),
 		]);

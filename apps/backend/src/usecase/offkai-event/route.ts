@@ -1,6 +1,8 @@
 import {
-	CreatePhotoShareRequestSchema,
+	CalculateEventRefundRequestSchema,
+	CreateOffkaiEventRequestSchema,
 	CreateParticipantExtraChargeRequestSchema,
+	CreatePhotoShareRequestSchema,
 	CreateSettlementCategoryRequestSchema,
 	CreateSettlementExpenseRequestSchema,
 	CreateSettlementIncomeRequestSchema,
@@ -9,43 +11,47 @@ import {
 	DeleteSettlementCategoryRequestSchema,
 	DeleteSettlementExpenseRequestSchema,
 	DeleteSettlementIncomeRequestSchema,
-	PhotoShareItemRouteParamsSchema,
-	PhotoShareRouteParamsSchema,
-	UpdatePhotoDownloadStatusRequestSchema,
-	UpdatePhotoShareRequestSchema,
-	CreateOffkaiEventRequestSchema,
+	GetEventFinanceRequestSchema,
+	GetEventRefundRequestSchema,
+	GetEventSettlementRequestSchema,
 	GetMyAnswerFormRequestSchema,
 	GetOffkaiDetailRequestSchema,
 	GetOffkaiEventDiscordRoleMembersRequestSchema,
 	GetOffkaiEventRequestSchema,
-	GetParticipantPaymentsRequestSchema,
 	GetParticipantAnswerTableRequestSchema,
-	GetEventFinanceRequestSchema,
-	GetEventSettlementRequestSchema,
-	GetEventRefundRequestSchema,
-	CalculateEventRefundRequestSchema,
+	GetParticipantPaymentsRequestSchema,
+	ManageGuestAnswerRequestSchema,
 	ManageOffkaiAnswerRequestSchema,
+	PhotoShareItemRouteParamsSchema,
+	PhotoShareRouteParamsSchema,
+	SaveGuestAnswerRequestSchema,
 	SaveOffkaiAnswerRequestSchema,
-	UpdateOffkaiEventDiscordRoleRequestSchema,
-	UpdateOffkaiEventDiscordRoleMemberRequestSchema,
-	UpdateParticipantPaymentRequestSchema,
 	SyncSettlementCategoryMembersRequestSchema,
-	UpdateFinanceSettingsRequestSchema,
 	UpdateFeeCalculationLockRequestSchema,
+	UpdateFinanceSettingsRequestSchema,
+	UpdateOffkaiEventDiscordRoleMemberRequestSchema,
+	UpdateOffkaiEventDiscordRoleRequestSchema,
+	UpdateParticipantCollectionRequestSchema,
 	UpdateParticipantExtraChargeRequestSchema,
 	UpdateParticipantFinanceNoteRequestSchema,
-	UpdateParticipantCollectionRequestSchema,
+	UpdateParticipantPaymentRequestSchema,
+	UpdateParticipantRefundRequestSchema,
+	UpdatePhotoDownloadStatusRequestSchema,
+	UpdatePhotoShareRequestSchema,
 	UpdateSettlementCategoryMemberRequestSchema,
 	UpdateSettlementCategoryRequestSchema,
 	UpdateSettlementExpenseRequestSchema,
 	UpdateSettlementIncomeRequestSchema,
-	UpdateParticipantRefundRequestSchema,
 	UserIdSchema,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
 import { getMyAnswerForm } from "./answer-command/get-my-answer-form.usecase";
 import {
+	deleteGuestAnswer,
+	getManagedGuestAnswerForm,
 	getManagedOffkaiAnswerForm,
+	getNewGuestAnswerForm,
+	saveGuestAnswer,
 	saveManagedOffkaiAnswer,
 } from "./answer-command/manage-offkai-answer.usecase";
 import { saveOffkaiAnswer } from "./answer-command/save-offkai-answer.usecase";
@@ -62,11 +68,11 @@ import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.useca
 import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
 import { updateOffkaiEvent } from "./event-management/update-offkai-event.usecase";
 import { FinanceUsecase, RefundUsecase, SettlementUsecase } from "./finance";
+import { getParticipantAnswerTable } from "./participant-answer-table";
 import {
 	getParticipantPayments,
 	updateParticipantPayment,
 } from "./participant-payment";
-import { getParticipantAnswerTable } from "./participant-answer-table";
 import {
 	createPhotoShare,
 	deletePhotoShare,
@@ -562,6 +568,53 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		const input = ManageOffkaiAnswerRequestSchema.parse(request.params);
 		return getManagedOffkaiAnswerForm(input, ownerUserId);
 	});
+
+	app.get(
+		"/:eventId/guest-answers/:answerId/form",
+		requireUser,
+		async (request) => {
+			const ownerUserId = UserIdSchema.parse(request.user.userId);
+			const input = ManageGuestAnswerRequestSchema.parse(request.params);
+			return getManagedGuestAnswerForm(input, ownerUserId);
+		},
+	);
+
+	app.get("/:eventId/guest-answer-form", requireUser, async (request) => {
+		const ownerUserId = UserIdSchema.parse(request.user.userId);
+		const { eventId } = GetParticipantAnswerTableRequestSchema.parse(
+			request.params,
+		);
+		return getNewGuestAnswerForm(eventId, ownerUserId);
+	});
+
+	app.post("/:eventId/guest-answers", requireUser, async (request, reply) => {
+		const ownerUserId = UserIdSchema.parse(request.user.userId);
+		const input = SaveGuestAnswerRequestSchema.parse({
+			...(request.body as object),
+			...(request.params as object),
+		});
+		return reply.code(201).send(await saveGuestAnswer(input, ownerUserId));
+	});
+
+	app.put("/:eventId/guest-answers/:answerId", requireUser, async (request) => {
+		const ownerUserId = UserIdSchema.parse(request.user.userId);
+		const input = SaveGuestAnswerRequestSchema.parse({
+			...(request.body as object),
+			...(request.params as object),
+		});
+		return saveGuestAnswer(input, ownerUserId);
+	});
+
+	app.delete(
+		"/:eventId/guest-answers/:answerId",
+		requireUser,
+		async (request, reply) => {
+			const ownerUserId = UserIdSchema.parse(request.user.userId);
+			const input = ManageGuestAnswerRequestSchema.parse(request.params);
+			await deleteGuestAnswer(input, ownerUserId);
+			return reply.code(204).send();
+		},
+	);
 
 	app.post("/", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);

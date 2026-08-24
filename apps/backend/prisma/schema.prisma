@@ -50,8 +50,8 @@ model PasswordCredential {
 }
 
 model DiscordIdentity {
-  userId        String @id
-  discordUserId String @unique
+  userId        String  @id
+  discordUserId String  @unique
   username      String
   displayName   String?
   avatarHash    String?
@@ -109,8 +109,9 @@ model OffkaiEvent {
 
   seriesId String
 
-  name        String
-  description String?
+  name                   String
+  description            String?
+  participantDescription String?
 
   eventStartDate         DateTime        @db.Date
   eventEndDate           DateTime        @db.Date
@@ -159,7 +160,7 @@ model OffkaiAnswer {
   id String @id @default(uuid(7))
 
   eventId        String
-  userId         String
+  userId         String?
   respondentName String
   updatedBy      String
 
@@ -170,7 +171,7 @@ model OffkaiAnswer {
   updatedAt DateTime @default(now()) @updatedAt
 
   event   OffkaiEvent @relation(fields: [eventId], references: [id])
-  user    User        @relation("AnswerOwner", fields: [userId], references: [id])
+  user    User?       @relation("AnswerOwner", fields: [userId], references: [id])
   updater User        @relation("AnswerUpdater", fields: [updatedBy], references: [id])
 
   histories                   OffkaiAnswerHistory[]
@@ -344,7 +345,7 @@ model OffkaiAnswerHistory {
 
   offkaiAnswerId String
   eventId        String
-  userId         String
+  userId         String?
 
   commitmentAnswers Json
   preferenceAnswers Json

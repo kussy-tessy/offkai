@@ -27,6 +27,7 @@
     },
     applicationStartDate: "",
     description: "",
+    participantDescription: "",
     discordRoleId: null,
     askBringingKigurumi: false,
 		overviewVisibility: "AUTHENTICATED",
@@ -50,7 +51,7 @@
     try {
       await put(`/offkai-event/${id}`, payload as CreateOffkaiEventRequest)
       success("オフ会を更新しました。")
-      await router.push(`/offkai/${id}/detail`)
+      await router.push(`/offkai/${id}/overview`)
     } catch (cause) {
       error(getApiErrorMessage(cause, "オフ会の更新に失敗しました。"))
     }

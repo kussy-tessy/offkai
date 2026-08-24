@@ -26,6 +26,7 @@
     },
     applicationStartDate: "",
     description: "",
+    participantDescription: "",
     discordRoleId: null,
     askBringingKigurumi: false,
 		overviewVisibility: "AUTHENTICATED",
@@ -62,7 +63,7 @@
       const result = await post<{ id: string }>("/offkai-event", payload);
       if (!result) return;
       success("オフ会を作成しました。");
-      await router.push(`/offkai/${result.id}/detail`);
+      await router.push(`/offkai/${result.id}/overview`);
     } catch (cause) {
       error(getApiErrorMessage(cause, "オフ会の作成に失敗しました。"));
     }

@@ -97,7 +97,7 @@ export class FinanceUsecase {
 		if (finance.refundLockedAt) {
 			throw new AppError(
 				"VALIDATION_ERROR",
-				"返金開始後は丸め単位を変更できません。",
+				"返金開始後は切り捨て単位を変更できません。",
 			);
 		}
 		const updated = runBusinessRule(() =>

@@ -46,7 +46,25 @@ describe("シリーズ権限", () => {
 			canEditAnswers: false,
 			canManageDiscordRole: true,
 			canManagePayments: true,
+			canViewParticipantDescription: true,
 		});
+	});
+
+	it("参加者向け案内は参加表明者とstaff以上だけが閲覧できる", () => {
+		const access = { granted: true } as const;
+		const permissions = (seriesRole: "staff" | null, isParticipant: boolean) =>
+			createEventViewerPermissions({
+				seriesRole,
+				isParticipant,
+				overviewAccess: access,
+				participantsAccess: access,
+			});
+
+		expect(permissions(null, false).canViewParticipantDescription).toBe(false);
+		expect(permissions(null, true).canViewParticipantDescription).toBe(true);
+		expect(permissions("staff", false).canViewParticipantDescription).toBe(
+			true,
+		);
 	});
 });
 

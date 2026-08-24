@@ -33,6 +33,7 @@ export async function getOffkaiEvent(
 		},
 		applicationStartDate: formatForForm(event.applicationStartDate),
 		description: event.description,
+		participantDescription: event.participantDescription,
 		discordRoleId: event.discordRoleId,
 		askBringingKigurumi: event.askBringingKigurumi,
 		overviewVisibility: event.overviewVisibility,

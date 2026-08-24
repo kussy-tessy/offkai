@@ -16,6 +16,7 @@ export const OffkaiEventResponseSchema = z.object({
 	eventPeriod: LocalDatePeriodStringSchema,
 	applicationStartDate: LocalDateTimeMinuteStringSchema,
 	description: z.string(),
+	participantDescription: z.string(),
 	discordRoleId: DiscordRoleIdSchema.nullable(),
 	askBringingKigurumi: z.boolean().default(false),
 	overviewVisibility: EventVisibilitySchema,

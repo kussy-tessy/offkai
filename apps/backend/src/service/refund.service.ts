@@ -1,10 +1,10 @@
 import {
 	FinalRefundCalculator,
-	GetEventRefundResponseSchema,
-	SettlementCalculator,
 	type GetEventRefundResponse,
+	GetEventRefundResponseSchema,
 	type OffkaiEventId,
 	type RationalAmount,
+	SettlementCalculator,
 	type Unbrand,
 } from "@offkai/core";
 import {
@@ -36,7 +36,7 @@ export class RefundPageAssembler {
 		const [finance, respondents, participantFinances, expenses, incomes] =
 			await Promise.all([
 				this.financeRepository.findByEventId(eventId),
-				this.eventRepository.findRespondentUsersByEventId(eventId),
+				this.eventRepository.findParticipantsByEventId(eventId),
 				this.participantRepository.findManyByEventId(eventId),
 				this.expenseRepository.findManyByEventId(eventId),
 				this.incomeRepository.findManyByEventId(eventId),

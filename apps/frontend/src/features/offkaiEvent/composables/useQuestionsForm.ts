@@ -28,6 +28,7 @@ export type OffkaiEventInitializeProps = {
 	};
 	applicationStartDate: string;
 	description: string;
+	participantDescription: string;
 	discordRoleId: string | null;
 	askBringingKigurumi: boolean;
 	overviewVisibility: EventVisibility;
@@ -42,6 +43,7 @@ export const useQuestionsForm = () => {
 	const eventEndDate = useField("");
 	const applicationStartDate = useField("");
 	const description = useField("");
+	const participantDescription = useField("");
 	const discordRoleId = useField<string | null>(null);
 	const askBringingKigurumi = useField(false);
 	const overviewVisibility = useField<EventVisibility>("AUTHENTICATED");
@@ -148,6 +150,7 @@ export const useQuestionsForm = () => {
 		eventEndDate.set(props.eventPeriod.endDate);
 		applicationStartDate.set(props.applicationStartDate);
 		description.set(props.description);
+		participantDescription.set(props.participantDescription);
 		discordRoleId.set(props.discordRoleId);
 		askBringingKigurumi.set(props.askBringingKigurumi);
 		overviewVisibility.set(props.overviewVisibility);
@@ -168,6 +171,7 @@ export const useQuestionsForm = () => {
 		},
 		applicationStartDate: applicationStartDate.value.value,
 		description: description.value.value,
+		participantDescription: participantDescription.value.value,
 		discordRoleId: discordRoleId.value.value,
 		askBringingKigurumi: askBringingKigurumi.value.value,
 		overviewVisibility: overviewVisibility.value.value,
@@ -224,6 +228,7 @@ export const useQuestionsForm = () => {
 		eventEndDate,
 		applicationStartDate,
 		description,
+		participantDescription,
 		discordRoleId,
 		askBringingKigurumi,
 		overviewVisibility,

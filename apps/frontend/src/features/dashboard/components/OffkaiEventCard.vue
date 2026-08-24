@@ -2,9 +2,9 @@
   <div
     class="group relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg hover:border-teal-200 transition-all duration-200">
     <RouterLink
-      :to="`/offkai/${event.id}/detail`"
+      :to="`/offkai/${event.id}/overview`"
       class="absolute inset-0 z-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset"
-      :aria-label="`${event.title}の回答一覧を表示する`"
+      :aria-label="`${event.title}の概要を表示する`"
     />
 
     <!-- アクセントバー -->

@@ -6,7 +6,6 @@ import {
 	LocalDatePeriodStringSchema,
 	OffkaiEventIdSchema,
 	QuestionIdSchema,
-	UserIdSchema,
 	UserNameSchema,
 } from "../../schema";
 
@@ -56,8 +55,9 @@ export const GetMyAnswerFormResponseSchema = z.object({
 	event: OffkaiEventHeaderSchema,
 	respondent: z
 		.object({
-			id: UserIdSchema,
+			id: z.string().uuid(),
 			displayName: UserNameSchema,
+			isGuest: z.boolean().default(false),
 		})
 		.optional(),
 	commitmentQuestions: z.array(CommitmentQuestionWithAnswerSchema),

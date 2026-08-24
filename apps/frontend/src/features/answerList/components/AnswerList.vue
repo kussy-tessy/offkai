@@ -2,7 +2,6 @@
   <OffkaiDetailHeader
     :offkai="data.offkai"
     :has-answered="hasAnswered"
-		:permissions="data.viewer.permissions"
   />
 
 	<section
@@ -167,7 +166,7 @@
 	const hasAnswered = computed(() => data.viewer.isParticipant);
 	const loginRoute = computed(() => ({
 		path: "/login",
-		query: { redirect: `/offkai/${data.offkai.id}/detail` },
+		query: { redirect: `/offkai/${data.offkai.id}/answers` },
 	}));
 	const participantsAccessMessage = computed(() => {
 		switch (data.participantsAccess.reason) {

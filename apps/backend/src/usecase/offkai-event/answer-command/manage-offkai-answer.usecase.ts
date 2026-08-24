@@ -1,6 +1,8 @@
 import type {
 	GetMyAnswerFormResponse,
+	ManageGuestAnswerRequest,
 	ManageOffkaiAnswerRequest,
+	SaveGuestAnswerRequest,
 	SaveOffkaiAnswerRequest,
 	SaveOffkaiAnswerResponse,
 	Unbrand,
@@ -11,7 +13,6 @@ import { hasSeriesRole } from "../../../authorization/event-access";
 import {
 	OffkaiAnswerRepository,
 	OffkaiEventRepository,
-	UserRepository,
 } from "../../../repository";
 import { OffkaiAnswerService } from "../../../service/offkai-answer.service";
 import { getAnswerForm } from "./get-my-answer-form.usecase";
@@ -30,10 +31,6 @@ export async function getManagedOffkaiAnswerForm(
 	if (!answer)
 		throw new AppError("ANSWER_NOT_FOUND", "編集対象の回答が見つかりません。");
 
-	const respondent = await new UserRepository().findById(input.userId);
-	if (!respondent)
-		throw new AppError("RESPONDENT_NOT_FOUND", "回答者が見つかりません。");
-
 	const form = await getAnswerForm(
 		{ eventId: input.eventId },
 		input.userId,
@@ -44,9 +41,84 @@ export async function getManagedOffkaiAnswerForm(
 		...form,
 		respondent: {
 			id: input.userId,
-			displayName: respondent.name,
+			displayName: answer.respondentName ?? "",
+			isGuest: false,
 		},
 	};
+}
+
+export async function getManagedGuestAnswerForm(
+	input: ManageGuestAnswerRequest,
+	ownerUserId: UserId,
+): Promise<Unbrand<GetMyAnswerFormResponse>> {
+	await requireEventOwner(input, ownerUserId);
+	const answer = await new OffkaiAnswerRepository().findById(input.answerId);
+	if (!answer || answer.eventId !== input.eventId || answer.userId !== null)
+		throw new AppError(
+			"ANSWER_NOT_FOUND",
+			"編集対象のゲスト回答が見つかりません。",
+		);
+	const form = await getAnswerForm(
+		{ eventId: input.eventId },
+		null,
+		true,
+		input.answerId,
+	);
+	return {
+		...form,
+		respondent: {
+			id: answer.id,
+			displayName: answer.respondentName ?? "",
+			isGuest: true,
+		},
+	};
+}
+
+export async function getNewGuestAnswerForm(
+	eventId: ManageGuestAnswerRequest["eventId"],
+	ownerUserId: UserId,
+): Promise<Unbrand<GetMyAnswerFormResponse>> {
+	await requireEventOwner({ eventId }, ownerUserId);
+	return getAnswerForm({ eventId }, null, true);
+}
+
+export async function saveGuestAnswer(
+	input: SaveGuestAnswerRequest,
+	ownerUserId: UserId,
+): Promise<Unbrand<SaveOffkaiAnswerResponse>> {
+	await requireEventOwner(input, ownerUserId);
+	if (!input.respondentName.trim())
+		throw new AppError("VALIDATION_ERROR", "ゲストの名前を入力してください。");
+	const answer = await new OffkaiAnswerService().prepareGuestAnswerEntity(
+		input.eventId,
+		input.respondentName,
+		input.commitmentAnswers,
+		input.preferenceAnswers,
+		input.bringingKigurumis,
+		input.answerId,
+	);
+	await new OffkaiAnswerRepository().save(answer, ownerUserId);
+	return { ok: true };
+}
+
+export async function deleteGuestAnswer(
+	input: ManageGuestAnswerRequest,
+	ownerUserId: UserId,
+): Promise<void> {
+	await requireEventOwner(input, ownerUserId);
+	const repository = new OffkaiAnswerRepository();
+	const answer = await repository.findById(input.answerId);
+	if (!answer || answer.eventId !== input.eventId || answer.userId !== null)
+		throw new AppError(
+			"ANSWER_NOT_FOUND",
+			"削除対象のゲスト回答が見つかりません。",
+		);
+	if (await repository.hasFinancialData(input.answerId))
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"会計データがあるゲストは削除できません。",
+		);
+	await repository.delete(input.answerId);
 }
 
 export async function saveManagedOffkaiAnswer(
@@ -69,7 +141,7 @@ export async function saveManagedOffkaiAnswer(
 }
 
 async function requireEventOwner(
-	input: ManageOffkaiAnswerRequest,
+	input: { eventId: ManageOffkaiAnswerRequest["eventId"] },
 	ownerUserId: UserId,
 ) {
 	const repository = new OffkaiEventRepository();

@@ -1,126 +1,27 @@
 <template>
-  <header class="pb-8 mb-8 text-center space-y-4">
-    <div class="flex flex-wrap items-start justify-center gap-2">
-      <h1 class="text-4xl font-bold tracking-tight">{{ offkai.title }}</h1>
-      <div v-if="showManagementActions" class="flex items-center gap-1">
-        <button v-if="permissions.canEditEvent" type="button"
-          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-          aria-label="オフ会を編集する" title="オフ会を編集する" @click="router.push(`/offkai/${offkai.id}/edit`)">
-          <FontAwesomeIcon :icon="faPenToSquare" class="text-lg" />
-        </button>
-        <button v-if="canManageParticipants" type="button"
-          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-          aria-label="参加者を管理する" title="参加者を管理する" @click="router.push(managementRoute)">
-          <FontAwesomeIcon :icon="faUserGear" class="text-lg" />
-        </button>
-        <span v-if="permissions.canDeleteEvent" class="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
-        <button v-if="permissions.canDeleteEvent" type="button"
-          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          aria-label="オフ会を削除する" title="オフ会を削除する" @click="confirmDeleteOpen = true">
-          <FontAwesomeIcon :icon="faTrash" class="text-lg" />
-        </button>
-      </div>
-    </div>
-
-    <MyBadge :icon="faCalendar">開催日：{{ formatPeriodWithDay(offkai.eventPeriod) }}</MyBadge>
-    <p v-if="offkai.description" class="text-left text-gray-600 whitespace-pre-line">
-      <LinkifiedText :text="offkai.description" />
-    </p>
-    <hr class="border-teal-200 border-t-2" />
-
-    <div class="flex flex-col items-center gap-2 pt-2">
-      <MyButton :color="canAnswer ? 'primary' : 'gray'" size="lg" :disabled="!canAnswer"
-        @click="router.push(`/offkai/${offkai.id}/join`)">
-        <FontAwesomeIcon :icon="faPen" class="mr-2" />
-        {{ hasAnswered ? '参加表明を編集する' : '参加する' }}
-      </MyButton>
-      <p v-if="!canAnswer" class="text-sm text-gray-500">
-        募集開始前です。{{ formatWithDay(offkai.applicationStartDate, true) }} から参加表明できます。
-      </p>
-    </div>
-
-    <RouteTabs v-if="hasAnswered" class="pt-2" label="オフ会コンテンツ" :items="contentTabs" />
+  <header class="mb-8 space-y-6">
+    <h1 class="text-center text-4xl font-bold tracking-tight">{{ offkai.title }}</h1>
+    <RouteTabs label="オフ会コンテンツ" :items="contentTabs" variant="equal" />
   </header>
-
-  <MyConfirmDialog v-model:open="confirmDeleteOpen" title="オフ会を削除しますか？"
-    :message="`「${offkai.title}」を削除します。回答データも削除され、この操作は元に戻せません。`" confirm-label="削除する" confirm-color="red"
-    :loading="deleting" @confirm="deleteEvent" />
 </template>
 
 <script setup lang="ts">
-  import { faCalendar, faClipboardList, faImages, faPen, faPenToSquare, faTrash, faUserGear } from "@fortawesome/free-solid-svg-icons";
-  import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-  import { formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
-  import { computed, ref } from "vue";
-  import { useRouter } from "vue-router";
-  import LinkifiedText from "@/common/components/LinkifiedText.vue";
-  import MyBadge from "@/common/components/MyBadge.vue";
-  import MyButton from "@/common/components/MyButton.vue";
-  import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
-  import type { RouteTabItem } from "@/common/components/RouteTabs.types";
-  import RouteTabs from "@/common/components/RouteTabs.vue";
-  import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { faCircleInfo, faClipboardList, faImages } from "@fortawesome/free-solid-svg-icons";
+import type { OffkaiDetail, Unbrand } from "@offkai/core";
+import { computed } from "vue";
+import type { RouteTabItem } from "@/common/components/RouteTabs.types";
+import RouteTabs from "@/common/components/RouteTabs.vue";
 
-  const props = defineProps<{
-    offkai: Unbrand<OffkaiDetail>["offkai"];
-    hasAnswered: boolean;
-    permissions: Unbrand<OffkaiDetail>["viewer"]["permissions"];
-  }>();
+const props = defineProps<{
+  offkai: Unbrand<OffkaiDetail>["offkai"];
+  hasAnswered: boolean;
+}>();
 
-  const router = useRouter();
-  const { del } = useApi();
-  const { success, error } = useToast();
-  const confirmDeleteOpen = ref(false);
-  const deleting = ref(false);
-  const canAnswer = computed(
-    () =>
-      props.permissions.canEditAnswers ||
-      props.hasAnswered ||
-      Date.now() >= new Date(props.offkai.applicationStartDate).getTime(),
-  );
-
-  const canManageParticipants = computed(
-    () =>
-      props.permissions.canManageDiscordRole ||
-      props.permissions.canManagePayments,
-  );
-  const managementRoute = computed(() =>
-    props.permissions.canManageDiscordRole
-      ? `/offkai/${props.offkai.id}/participants/discord`
-      : `/offkai/${props.offkai.id}/participants/payments`,
-  );
-  const showManagementActions = computed(
-    () =>
-      props.permissions.canEditEvent ||
-      props.permissions.canDeleteEvent ||
-      canManageParticipants.value,
-  );
-
-  const contentTabs = computed<RouteTabItem[]>(() => [
-    {
-      label: "回答一覧",
-      to: `/offkai/${props.offkai.id}/detail`,
-      icon: faClipboardList,
-    },
-    {
-      label: "写真共有",
-      to: `/offkai/${props.offkai.id}/photos`,
-      icon: faImages,
-    },
-  ]);
-
-  const deleteEvent = async () => {
-    if (deleting.value) return;
-    deleting.value = true;
-    try {
-      await del(`/offkai-event/${props.offkai.id}`);
-      success("オフ会を削除しました。");
-      confirmDeleteOpen.value = false;
-      await router.push("/dashboard");
-    } catch (cause) {
-      error(getApiErrorMessage(cause, "オフ会の削除に失敗しました。"));
-    } finally {
-      deleting.value = false;
-    }
-  };
+const contentTabs = computed<RouteTabItem[]>(() => [
+  { label: "概要", to: `/offkai/${props.offkai.id}/overview`, icon: faCircleInfo },
+  { label: "回答一覧", to: `/offkai/${props.offkai.id}/answers`, icon: faClipboardList },
+  ...(props.hasAnswered
+    ? [{ label: "写真共有", to: `/offkai/${props.offkai.id}/photos`, icon: faImages }]
+    : []),
+]);
 </script>

@@ -1,9 +1,9 @@
 import {
-	GetEventFinanceResponseSchema,
-	ParticipantFinance,
 	type EventFinance,
 	type GetEventFinanceResponse,
+	GetEventFinanceResponseSchema,
 	type OffkaiEventId,
+	ParticipantFinance,
 	type ParticipantFinance as ParticipantFinanceEntity,
 	type Unbrand,
 } from "@offkai/core";
@@ -28,7 +28,7 @@ export class FinancePageAssembler {
 			await Promise.all([
 				this.eventRepository.findCommitmentQuestionsForFinance(eventId),
 				this.financeRepository.findByEventId(eventId),
-				this.eventRepository.findRespondentUsersByEventId(eventId),
+				this.eventRepository.findParticipantsByEventId(eventId),
 				this.participantFinanceRepository.findManyByEventId(eventId),
 			]);
 		const financesByUserId = new Map(

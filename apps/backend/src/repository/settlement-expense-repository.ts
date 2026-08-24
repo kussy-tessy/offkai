@@ -1,8 +1,8 @@
 import {
-	SettlementExpense,
 	type OffkaiEventId,
-	type SettlementExpenseId,
 	type SettlementCategoryId,
+	SettlementExpense,
+	type SettlementExpenseId,
 	type UserId,
 } from "@offkai/core";
 import type { FinanceDbClient } from "./finance-repository-shared";
@@ -19,7 +19,10 @@ export class SettlementExpenseRepository {
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 			include: {
 				recipients: {
-					select: { amount: true, answer: { select: { userId: true } } },
+					select: {
+						amount: true,
+						answer: { select: { id: true, userId: true } },
+					},
 				},
 			},
 		});
@@ -31,7 +34,7 @@ export class SettlementExpenseRepository {
 				amount: record.amount,
 				note: record.note,
 				recipients: record.recipients.map((recipient) => ({
-					userId: recipient.answer.userId as UserId,
+					userId: (recipient.answer.userId ?? recipient.answer.id) as UserId,
 					amount: recipient.amount,
 				})),
 			}),
@@ -55,13 +58,16 @@ export class SettlementExpenseRepository {
 	): Promise<void> {
 		const userIds = expense.recipients.map((recipient) => recipient.userId);
 		const answers = await this.client.offkaiAnswer.findMany({
-			where: { eventId, userId: { in: userIds } },
+			where: {
+				eventId,
+				OR: [{ id: { in: userIds } }, { userId: { in: userIds } }],
+			},
 			select: { id: true, userId: true },
 		});
 		if (answers.length !== userIds.length)
 			throw new Error("受取人に指定された参加者が見つかりません。");
 		const answerIdByUserId = new Map(
-			answers.map((answer) => [answer.userId, answer.id]),
+			answers.map((answer) => [answer.userId ?? answer.id, answer.id]),
 		);
 		const recipients = expense.recipients.map((recipient) => ({
 			answerId: answerIdByUserId.get(recipient.userId)!,

@@ -3,7 +3,7 @@
     <header>
       <h2 class="text-xl font-bold text-slate-900">経費精算</h2>
       <p class="mt-1 text-sm text-slate-600">
-        区分ごとの経費と協力金を入力し、参加者ごとの丸め前返金を確認します。
+        区分ごとの経費と協力金を入力し、参加者ごとの切り捨て前返金を確認します。
       </p>
     </header>
     <div v-if="loading" class="py-16 text-center text-sm text-slate-400">

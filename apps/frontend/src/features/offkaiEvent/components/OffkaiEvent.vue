@@ -28,6 +28,18 @@
       <MyTextarea :id="id" :value="description.value" :on-change="description.set" rows="12" />
     </MyFormField>
 
+    <MyFormField v-slot="{ id }" label="参加者向け案内">
+      <MyTextarea
+        :id="id"
+        :value="participantDescription.value"
+        :on-change="participantDescription.set"
+        rows="8"
+      />
+      <p class="mt-1 text-sm text-slate-500">
+        参加表明を送信したユーザーと運営者だけに表示されます。
+      </p>
+    </MyFormField>
+
     <section class="space-y-4 rounded-xl border border-teal-100 bg-teal-50/50 p-4">
       <h2 class="text-xl font-semibold text-slate-800">公開範囲</h2>
       <MyFormField v-slot="{ id }" label="オフ会概要">
@@ -105,6 +117,7 @@
     eventEndDate,
     applicationStartDate,
     description,
+    participantDescription,
     askBringingKigurumi,
 		overviewVisibility,
 		participantsVisibility,

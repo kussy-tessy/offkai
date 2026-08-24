@@ -1,7 +1,7 @@
 import {
-	ParticipantFinance,
 	type ExtraChargeId,
 	type OffkaiEventId,
+	ParticipantFinance,
 	type PaymentAmount,
 	type UserId,
 } from "@offkai/core";
@@ -18,6 +18,7 @@ export class ParticipantFinanceRepository {
 			where: { eventId },
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 			select: {
+				id: true,
 				userId: true,
 				finance: {
 					select: {
@@ -33,7 +34,7 @@ export class ParticipantFinanceRepository {
 			},
 		});
 		return answers.map((answer) =>
-			this.toDomain(answer.userId, answer.finance),
+			this.toDomain(answer.userId ?? answer.id, answer.finance),
 		);
 	}
 
@@ -41,9 +42,10 @@ export class ParticipantFinanceRepository {
 		eventId: OffkaiEventId,
 		userId: UserId,
 	): Promise<ParticipantFinance | null> {
-		const answer = await this.client.offkaiAnswer.findUnique({
-			where: { eventId_userId: { eventId, userId } },
+		const answer = await this.client.offkaiAnswer.findFirst({
+			where: { eventId, OR: [{ id: userId }, { userId }] },
 			select: {
+				id: true,
 				userId: true,
 				finance: {
 					select: {
@@ -58,15 +60,20 @@ export class ParticipantFinanceRepository {
 				},
 			},
 		});
-		return answer ? this.toDomain(answer.userId, answer.finance) : null;
+		return answer
+			? this.toDomain(answer.userId ?? answer.id, answer.finance)
+			: null;
 	}
 
 	async save(
 		eventId: OffkaiEventId,
 		finance: ParticipantFinance,
 	): Promise<void> {
-		const answer = await this.client.offkaiAnswer.findUniqueOrThrow({
-			where: { eventId_userId: { eventId, userId: finance.userId } },
+		const answer = await this.client.offkaiAnswer.findFirstOrThrow({
+			where: {
+				eventId,
+				OR: [{ id: finance.userId }, { userId: finance.userId }],
+			},
 			select: { id: true, finance: { select: { chargeAmount: true } } },
 		});
 		await this.client.participantFinance.upsert({

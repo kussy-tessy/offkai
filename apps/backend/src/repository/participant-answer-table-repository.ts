@@ -27,6 +27,7 @@ export class ParticipantAnswerTableRepository {
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					select: {
+						id: true,
 						userId: true,
 						respondentName: true,
 						commitmentAnswers: {
@@ -48,6 +49,7 @@ export class ParticipantAnswerTableRepository {
 		}>;
 		return GetParticipantAnswerTableResponseSchema.parse({
 			canEditAnswers,
+			canManageGuests: canEditAnswers,
 			commitmentQuestions: cq.map((q) => ({
 				id: q.id,
 				question: q.questionShort,
@@ -55,7 +57,9 @@ export class ParticipantAnswerTableRepository {
 			preferenceQuestions: pq,
 			askBringingKigurumi: event.askBringingKigurumi,
 			participants: event.answers.map((a) => ({
+				answerId: a.id,
 				userId: a.userId,
+				isGuest: a.userId === null,
 				displayName: a.respondentName,
 				commitmentAnswers: Object.fromEntries(
 					a.commitmentAnswers

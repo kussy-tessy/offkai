@@ -1,4 +1,5 @@
 import type {
+	AnswerId,
 	GetMyAnswerFormRequest,
 	GetMyAnswerFormResponse,
 	Unbrand,
@@ -25,29 +26,32 @@ export async function getMyAnswerForm(
 
 export async function getAnswerForm(
 	input: GetMyAnswerFormRequest,
-	userId: UserId,
+	userId: UserId | null,
 	bypassBusinessRules = false,
+	answerId?: AnswerId,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
 	const eventRepository = new OffkaiEventRepository();
 	const event = await eventRepository.findById(input.eventId);
-	const seriesRole = await eventRepository.findSeriesMemberRole(
-		userId,
-		event.seriesId,
-	);
+	const seriesRole = userId
+		? await eventRepository.findSeriesMemberRole(userId, event.seriesId)
+		: null;
 	const canBypassParticipationRestrictions =
 		bypassBusinessRules || hasSeriesRole(seriesRole, "owner");
 	const answerRepository = new OffkaiAnswerRepository();
-	const myAnswer = await answerRepository.findByEventAndUser(
-		input.eventId,
-		userId,
-	);
+	const myAnswer = answerId
+		? await answerRepository.findById(answerId)
+		: userId
+			? await answerRepository.findByEventAndUser(input.eventId, userId)
+			: null;
 	if (!canBypassParticipationRestrictions && !myAnswer) {
 		rejectBeforeApplicationStart(event);
 	}
 
 	const [allAnswers, kigurumiOptions] = await Promise.all([
 		answerRepository.findManyByEventId(input.eventId),
-		new KigurumiRepository().findManyByOwnerUserId(userId),
+		userId
+			? new KigurumiRepository().findManyByOwnerUserId(userId)
+			: Promise.resolve([]),
 	]);
 
 	// 自分を除いた各 commitment question の "yes" 数を集計
@@ -56,7 +60,7 @@ export async function getAnswerForm(
 		counts.set(question.id, 0);
 	}
 	for (const record of allAnswers) {
-		if (record.userId === userId) continue;
+		if (record.id === myAnswer?.id) continue;
 		for (const answer of record.commitmentAnswers) {
 			if (answer.answer !== "yes") continue;
 			counts.set(answer.questionId, (counts.get(answer.questionId) ?? 0) + 1);

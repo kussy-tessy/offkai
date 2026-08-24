@@ -56,6 +56,7 @@ export const OffkaiDetailSchema = z.object({
 		id: OffkaiEventIdSchema,
 		title: z.string(),
 		description: z.string(),
+		participantDescription: z.string().nullable(),
 		eventPeriod: LocalDatePeriodStringSchema,
 		applicationStartDate: ISODateTimeStringSchema,
 		askBringingKigurumi: z.boolean().default(false),
@@ -65,6 +66,7 @@ export const OffkaiDetailSchema = z.object({
 		isParticipant: z.boolean(),
 		permissions: z.object({
 			canViewOverview: z.boolean(),
+			canViewParticipantDescription: z.boolean(),
 			canViewParticipants: z.boolean(),
 			canViewPrivateAnswers: z.boolean(),
 			canEditEvent: z.boolean(),

@@ -19,6 +19,7 @@ export class OffkaiEvent {
 		readonly name: string,
 		readonly eventPeriod: EventPeriod,
 		readonly description: string,
+		readonly participantDescription: string,
 		readonly applicationStartDate: ApplicationStartDate,
 		readonly discordRoleId: DiscordRoleId | null,
 		readonly askBringingKigurumi: boolean,
@@ -34,6 +35,7 @@ export class OffkaiEvent {
 		name: string;
 		eventPeriod: EventPeriod;
 		description: string;
+		participantDescription?: string;
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
@@ -48,6 +50,7 @@ export class OffkaiEvent {
 			params.name,
 			params.eventPeriod,
 			params.description,
+			params.participantDescription ?? "",
 			params.applicationStartDate,
 			params.discordRoleId,
 			params.askBringingKigurumi ?? false,
@@ -63,6 +66,7 @@ export class OffkaiEvent {
 		name: string;
 		eventPeriod: EventPeriod;
 		description: string;
+		participantDescription: string;
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId?: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
@@ -80,6 +84,7 @@ export class OffkaiEvent {
 			params.name,
 			params.eventPeriod,
 			params.description,
+			params.participantDescription,
 			params.applicationStartDate,
 			params.discordRoleId ?? null,
 			params.askBringingKigurumi ?? false,
@@ -100,6 +105,7 @@ export class OffkaiEvent {
 		name: string;
 		eventPeriod: EventPeriod;
 		description: string;
+		participantDescription: string;
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId?: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
@@ -117,6 +123,7 @@ export class OffkaiEvent {
 			params.name,
 			params.eventPeriod,
 			params.description,
+			params.participantDescription,
 			params.applicationStartDate,
 			params.discordRoleId ?? this.discordRoleId,
 			params.askBringingKigurumi ?? this.askBringingKigurumi,

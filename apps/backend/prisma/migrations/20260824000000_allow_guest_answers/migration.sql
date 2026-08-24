@@ -1,0 +1,5 @@
+ALTER TABLE "OffkaiAnswer"
+ALTER COLUMN "userId" DROP NOT NULL;
+
+ALTER TABLE "OffkaiAnswerHistory"
+ALTER COLUMN "userId" DROP NOT NULL;

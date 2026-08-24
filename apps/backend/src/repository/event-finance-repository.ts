@@ -1,10 +1,10 @@
 import {
 	EventFinance,
-	SettlementCategory,
 	type OffkaiEventId,
 	type PaymentAmount,
 	type QuestionId,
 	type RefundRoundingUnit,
+	SettlementCategory,
 	type SettlementCategoryId,
 	type UserId,
 } from "@offkai/core";
@@ -14,7 +14,10 @@ import { prisma } from "./prisma";
 
 const categoryInclude = {
 	members: {
-		select: { amountOverride: true, answer: { select: { userId: true } } },
+		select: {
+			amountOverride: true,
+			answer: { select: { id: true, userId: true } },
+		},
 	},
 } satisfies Prisma.SettlementCategoryInclude;
 type CategoryRecord = Prisma.SettlementCategoryGetPayload<{
@@ -90,17 +93,13 @@ export class EventFinanceRepository {
 			},
 		});
 		await this.client.settlementCategoryMember.deleteMany({
-			where: {
-				categoryId: category.id,
-				answer: {
-					userId: { notIn: category.members.map((member) => member.userId) },
-				},
-			},
+			where: { categoryId: category.id },
 		});
 		for (const member of category.members) {
-			const answer = await this.client.offkaiAnswer.findUniqueOrThrow({
+			const answer = await this.client.offkaiAnswer.findFirstOrThrow({
 				where: {
-					eventId_userId: { eventId: category.eventId, userId: member.userId },
+					eventId: category.eventId,
+					OR: [{ id: member.userId }, { userId: member.userId }],
 				},
 				select: { id: true },
 			});
@@ -127,7 +126,7 @@ function toSettlementCategory(category: CategoryRecord): SettlementCategory {
 		baseParticipationFeeAmount: category.baseParticipationFeeAmount,
 		commitmentQuestionId: category.commitmentQuestionId as QuestionId | null,
 		members: category.members.map((member) => ({
-			userId: member.answer.userId as UserId,
+			userId: (member.answer.userId ?? member.answer.id) as UserId,
 			amountOverride: member.amountOverride as PaymentAmount | null,
 		})),
 	});

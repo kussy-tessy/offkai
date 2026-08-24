@@ -60,6 +60,7 @@ export class OffkaiEventRepository {
 			seriesId: record.seriesId as OffkaiSeriesId,
 			name: record.name,
 			description: record.description ?? "",
+			participantDescription: record.participantDescription ?? "",
 			eventPeriod: EventPeriodSchema.parse({
 				startDate: record.eventStartDate,
 				endDate: record.eventEndDate,
@@ -151,6 +152,7 @@ export class OffkaiEventRepository {
 			seriesId: event.seriesId,
 			name: event.name,
 			description: event.description,
+			participantDescription: event.participantDescription,
 			eventStartDate: event.eventPeriod.startDate,
 			eventEndDate: event.eventPeriod.endDate,
 			applicationStartDate: event.applicationStartDate,
@@ -337,7 +339,7 @@ export class OffkaiEventRepository {
 		eventId: OffkaiEventId,
 	): Promise<OffkaiEventRespondentUser[]> {
 		const records = await this.prisma.offkaiAnswer.findMany({
-			where: { eventId },
+			where: { eventId, userId: { not: null } },
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 			select: {
 				respondentName: true,
@@ -352,12 +354,41 @@ export class OffkaiEventRepository {
 			},
 		});
 
+		return records.flatMap((record) =>
+			record.user
+				? [
+						{
+							userId: record.user.id as UserId,
+							displayName: record.respondentName as UserName,
+							discordUsername: record.user.discordIdentity
+								?.username as DiscordUsername | null,
+							discordUserId: record.user.discordIdentity
+								?.discordUserId as DiscordUserId | null,
+						},
+					]
+				: [],
+		);
+	}
+
+	async findParticipantsByEventId(
+		eventId: OffkaiEventId,
+	): Promise<OffkaiEventRespondentUser[]> {
+		const records = await this.prisma.offkaiAnswer.findMany({
+			where: { eventId },
+			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+			select: {
+				id: true,
+				userId: true,
+				respondentName: true,
+				user: { select: { discordIdentity: true } },
+			},
+		});
 		return records.map((record) => ({
-			userId: record.user.id as UserId,
+			userId: (record.userId ?? record.id) as UserId,
 			displayName: record.respondentName as UserName,
-			discordUsername: record.user.discordIdentity
+			discordUsername: record.user?.discordIdentity
 				?.username as DiscordUsername | null,
-			discordUserId: record.user.discordIdentity
+			discordUserId: record.user?.discordIdentity
 				?.discordUserId as DiscordUserId | null,
 		}));
 	}
@@ -417,6 +448,7 @@ export class OffkaiEventRepository {
 		});
 
 		if (!record) return null;
+		if (!record.user) return null;
 
 		return {
 			userId: record.user.id as UserId,

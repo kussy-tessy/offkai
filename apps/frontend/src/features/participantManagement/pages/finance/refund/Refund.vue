@@ -33,7 +33,7 @@
         class="rounded-lg border border-slate-300 bg-slate-100 p-3 text-sm text-slate-700"
       >
         <strong>返金を開始しています。</strong>
-        返金額・経費・収入・丸め単位は変更できません。個人の返金済みチェックは解除できます。
+        返金額・経費・収入・切り捨て単位は変更できません。個人の返金済みチェックは解除できます。
       </div>
       <div
         v-if="completed"
@@ -72,11 +72,8 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 class="font-bold text-slate-900">返金計算</h3>
-            <p class="mt-1 text-xs text-slate-500">
-              丸め単位：{{ page.refundRoundingUnit }}円
-              <template v-if="page.refundCalculatedAt"
-                >・{{ format(page.refundCalculatedAt) }}に計算</template
-              >
+            <p v-if="page.refundCalculatedAt" class="mt-1 text-xs text-slate-500">
+              {{ format(page.refundCalculatedAt) }}に計算
             </p>
           </div>
           <MyButton
@@ -89,9 +86,22 @@
             {{ page.refundCalculatedAt ? "返金額を再計算" : "返金額を計算" }}
           </MyButton>
         </div>
+        <label class="mt-4 block text-sm text-slate-600">
+          切り捨て単位
+          <select
+            :value="page.refundRoundingUnit"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base disabled:bg-slate-100 disabled:text-slate-500 sm:w-48"
+            :disabled="page.refundLockedAt !== null || saving !== null"
+            @change="updateRoundingUnit"
+          >
+            <option :value="10">10円単位</option>
+            <option :value="100">100円単位</option>
+            <option :value="500">500円単位</option>
+          </select>
+        </label>
         <dl class="mt-4 divide-y divide-slate-100 text-sm">
           <div class="flex justify-between gap-3 py-2">
-            <dt class="text-slate-600">丸め前返金原資</dt>
+            <dt class="text-slate-600">切り捨て前返金原資</dt>
             <dd class="font-semibold tabular-nums">
               {{ money(page.totalUnroundedRefundAmount) }}
             </dd>
@@ -108,7 +118,7 @@
             class="flex justify-between gap-3 border-t border-slate-300 py-2"
           >
             <dt class="font-semibold text-slate-700">
-              丸めによってイベントに残る金額
+              切り捨てによってイベントに残る金額
             </dt>
             <dd class="font-bold tabular-nums text-teal-800">
               {{ money(page.roundingRemainder) }}
@@ -258,7 +268,7 @@
                       <div
                         class="flex justify-between border-t border-slate-200 pt-1.5"
                       >
-                        <dt class="font-semibold">丸め前合計</dt>
+                        <dt class="font-semibold">切り捨て前合計</dt>
                         <dd class="font-bold tabular-nums">
                           {{
                             decimalMoney(
@@ -296,7 +306,7 @@
     <MyConfirmDialog
       v-model:open="startConfirmOpen"
       title="返金を開始しますか？"
-      message="返金を開始すると、返金額・経費・収入・丸め単位を変更できなくなります。このロックは解除できません。"
+      message="返金を開始すると、返金額・経費・収入・切り捨て単位を変更できなくなります。このロックは解除できません。"
       confirm-label="返金を開始"
       :loading="saving === 'toggle'"
       @confirm="confirmStartRefund"
@@ -336,7 +346,7 @@ const basePath = `/offkai-event/${eventId}/finance/refunds`;
 const page = ref<RefundPage | null>(null);
 const loading = ref(true);
 const loadError = ref("");
-const saving = ref<"calculate" | "toggle" | null>(null);
+const saving = ref<"calculate" | "settings" | "toggle" | null>(null);
 const startConfirmOpen = ref(false);
 const pendingParticipant = ref<RefundParticipant | null>(null);
 const unrefundDialogOpen = ref(false);
@@ -431,6 +441,32 @@ const calculate = async () => {
     toast.success("返金額を計算しました。");
   } catch (cause) {
     toast.error(getApiErrorMessage(cause, "返金額を計算できませんでした。"));
+  } finally {
+    saving.value = null;
+  }
+};
+const updateRoundingUnit = async (event: Event) => {
+  if (!page.value || saving.value) return;
+  const select = event.target as HTMLSelectElement;
+  const previousUnit = page.value.refundRoundingUnit;
+  const refundRoundingUnit = Number(
+    select.value,
+  ) as RefundPage["refundRoundingUnit"];
+  if (refundRoundingUnit === previousUnit) return;
+  saving.value = "settings";
+  try {
+    await put(`/offkai-event/${eventId}/finance/settings`, {
+      refundRoundingUnit,
+    });
+    const result = await get<RefundPage>(basePath);
+    if (!result) throw new Error();
+    page.value = result;
+    toast.success("切り捨て単位を変更しました。");
+  } catch (cause) {
+    select.value = String(previousUnit);
+    toast.error(
+      getApiErrorMessage(cause, "切り捨て単位を変更できませんでした。"),
+    );
   } finally {
     saving.value = null;
   }

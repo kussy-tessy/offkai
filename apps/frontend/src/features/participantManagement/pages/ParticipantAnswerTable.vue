@@ -4,9 +4,10 @@
       <p class="text-sm text-slate-600">
         回答を横一列に並べています。コピーするとスプレッドシートへそのまま貼り付けられます。
       </p>
-      <MyButton v-if="data?.participants.length" size="sm" @click="copyTable"
-        >表をコピー</MyButton
-      >
+      <div class="flex gap-2">
+        <MyButton v-if="data?.canManageGuests" size="sm" @click="router.push(`/offkai/${eventId}/guests/new`)">ゲストを追加</MyButton>
+        <MyButton v-if="data?.participants.length" size="sm" @click="copyTable">表をコピー</MyButton>
+      </div>
     </div>
     <div v-if="loading" class="py-12 text-center text-sm text-gray-400">
       読み込み中…
@@ -47,7 +48,7 @@
         <tbody>
           <tr
             v-for="participant in data.participants"
-            :key="participant.userId"
+            :key="participant.answerId"
           >
             <td
               v-for="cell in rowCells(participant)"
@@ -63,12 +64,21 @@
                   :aria-label="`${participant.displayName}さんの回答を編集`"
                   @click="
                     router.push(
-                      `/offkai/${eventId}/answers/${participant.userId}/edit`,
+                      participant.isGuest
+                        ? `/offkai/${eventId}/guests/${participant.answerId}/edit`
+                        : `/offkai/${eventId}/answers/${participant.userId}/edit`,
                     )
                   "
                 >
                   <FontAwesomeIcon :icon="faPenToSquare" />
                 </button>
+                <button
+                  v-if="data.canManageGuests && participant.isGuest"
+                  type="button"
+                  class="ml-2 text-rose-600 hover:text-rose-800"
+                  :aria-label="`${participant.displayName}さんを削除`"
+                  @click="deleteGuest(participant)"
+                >削除</button>
               </template>
               <template v-else>{{ cell.value }}</template>
             </td>
@@ -90,7 +100,7 @@ import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 const { eventId } = defineProps<{ eventId: string }>();
 type Data = Unbrand<GetParticipantAnswerTableResponse>;
 type Participant = Data["participants"][number];
-const { get } = useApi();
+const { get, del } = useApi();
 const { success, error } = useToast();
 const router = useRouter();
 const loading = ref(true),
@@ -162,6 +172,16 @@ const copyTable = async () => {
     success("回答表をコピーしました。");
   } catch (cause) {
     error(getApiErrorMessage(cause, "回答表をコピーできませんでした。"));
+  }
+};
+const deleteGuest = async (participant: Participant) => {
+  if (!window.confirm(`${participant.displayName}さんを削除しますか？`)) return;
+  try {
+    await del(`/offkai-event/${eventId}/guest-answers/${participant.answerId}`);
+    success("ゲストを削除しました。");
+    await load();
+  } catch (cause) {
+    error(getApiErrorMessage(cause, "ゲストを削除できませんでした。"));
   }
 };
 const load = async () => {

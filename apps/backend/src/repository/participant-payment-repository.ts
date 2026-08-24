@@ -26,6 +26,7 @@ export class ParticipantPaymentRepository {
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					select: {
+						id: true,
 						userId: true,
 						respondentName: true,
 						commitmentAnswers: {
@@ -55,7 +56,7 @@ export class ParticipantPaymentRepository {
 				questionShort: question.questionShort,
 			})),
 			participants: event.answers.map((answer) => ({
-				userId: answer.userId,
+				userId: answer.userId ?? answer.id,
 				displayName: answer.respondentName,
 				commitmentAnswers: this.toCommitmentAnswerRecord(
 					answer.commitmentAnswers,
@@ -72,12 +73,10 @@ export class ParticipantPaymentRepository {
 		amount: PaymentAmount;
 		collected: boolean;
 	}): Promise<Unbrand<UpdateParticipantPaymentResponse> | null> {
-		const answer = await prisma.offkaiAnswer.findUnique({
+		const answer = await prisma.offkaiAnswer.findFirst({
 			where: {
-				eventId_userId: {
-					eventId: input.eventId,
-					userId: input.userId,
-				},
+				eventId: input.eventId,
+				OR: [{ id: input.userId }, { userId: input.userId }],
 			},
 			select: {
 				id: true,
@@ -105,7 +104,7 @@ export class ParticipantPaymentRepository {
 		});
 
 		return {
-			userId: answer.userId,
+			userId: answer.userId ?? answer.id,
 			displayName: answer.respondentName,
 			commitmentAnswers: this.toCommitmentAnswerRecord(
 				answer.commitmentAnswers,

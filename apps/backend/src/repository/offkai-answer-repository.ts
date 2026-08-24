@@ -30,10 +30,12 @@ export class OffkaiAnswerRepository {
 		this.prisma = prisma;
 	}
 
-	async findManyByEventId(
-		eventId: OffkaiEventId,
-	): Promise<
-		Array<{ id: string; userId: string; commitmentAnswers: CommitmentAnswer[] }>
+	async findManyByEventId(eventId: OffkaiEventId): Promise<
+		Array<{
+			id: string;
+			userId: string | null;
+			commitmentAnswers: CommitmentAnswer[];
+		}>
 	> {
 		return this.prisma.offkaiAnswer
 			.findMany({
@@ -68,9 +70,12 @@ export class OffkaiAnswerRepository {
 				answer: true,
 				answerRecord: { eventId },
 			},
-			select: { answerRecord: { select: { userId: true } } },
+			select: { answerRecord: { select: { id: true, userId: true } } },
 		});
-		return answers.map((answer) => answer.answerRecord.userId as UserId);
+		return answers.map(
+			(answer) =>
+				(answer.answerRecord.userId ?? answer.answerRecord.id) as UserId,
+		);
 	}
 
 	async findByEventAndUser(
@@ -99,6 +104,32 @@ export class OffkaiAnswerRepository {
 			id: record.id as AnswerId,
 			eventId: record.eventId as OffkaiEventId,
 			userId: record.userId as UserId,
+			respondentName: record.respondentName,
+			commitmentAnswers: record.commitmentAnswers.map(toDomainCommitmentAnswer),
+			preferenceAnswers:
+				record.preferenceAnswers as unknown as PreferenceAnswer[],
+			bringingKigurumis:
+				record.bringingKigurumis as unknown as BringingKigurumi[],
+		});
+	}
+
+	async findById(id: AnswerId): Promise<OffkaiAnswer | null> {
+		const record = await this.prisma.offkaiAnswer.findUnique({
+			where: { id },
+			include: {
+				commitmentAnswers: {
+					where: { question: { archivedAt: null } },
+					select: { questionId: true, answer: true },
+					orderBy: { question: { sortOrder: "asc" } },
+				},
+			},
+		});
+		if (!record) return null;
+		return OffkaiAnswer.reconstruct({
+			id: record.id as AnswerId,
+			eventId: record.eventId as OffkaiEventId,
+			userId: record.userId as UserId | null,
+			respondentName: record.respondentName,
 			commitmentAnswers: record.commitmentAnswers.map(toDomainCommitmentAnswer),
 			preferenceAnswers:
 				record.preferenceAnswers as unknown as PreferenceAnswer[],
@@ -150,7 +181,7 @@ export class OffkaiAnswerRepository {
 		const canViewPrivateAnswers = viewer.permissions.canViewPrivateAnswers;
 		const answerRows: Unbrand<AnswerRow>[] = event.answers.map((a) => ({
 			user: {
-				id: a.userId,
+				id: a.userId ?? a.id,
 				displayName: a.respondentName,
 			},
 			createdAt: a.createdAt.toISOString(),
@@ -176,6 +207,9 @@ export class OffkaiAnswerRepository {
 				id: event.id,
 				title: event.name,
 				description: event.description ?? "",
+				participantDescription: viewer.permissions.canViewParticipantDescription
+					? (event.participantDescription ?? "")
+					: null,
 				eventPeriod: {
 					startDate: event.eventStartDate.toISOString().slice(0, 10),
 					endDate: event.eventEndDate.toISOString().slice(0, 10),
@@ -204,13 +238,10 @@ export class OffkaiAnswerRepository {
 		};
 
 		await this.prisma.$transaction(async (tx) => {
-			const existing = await tx.offkaiAnswer.findUnique({
-				where: {
-					eventId_userId: {
-						eventId: props.eventId,
-						userId: props.userId,
-					},
-				},
+			const existing = await tx.offkaiAnswer.findFirst({
+				where: props.userId
+					? { eventId: props.eventId, userId: props.userId }
+					: { id: props.id, eventId: props.eventId, userId: null },
 				include: {
 					commitmentAnswers: {
 						select: { questionId: true, answer: true },
@@ -237,18 +268,24 @@ export class OffkaiAnswerRepository {
 			}
 
 			const respondentName = existing
-				? existing.respondentName
-				: (
+				? props.userId
+					? existing.respondentName
+					: (answer.respondentName ?? existing.respondentName)
+				: (answer.respondentName ??
+					(
 						await tx.user.findUniqueOrThrow({
-							where: { id: props.userId },
+							where: { id: props.userId! },
 							select: { name: true },
 						})
-					).name;
+					).name);
 
 			await tx.offkaiAnswer.upsert({
 				where: { id: props.id },
 				create: { ...props, respondentName },
-				update: props,
+				update: {
+					...props,
+					...(props.userId === null ? { respondentName } : {}),
+				},
 			});
 
 			await tx.commitmentAnswer.deleteMany({
@@ -267,9 +304,31 @@ export class OffkaiAnswerRepository {
 		});
 	}
 
-	async delete(id: AnswerId): Promise<void> {
-		await this.prisma.offkaiAnswer.delete({
+	async hasFinancialData(id: AnswerId): Promise<boolean> {
+		const answer = await this.prisma.offkaiAnswer.findUnique({
 			where: { id },
+			select: {
+				finance: { select: { answerId: true } },
+				payment: { select: { answerId: true } },
+				settlementCategoryMembers: { select: { answerId: true }, take: 1 },
+				settlementExpenseRecipients: { select: { answerId: true }, take: 1 },
+			},
+		});
+		return Boolean(
+			answer &&
+				(answer.finance ||
+					answer.payment ||
+					answer.settlementCategoryMembers.length ||
+					answer.settlementExpenseRecipients.length),
+		);
+	}
+
+	async delete(id: AnswerId): Promise<void> {
+		await this.prisma.$transaction(async (tx) => {
+			await tx.offkaiAnswerHistory.deleteMany({
+				where: { offkaiAnswerId: id },
+			});
+			await tx.offkaiAnswer.delete({ where: { id } });
 		});
 	}
 

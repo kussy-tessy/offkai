@@ -1,4 +1,5 @@
 import type {
+	AnswerId,
 	BringingKigurumi,
 	CommitmentAnswer,
 	CommitmentQuestion,
@@ -117,6 +118,52 @@ export class OffkaiAnswerService {
 					preferenceQuestions: event.preferenceQuestions,
 				},
 			}),
+		);
+	}
+
+	async prepareGuestAnswerEntity(
+		eventId: OffkaiEventId,
+		respondentName: string,
+		commitmentAnswers: CommitmentAnswer[],
+		preferenceAnswers: PreferenceAnswer[],
+		bringingKigurumis: BringingKigurumi[],
+		answerId?: AnswerId,
+	): Promise<OffkaiAnswer> {
+		const event = await new OffkaiEventRepository().findById(eventId);
+		const repository = new OffkaiAnswerRepository();
+		const existing = answerId ? await repository.findById(answerId) : null;
+		if (
+			existing &&
+			(existing.eventId !== eventId || existing.userId !== null)
+		) {
+			throw new AppError(
+				"ANSWER_NOT_FOUND",
+				"編集対象のゲスト回答が見つかりません。",
+			);
+		}
+		const params = {
+			answer: {
+				commitmentAnswers,
+				preferenceAnswers,
+				bringingKigurumis: event.askBringingKigurumi ? bringingKigurumis : [],
+			},
+			question: {
+				eventId: event.id,
+				askBringingKigurumi: event.askBringingKigurumi,
+				commitmentQuestions: event.commitmentQuestions.map((question) => ({
+					...question,
+					numberOfPeople: 0,
+				})),
+				preferenceQuestions: event.preferenceQuestions,
+			},
+		};
+		return runBusinessRule(() =>
+			existing
+				? OffkaiAnswer.reconstruct({
+						...existing,
+						respondentName: respondentName.trim(),
+					}).forceEdit(params)
+				: OffkaiAnswer.forceCreateGuest({ ...params, respondentName }),
 		);
 	}
 

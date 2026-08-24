@@ -1,9 +1,4 @@
 import { v7 as uuidv7 } from "uuid";
-import {
-	BringingKigurumiSchema,
-	CommitmentAnswerSchema,
-	PreferenceAnswerSchema,
-} from "../schema";
 import type {
 	AnswerId,
 	BringingKigurumi,
@@ -13,6 +8,11 @@ import type {
 	PreferenceAnswer,
 	PreferenceQuestion,
 	UserId,
+} from "../schema";
+import {
+	BringingKigurumiSchema,
+	CommitmentAnswerSchema,
+	PreferenceAnswerSchema,
 } from "../schema";
 
 type Params = {
@@ -33,7 +33,8 @@ export class OffkaiAnswer {
 	private constructor(
 		readonly id: AnswerId,
 		readonly eventId: OffkaiEventId,
-		readonly userId: UserId,
+		readonly userId: UserId | null,
+		readonly respondentName: string | null,
 		readonly commitmentAnswers: CommitmentAnswer[],
 		readonly preferenceAnswers: PreferenceAnswer[],
 		readonly bringingKigurumis: BringingKigurumi[],
@@ -42,7 +43,8 @@ export class OffkaiAnswer {
 	static reconstruct(params: {
 		id: AnswerId;
 		eventId: OffkaiEventId;
-		userId: UserId;
+		userId: UserId | null;
+		respondentName?: string | null;
 		commitmentAnswers: CommitmentAnswer[];
 		preferenceAnswers: PreferenceAnswer[];
 		bringingKigurumis?: BringingKigurumi[];
@@ -51,6 +53,7 @@ export class OffkaiAnswer {
 			params.id,
 			params.eventId,
 			params.userId,
+			params.respondentName ?? null,
 			params.commitmentAnswers,
 			params.preferenceAnswers,
 			params.bringingKigurumis ?? [],
@@ -65,6 +68,7 @@ export class OffkaiAnswer {
 			uuidv7() as AnswerId,
 			params.question.eventId,
 			params.userId,
+			null,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
 			params.answer.bringingKigurumis,
@@ -79,6 +83,23 @@ export class OffkaiAnswer {
 			uuidv7() as AnswerId,
 			params.question.eventId,
 			params.userId,
+			null,
+			params.answer.commitmentAnswers,
+			params.answer.preferenceAnswers,
+			params.answer.bringingKigurumis,
+		);
+	}
+
+	static forceCreateGuest(params: Params & { respondentName: string }) {
+		OffkaiAnswer.validateAnswerStructure(params);
+		OffkaiAnswer.validateRequiredAnswers(params);
+		const respondentName = params.respondentName.trim();
+		if (!respondentName) throw new Error("ゲストの名前を入力してください。");
+		return new OffkaiAnswer(
+			uuidv7() as AnswerId,
+			params.question.eventId,
+			null,
+			respondentName,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
 			params.answer.bringingKigurumis,
@@ -93,6 +114,7 @@ export class OffkaiAnswer {
 			this.id,
 			this.eventId,
 			this.userId,
+			this.respondentName,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
 			params.answer.bringingKigurumis,
@@ -107,6 +129,7 @@ export class OffkaiAnswer {
 			this.id,
 			this.eventId,
 			this.userId,
+			this.respondentName,
 			params.answer.commitmentAnswers,
 			params.answer.preferenceAnswers,
 			params.answer.bringingKigurumis,
