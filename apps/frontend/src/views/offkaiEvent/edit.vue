@@ -27,7 +27,6 @@
     },
     applicationStartDate: "",
     description: "",
-    participantDescription: "",
     discordRoleId: null,
     askBringingKigurumi: false,
 		overviewVisibility: "AUTHENTICATED",

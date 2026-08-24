@@ -18,6 +18,8 @@
       <OffkaiDetailHeader
         :offkai="detail.offkai"
         :has-answered="true"
+        :can-view-participant-guide="detail.viewer.permissions.canViewParticipantGuide"
+        :can-manage-participants="detail.viewer.permissions.canManageDiscordRole || detail.viewer.permissions.canManagePayments"
       />
 
       <p class="text-sm text-slate-600">

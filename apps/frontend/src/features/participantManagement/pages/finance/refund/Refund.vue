@@ -29,7 +29,7 @@
 
     <template v-else-if="page">
       <div
-        v-if="page.refundLockedAt"
+        v-if="page.refundStartedAt"
         class="rounded-lg border border-slate-300 bg-slate-100 p-3 text-sm text-slate-700"
       >
         <strong>返金を開始しています。</strong>
@@ -59,11 +59,11 @@
       </div>
       <div
         v-else-if="
-          !page.canCalculate && !page.refundLockedAt && !page.refundCalculatedAt
+          !page.settlementLockedAt
         "
         class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
       >
-        参加費を確定すると返金額を計算できます。
+        経費精算を確定すると返金を開始できます。
       </div>
 
       <section
@@ -76,22 +76,13 @@
               {{ format(page.refundCalculatedAt) }}に計算
             </p>
           </div>
-          <MyButton
-            v-if="!page.refundLockedAt"
-            size="sm"
-            :disabled="!page.canCalculate || saving !== null"
-            :loading="saving === 'calculate'"
-            @click="calculate"
-          >
-            {{ page.refundCalculatedAt ? "返金額を再計算" : "返金額を計算" }}
-          </MyButton>
         </div>
         <label class="mt-4 block text-sm text-slate-600">
           切り捨て単位
           <select
             :value="page.refundRoundingUnit"
             class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base disabled:bg-slate-100 disabled:text-slate-500 sm:w-48"
-            :disabled="page.refundLockedAt !== null || saving !== null"
+            :disabled="page.settlementLockedAt !== null || saving !== null"
             @change="updateRoundingUnit"
           >
             <option :value="10">10円単位</option>
@@ -195,7 +186,7 @@
                       class="h-5 w-5 cursor-pointer accent-teal-600 disabled:cursor-not-allowed"
                       :checked="participant.refundedAt !== null"
                       :disabled="
-                        saving !== null || participant.refundAmount === null
+                        saving !== null || !page.settlementLockedAt || participant.refundAmount === null
                       "
                       :aria-label="`${participant.displayName}を返金済みにする`"
                       @click.prevent="toggleRefund(participant)"
@@ -306,7 +297,7 @@
     <MyConfirmDialog
       v-model:open="startConfirmOpen"
       title="返金を開始しますか？"
-      message="返金を開始すると、返金額・経費・収入・切り捨て単位を変更できなくなります。このロックは解除できません。"
+      message="最初の返金を記録すると返金開始となり、経費精算の確定は解除できなくなります。"
       confirm-label="返金を開始"
       :loading="saving === 'toggle'"
       @confirm="confirmStartRefund"
@@ -340,13 +331,13 @@ import type { RefundPage, RefundParticipant } from "./types";
 type Filter = "unrefunded" | "refunded" | "all";
 
 const { eventId } = defineProps<{ eventId: string }>();
-const { get, post, put } = useApi();
+const { get, put } = useApi();
 const toast = useToast();
 const basePath = `/offkai-event/${eventId}/finance/refunds`;
 const page = ref<RefundPage | null>(null);
 const loading = ref(true);
 const loadError = ref("");
-const saving = ref<"calculate" | "settings" | "toggle" | null>(null);
+const saving = ref<"settings" | "toggle" | null>(null);
 const startConfirmOpen = ref(false);
 const pendingParticipant = ref<RefundParticipant | null>(null);
 const unrefundDialogOpen = ref(false);
@@ -431,20 +422,6 @@ const load = async () => {
     loading.value = false;
   }
 };
-const calculate = async () => {
-  if (saving.value) return;
-  saving.value = "calculate";
-  try {
-    const result = await post<RefundPage>(`${basePath}/calculate`, {});
-    if (!result) throw new Error();
-    page.value = result;
-    toast.success("返金額を計算しました。");
-  } catch (cause) {
-    toast.error(getApiErrorMessage(cause, "返金額を計算できませんでした。"));
-  } finally {
-    saving.value = null;
-  }
-};
 const updateRoundingUnit = async (event: Event) => {
   if (!page.value || saving.value) return;
   const select = event.target as HTMLSelectElement;
@@ -482,7 +459,7 @@ const toggleRefund = (participant: RefundParticipant) => {
     unrefundDialogOpen.value = true;
     return;
   }
-  if (!page.value?.refundLockedAt) {
+  if (!page.value?.refundStartedAt) {
     pendingParticipant.value = participant;
     startConfirmOpen.value = true;
     return;

@@ -66,7 +66,6 @@ export class OffkaiEvent {
 		name: string;
 		eventPeriod: EventPeriod;
 		description: string;
-		participantDescription: string;
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId?: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
@@ -84,7 +83,7 @@ export class OffkaiEvent {
 			params.name,
 			params.eventPeriod,
 			params.description,
-			params.participantDescription,
+			"",
 			params.applicationStartDate,
 			params.discordRoleId ?? null,
 			params.askBringingKigurumi ?? false,
@@ -105,7 +104,6 @@ export class OffkaiEvent {
 		name: string;
 		eventPeriod: EventPeriod;
 		description: string;
-		participantDescription: string;
 		applicationStartDate: ApplicationStartDate;
 		discordRoleId?: DiscordRoleId | null;
 		askBringingKigurumi?: boolean;
@@ -123,7 +121,7 @@ export class OffkaiEvent {
 			params.name,
 			params.eventPeriod,
 			params.description,
-			params.participantDescription,
+			this.participantDescription,
 			params.applicationStartDate,
 			params.discordRoleId ?? this.discordRoleId,
 			params.askBringingKigurumi ?? this.askBringingKigurumi,
@@ -131,6 +129,24 @@ export class OffkaiEvent {
 			params.participantsVisibility,
 			params.commitmentQuestions,
 			params.preferenceQuestions,
+		);
+	}
+
+	updateParticipantDescription(description: string): OffkaiEvent {
+		return new OffkaiEvent(
+			this.id,
+			this.seriesId,
+			this.name,
+			this.eventPeriod,
+			this.description,
+			description,
+			this.applicationStartDate,
+			this.discordRoleId,
+			this.askBringingKigurumi,
+			this.overviewVisibility,
+			this.participantsVisibility,
+			this.commitmentQuestions,
+			this.preferenceQuestions,
 		);
 	}
 }

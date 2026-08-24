@@ -25,6 +25,46 @@
     </div>
     <template v-else-if="page">
       <div
+        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-3"
+        :class="
+          page.settlementLockedAt
+            ? 'border-emerald-200 bg-emerald-50'
+            : 'border-amber-200 bg-amber-50'
+        "
+      >
+        <div>
+          <p class="font-semibold" :class="page.settlementLockedAt ? 'text-emerald-800' : 'text-amber-800'">
+            {{ page.settlementLockedAt ? "経費精算は確定済みです" : "経費精算は編集中です" }}
+          </p>
+          <p class="mt-0.5 text-xs text-slate-600">
+            {{
+              page.settlementLockedAt
+                ? `${format(page.settlementLockedAt)}に確定。精算内容は変更できません。`
+                : "内容を確認したら経費精算を確定してください。確定後に返金できます。"
+            }}
+          </p>
+        </div>
+        <MyButton
+          v-if="!page.settlementLockedAt"
+          size="sm"
+          :disabled="saving !== null || !page.feeCalculationLockedAt"
+          @click="lockDialogOpen = true"
+          >経費精算を確定</MyButton
+        >
+        <MyButton
+          v-else-if="!page.refundStartedAt"
+          size="sm"
+          color="gray"
+          variant="ghost"
+          :disabled="saving !== null"
+          @click="unlockDialogOpen = true"
+          >確定を解除</MyButton
+        >
+        <span v-else class="text-xs font-medium text-emerald-800"
+          >返金開始済み・解除不可</span
+        >
+      </div>
+      <div
         v-if="!page.feeCalculationLockedAt"
         class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800"
       >
@@ -32,7 +72,7 @@
         現在の区分金額と所属に基づく試算を表示しています。経費は入力できます。
       </div>
       <div
-        v-if="page.refundLockedAt"
+        v-if="page.refundStartedAt"
         class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-700"
       >
         返金を開始したため、収入・経費・協力金は変更できません。
@@ -54,7 +94,7 @@
           :participants="page.participants"
           :initially-open="index === 0"
           :saving-action="saving"
-          :locked="page.refundLockedAt !== null"
+          :locked="page.settlementLockedAt !== null"
           :save-expense="saveExpense"
           :delete-expense="deleteExpense"
           :save-income="saveIncome"
@@ -62,12 +102,31 @@
         />
       </div>
     </template>
+    <MyConfirmDialog
+      v-model:open="lockDialogOpen"
+      title="経費精算を確定しますか？"
+      message="確定時の内容で参加者ごとの返金額を保存します。返金を始める前であれば確定解除できます。"
+      confirm-label="経費精算を確定"
+      :loading="saving === 'lock'"
+      @confirm="lockSettlement"
+    />
+    <MyConfirmDialog
+      v-model:open="unlockDialogOpen"
+      title="経費精算の確定を解除しますか？"
+      message="保存済みの返金額はクリアされ、経費・収入を再び編集できるようになります。"
+      confirm-label="確定を解除"
+      confirm-color="red"
+      :loading="saving === 'unlock'"
+      @confirm="unlockSettlement"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
+import { format } from "@offkai/core";
 import { onMounted, ref } from "vue";
 import MyButton from "@/common/components/MyButton.vue";
+import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 import SettlementCategoryPanel from "./SettlementCategoryPanel.vue";
 import type {
@@ -84,6 +143,8 @@ const page = ref<SettlementPage | null>(null);
 const loading = ref(true);
 const loadError = ref("");
 const saving = ref<string | null>(null);
+const lockDialogOpen = ref(false);
+const unlockDialogOpen = ref(false);
 
 const load = async () => {
   loading.value = true;
@@ -179,6 +240,40 @@ const deleteIncome = async (incomeId: string) => {
   } catch (cause) {
     toast.error(getApiErrorMessage(cause, "収入を削除できませんでした。"));
     return false;
+  } finally {
+    saving.value = null;
+  }
+};
+
+const lockSettlement = async () => {
+  if (saving.value) return;
+  saving.value = "lock";
+  try {
+    const result = await post<SettlementPage>(`${basePath}/settlement/lock`);
+    if (!result) throw new Error();
+    page.value = result;
+    lockDialogOpen.value = false;
+    toast.success("経費精算を確定しました。");
+  } catch (cause) {
+    toast.error(getApiErrorMessage(cause, "経費精算を確定できませんでした。"));
+  } finally {
+    saving.value = null;
+  }
+};
+
+const unlockSettlement = async () => {
+  if (saving.value) return;
+  saving.value = "unlock";
+  try {
+    const result = await del<SettlementPage>(`${basePath}/settlement/lock`);
+    if (!result) throw new Error();
+    page.value = result;
+    unlockDialogOpen.value = false;
+    toast.success("経費精算の確定を解除しました。");
+  } catch (cause) {
+    toast.error(
+      getApiErrorMessage(cause, "経費精算の確定を解除できませんでした。"),
+    );
   } finally {
     saving.value = null;
   }

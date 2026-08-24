@@ -20,7 +20,6 @@ export const CreateOffkaiEventRequestSchema = z
 		eventPeriod: LocalDatePeriodStringSchema,
 		applicationStartDate: LocalDateTimeToISOStringSchema,
 		description: z.string().max(1000),
-		participantDescription: z.string().max(1000).default(""),
 		discordRoleId: DiscordRoleIdSchema.nullable().default(null),
 		askBringingKigurumi: z.boolean().default(false),
 		overviewVisibility: EventVisibilitySchema.default("AUTHENTICATED"),

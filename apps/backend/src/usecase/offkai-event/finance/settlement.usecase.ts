@@ -1,6 +1,8 @@
 import {
+	FinalRefundCalculator,
 	SettlementExpense,
 	SettlementIncome,
+	SettlementCalculator,
 	type CreateSettlementIncomeRequest,
 	type DeleteSettlementIncomeRequest,
 	type CreateSettlementExpenseRequest,
@@ -10,6 +12,7 @@ import {
 	type Unbrand,
 	type UpdateSettlementExpenseRequest,
 	type UpdateSettlementIncomeRequest,
+	type UpdateSettlementLockRequest,
 	type UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
@@ -20,6 +23,7 @@ import {
 	ParticipantFinanceRepository,
 	SettlementExpenseRepository,
 	SettlementIncomeRepository,
+	prisma,
 } from "../../../repository";
 import { SettlementPageAssembler } from "../../../service/settlement.service";
 import { FinanceUsecase } from "./finance.usecase";
@@ -44,12 +48,92 @@ export class SettlementUsecase {
 		return this.pageAssembler.build(input.eventId);
 	}
 
+	async lock(
+		input: UpdateSettlementLockRequest,
+		viewerUserId: UserId,
+	): Promise<Unbrand<GetEventSettlementResponse>> {
+		await this.authorize(input.eventId, viewerUserId);
+		const [finance, expenses, incomes, participants] = await Promise.all([
+			this.financeRepository.findByEventId(input.eventId),
+			this.expenseRepository.findManyByEventId(input.eventId),
+			this.incomeRepository.findManyByEventId(input.eventId),
+			this.participantRepository.findManyByEventId(input.eventId),
+		]);
+		if (finance.settlementLockedAt) {
+			throw new AppError(
+				"VALIDATION_ERROR",
+				"経費精算はすでに確定されています。",
+			);
+		}
+		const calculation = FinalRefundCalculator.calculate(
+			finance.categories.map((category) => ({
+				categoryId: category.id,
+				categoryName: category.name,
+				calculation: SettlementCalculator.calculate(
+					category,
+					expenses.filter((expense) => expense.categoryId === category.id),
+					incomes.filter((income) => income.categoryId === category.id),
+				),
+			})),
+			finance.refundRoundingUnit,
+		);
+		const amountByUserId = new Map(
+			calculation.participants.map((participant) => [
+				participant.userId,
+				participant.refundAmount,
+			]),
+		);
+		const negativeParticipants = participants.filter(
+			(participant) => (amountByUserId.get(participant.userId) ?? 0) < 0,
+		);
+		if (negativeParticipants.length > 0) {
+			throw new AppError(
+				"VALIDATION_ERROR",
+				"最終精算がマイナスの参加者がいるため、経費精算を確定できません。",
+			);
+		}
+		const lockedAt = new Date();
+		const locked = runBusinessRule(() => finance.lockSettlement(lockedAt));
+		await prisma.$transaction(async (tx) => {
+			const participantRepository = new ParticipantFinanceRepository(tx);
+			for (const participant of participants) {
+				await participantRepository.save(
+					input.eventId,
+					runBusinessRule(() =>
+						participant.setRefundCalculation(
+							amountByUserId.get(participant.userId) ?? 0,
+							lockedAt,
+						),
+					),
+				);
+			}
+			await new EventFinanceRepository(tx).save(locked);
+		});
+		return this.pageAssembler.build(input.eventId);
+	}
+
+	async unlock(
+		input: UpdateSettlementLockRequest,
+		viewerUserId: UserId,
+	): Promise<Unbrand<GetEventSettlementResponse>> {
+		await this.authorize(input.eventId, viewerUserId);
+		const finance = await this.financeRepository.findByEventId(input.eventId);
+		const unlocked = runBusinessRule(() => finance.unlockSettlement());
+		await prisma.$transaction(async (tx) => {
+			await new EventFinanceRepository(tx).save(unlocked);
+			await new ParticipantFinanceRepository(
+				tx,
+			).clearRefundCalculationsByEventId(input.eventId);
+		});
+		return this.pageAssembler.build(input.eventId);
+	}
+
 	async createExpense(
 		input: CreateSettlementExpenseRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
 		await this.authorize(input.eventId, viewerUserId);
-		await this.requireRefundUnlocked(input.eventId);
+		await this.requireSettlementUnlocked(input.eventId);
 		await this.requireCategory(input.eventId, input.categoryId);
 		const expense = runBusinessRule(() => SettlementExpense.create(input));
 		try {
@@ -74,7 +158,7 @@ export class SettlementUsecase {
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
 		await this.authorize(input.eventId, viewerUserId);
-		await this.requireRefundUnlocked(input.eventId);
+		await this.requireSettlementUnlocked(input.eventId);
 		const existing = await this.expenseRepository.findByEventAndId(
 			input.eventId,
 			input.expenseId,
@@ -100,7 +184,7 @@ export class SettlementUsecase {
 		viewerUserId: UserId,
 	): Promise<void> {
 		await this.authorize(input.eventId, viewerUserId);
-		await this.requireRefundUnlocked(input.eventId);
+		await this.requireSettlementUnlocked(input.eventId);
 		if (
 			!(await this.expenseRepository.delete(input.eventId, input.expenseId))
 		) {
@@ -116,7 +200,7 @@ export class SettlementUsecase {
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
 		await this.authorize(input.eventId, viewerUserId);
-		await this.requireRefundUnlocked(input.eventId);
+		await this.requireSettlementUnlocked(input.eventId);
 		await this.requireCategory(input.eventId, input.categoryId);
 		const income = runBusinessRule(() => SettlementIncome.create(input));
 		await this.incomeRepository.save(income);
@@ -131,7 +215,7 @@ export class SettlementUsecase {
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
 		await this.authorize(input.eventId, viewerUserId);
-		await this.requireRefundUnlocked(input.eventId);
+		await this.requireSettlementUnlocked(input.eventId);
 		const existing = await this.incomeRepository.findByEventAndId(
 			input.eventId,
 			input.incomeId,
@@ -158,7 +242,7 @@ export class SettlementUsecase {
 		viewerUserId: UserId,
 	): Promise<void> {
 		await this.authorize(input.eventId, viewerUserId);
-		await this.requireRefundUnlocked(input.eventId);
+		await this.requireSettlementUnlocked(input.eventId);
 		if (!(await this.incomeRepository.delete(input.eventId, input.incomeId))) {
 			throw new AppError("VALIDATION_ERROR", "収入が見つかりません。");
 		}
@@ -167,14 +251,14 @@ export class SettlementUsecase {
 		);
 	}
 
-	private async requireRefundUnlocked(
+	private async requireSettlementUnlocked(
 		eventId: GetEventSettlementRequest["eventId"],
 	) {
 		const finance = await this.financeRepository.findByEventId(eventId);
-		if (finance.refundLockedAt) {
+		if (finance.settlementLockedAt) {
 			throw new AppError(
 				"VALIDATION_ERROR",
-				"返金開始後は収入・経費・協力金を変更できません。",
+				"経費精算の確定後は収入・経費・協力金を変更できません。",
 			);
 		}
 		return finance;

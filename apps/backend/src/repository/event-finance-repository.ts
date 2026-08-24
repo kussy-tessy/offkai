@@ -45,7 +45,8 @@ export class EventFinanceRepository {
 			categories: record.categories.map(toSettlementCategory),
 			feeCalculationLockedAt: record.feeCalculationLockedAt,
 			collectionStartedAt: record.collectionStartedAt,
-			refundLockedAt: record.refundLockedAt,
+			settlementLockedAt: record.settlementLockedAt,
+			refundStartedAt: record.refundStartedAt,
 		});
 	}
 
@@ -57,13 +58,15 @@ export class EventFinanceRepository {
 				refundRoundingUnit: toRoundingEnum(finance.refundRoundingUnit),
 				feeCalculationLockedAt: finance.feeCalculationLockedAt,
 				collectionStartedAt: finance.collectionStartedAt,
-				refundLockedAt: finance.refundLockedAt,
+				settlementLockedAt: finance.settlementLockedAt,
+				refundStartedAt: finance.refundStartedAt,
 			},
 			update: {
 				refundRoundingUnit: toRoundingEnum(finance.refundRoundingUnit),
 				feeCalculationLockedAt: finance.feeCalculationLockedAt,
 				collectionStartedAt: finance.collectionStartedAt,
-				refundLockedAt: finance.refundLockedAt,
+				settlementLockedAt: finance.settlementLockedAt,
+				refundStartedAt: finance.refundStartedAt,
 			},
 		});
 		await this.client.settlementCategory.deleteMany({

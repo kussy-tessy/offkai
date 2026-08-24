@@ -94,10 +94,10 @@ export class FinanceUsecase {
 	): Promise<Unbrand<GetEventFinanceResponse>> {
 		await this.authorize(input.eventId, viewerUserId);
 		const finance = await this.financeRepository.findByEventId(input.eventId);
-		if (finance.refundLockedAt) {
+		if (finance.settlementLockedAt) {
 			throw new AppError(
 				"VALIDATION_ERROR",
-				"返金開始後は切り捨て単位を変更できません。",
+				"経費精算の確定後は切り捨て単位を変更できません。",
 			);
 		}
 		const updated = runBusinessRule(() =>

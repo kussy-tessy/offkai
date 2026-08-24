@@ -190,7 +190,8 @@ model EventFinance {
   refundRoundingUnit     RefundRoundingUnit @default(TEN)
   feeCalculationLockedAt DateTime?
   collectionStartedAt    DateTime?
-  refundLockedAt         DateTime?
+  settlementLockedAt     DateTime?
+  refundStartedAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

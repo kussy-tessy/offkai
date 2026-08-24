@@ -46,7 +46,7 @@ describe("シリーズ権限", () => {
 			canEditAnswers: false,
 			canManageDiscordRole: true,
 			canManagePayments: true,
-			canViewParticipantDescription: true,
+			canViewParticipantGuide: true,
 		});
 	});
 
@@ -60,9 +60,9 @@ describe("シリーズ権限", () => {
 				participantsAccess: access,
 			});
 
-		expect(permissions(null, false).canViewParticipantDescription).toBe(false);
-		expect(permissions(null, true).canViewParticipantDescription).toBe(true);
-		expect(permissions("staff", false).canViewParticipantDescription).toBe(
+		expect(permissions(null, false).canViewParticipantGuide).toBe(false);
+		expect(permissions(null, true).canViewParticipantGuide).toBe(true);
+		expect(permissions("staff", false).canViewParticipantGuide).toBe(
 			true,
 		);
 	});

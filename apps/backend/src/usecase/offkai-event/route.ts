@@ -1,5 +1,4 @@
 import {
-	CalculateEventRefundRequestSchema,
 	CreateOffkaiEventRequestSchema,
 	CreateParticipantExtraChargeRequestSchema,
 	CreatePhotoShareRequestSchema,
@@ -24,6 +23,7 @@ import {
 	ManageOffkaiAnswerRequestSchema,
 	PhotoShareItemRouteParamsSchema,
 	PhotoShareRouteParamsSchema,
+	ParticipantGuideRouteParamsSchema,
 	SaveGuestAnswerRequestSchema,
 	SaveOffkaiAnswerRequestSchema,
 	SyncSettlementCategoryMembersRequestSchema,
@@ -38,10 +38,12 @@ import {
 	UpdateParticipantRefundRequestSchema,
 	UpdatePhotoDownloadStatusRequestSchema,
 	UpdatePhotoShareRequestSchema,
+	UpdateParticipantGuideRequestSchema,
 	UpdateSettlementCategoryMemberRequestSchema,
 	UpdateSettlementCategoryRequestSchema,
 	UpdateSettlementExpenseRequestSchema,
 	UpdateSettlementIncomeRequestSchema,
+	UpdateSettlementLockRequestSchema,
 	UserIdSchema,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
@@ -80,6 +82,10 @@ import {
 	updatePhotoDownloadStatus,
 	updatePhotoShare,
 } from "./photo-sharing";
+import {
+	getParticipantGuide,
+	updateParticipantGuide,
+} from "./participant-guide";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	const requireUser = { preHandler: app.auth.requireUser };
@@ -91,6 +97,21 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		const userId = await app.auth.resolveOptionalUser(request);
 		const input = GetOffkaiDetailRequestSchema.parse(request.params);
 		return getOffkaiDetail(input, userId);
+	});
+
+	app.get("/:eventId/participant-guide", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const input = ParticipantGuideRouteParamsSchema.parse(request.params);
+		return getParticipantGuide(input, userId);
+	});
+
+	app.put("/:eventId/participant-guide", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const input = UpdateParticipantGuideRequestSchema.parse({
+			...(request.params as object),
+			...(request.body as object),
+		});
+		return updateParticipantGuide(input, userId);
 	});
 
 	app.get("/:eventId/photo-shares", requireUser, async (request) => {
@@ -413,6 +434,30 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 	});
 
 	app.post(
+		"/:eventId/finance/settlement/lock",
+		requireUser,
+		async (request) => {
+			const userId = UserIdSchema.parse(request.user.userId);
+			return settlement.lock(
+				UpdateSettlementLockRequestSchema.parse(request.params),
+				userId,
+			);
+		},
+	);
+
+	app.delete(
+		"/:eventId/finance/settlement/lock",
+		requireUser,
+		async (request) => {
+			const userId = UserIdSchema.parse(request.user.userId);
+			return settlement.unlock(
+				UpdateSettlementLockRequestSchema.parse(request.params),
+				userId,
+			);
+		},
+	);
+
+	app.post(
 		"/:eventId/finance/settlement-expenses",
 		requireUser,
 		async (request, reply) => {
@@ -507,18 +552,6 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 			userId,
 		);
 	});
-
-	app.post(
-		"/:eventId/finance/refunds/calculate",
-		requireUser,
-		async (request) => {
-			const userId = UserIdSchema.parse(request.user.userId);
-			return refund.calculate(
-				CalculateEventRefundRequestSchema.parse(request.params),
-				userId,
-			);
-		},
-	);
 
 	app.put("/:eventId/finance/refunds/:userId", requireUser, async (request) => {
 		const viewerUserId = UserIdSchema.parse(request.user.userId);

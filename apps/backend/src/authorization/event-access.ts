@@ -81,7 +81,7 @@ export function createEventViewerPermissions(input: {
 }) {
 	return {
 		canViewOverview: input.overviewAccess.granted,
-		canViewParticipantDescription:
+		canViewParticipantGuide:
 			input.isParticipant || hasSeriesRole(input.seriesRole, "staff"),
 		canViewParticipants: input.participantsAccess.granted,
 		canViewPrivateAnswers: input.isParticipant,

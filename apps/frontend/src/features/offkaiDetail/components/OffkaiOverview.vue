@@ -1,14 +1,16 @@
 <template>
-  <OffkaiDetailHeader :offkai="data.offkai" :has-answered="hasAnswered" />
+  <OffkaiDetailHeader
+    :offkai="data.offkai"
+    :has-answered="hasAnswered"
+    :can-view-participant-guide="data.viewer.permissions.canViewParticipantGuide"
+    :can-manage-participants="canManageParticipants"
+  />
 
   <section class="space-y-6">
     <div v-if="showManagementActions" class="flex flex-wrap justify-center gap-2">
       <MyButton v-if="data.viewer.permissions.canEditEvent" color="secondary" variant="ghost"
         @click="router.push(`/offkai/${data.offkai.id}/edit`)">
         <FontAwesomeIcon :icon="faPenToSquare" class="mr-2" />オフ会情報を編集
-      </MyButton>
-      <MyButton v-if="canManageParticipants" color="secondary" variant="ghost" @click="router.push(managementRoute)">
-        <FontAwesomeIcon :icon="faUserGear" class="mr-2" />参加者管理
       </MyButton>
       <MyButton v-if="data.viewer.permissions.canDeleteEvent" color="red" variant="ghost"
         @click="confirmDeleteOpen = true">
@@ -23,16 +25,6 @@
     <p v-if="data.offkai.description" class="whitespace-pre-line text-gray-600">
       <LinkifiedText :text="data.offkai.description" />
     </p>
-
-    <section
-      v-if="data.offkai.participantDescription"
-      class="rounded-xl border border-teal-200 bg-teal-50/50 p-4"
-    >
-      <h2 class="font-semibold text-slate-800">参加者向け案内</h2>
-      <p class="mt-2 whitespace-pre-line text-gray-600">
-        <LinkifiedText :text="data.offkai.participantDescription" />
-      </p>
-    </section>
 
     <div class="flex flex-col items-center gap-2 border-t-2 border-teal-200 pt-6">
       <MyButton :color="canAnswer ? 'primary' : 'gray'" size="lg" :disabled="!canAnswer"
@@ -53,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { faCalendar, faPen, faPenToSquare, faTrash, faUserGear } from "@fortawesome/free-solid-svg-icons";
+import { faCalendar, faPen, faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
 import { computed, ref } from "vue";
@@ -79,12 +71,8 @@ const canAnswer = computed(() =>
 const canManageParticipants = computed(() =>
   props.data.viewer.permissions.canManageDiscordRole || props.data.viewer.permissions.canManagePayments,
 );
-const managementRoute = computed(() => props.data.viewer.permissions.canManageDiscordRole
-  ? `/offkai/${props.data.offkai.id}/participants/discord`
-  : `/offkai/${props.data.offkai.id}/participants/payments`,
-);
 const showManagementActions = computed(() =>
-  props.data.viewer.permissions.canEditEvent || props.data.viewer.permissions.canDeleteEvent || canManageParticipants.value,
+  props.data.viewer.permissions.canEditEvent || props.data.viewer.permissions.canDeleteEvent,
 );
 
 const deleteEvent = async () => {

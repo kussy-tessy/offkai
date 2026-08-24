@@ -91,7 +91,8 @@ export class RefundPageAssembler {
 
 		return GetEventRefundResponseSchema.parse({
 			refundRoundingUnit: finance.refundRoundingUnit,
-			refundLockedAt: finance.refundLockedAt?.toISOString() ?? null,
+			settlementLockedAt: finance.settlementLockedAt?.toISOString() ?? null,
+			refundStartedAt: finance.refundStartedAt?.toISOString() ?? null,
 			refundCalculatedAt:
 				allCalculated && calculatedDates.length > 0
 					? new Date(
@@ -100,7 +101,7 @@ export class RefundPageAssembler {
 					: null,
 			canCalculate:
 				finance.feeCalculationLockedAt !== null &&
-				finance.refundLockedAt === null &&
+				finance.settlementLockedAt === null &&
 				negativeParticipantNames.length === 0,
 			negativeParticipantNames,
 			totalUnroundedRefundAmount: finalCalculation.totalUnroundedRefundAmount,

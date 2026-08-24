@@ -8,6 +8,7 @@ export * from "./update-offkai-event-discord-role-member-request";
 export * from "./update-offkai-event-discord-role-request";
 export * from "./participant-payment";
 export * from "./participant-answer-table";
+export * from "./participant-guide";
 export * from "./finance";
 export * from "./settlement";
 export * from "./refund";

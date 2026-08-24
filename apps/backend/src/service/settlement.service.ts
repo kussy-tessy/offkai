@@ -39,7 +39,8 @@ export class SettlementPageAssembler {
 		return GetEventSettlementResponseSchema.parse({
 			feeCalculationLockedAt:
 				finance.feeCalculationLockedAt?.toISOString() ?? null,
-			refundLockedAt: finance.refundLockedAt?.toISOString() ?? null,
+			settlementLockedAt: finance.settlementLockedAt?.toISOString() ?? null,
+			refundStartedAt: finance.refundStartedAt?.toISOString() ?? null,
 			participants: participants.map(({ userId, displayName }) => ({
 				userId,
 				displayName,

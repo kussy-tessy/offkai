@@ -43,7 +43,8 @@ export class FinancePageAssembler {
 			feeCalculationLockedAt:
 				finance.feeCalculationLockedAt?.toISOString() ?? null,
 			collectionStartedAt: finance.collectionStartedAt?.toISOString() ?? null,
-			refundLockedAt: finance.refundLockedAt?.toISOString() ?? null,
+			settlementLockedAt: finance.settlementLockedAt?.toISOString() ?? null,
+			refundStartedAt: finance.refundStartedAt?.toISOString() ?? null,
 			questions,
 			categories: finance.categories.map((category) => ({
 				id: category.id,

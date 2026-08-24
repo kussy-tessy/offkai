@@ -35,6 +35,11 @@ export type GetEventSettlementRequest = z.infer<
 	typeof GetEventSettlementRequestSchema
 >;
 
+export const UpdateSettlementLockRequestSchema = EventRouteSchema;
+export type UpdateSettlementLockRequest = z.infer<
+	typeof UpdateSettlementLockRequestSchema
+>;
+
 export const CreateSettlementExpenseRequestSchema = EventRouteSchema.merge(
 	SettlementExpenseInputSchema,
 );
@@ -127,7 +132,8 @@ const SettlementCategoryResultSchema = z.object({
 
 export const GetEventSettlementResponseSchema = z.object({
 	feeCalculationLockedAt: z.string().datetime().nullable(),
-	refundLockedAt: z.string().datetime().nullable(),
+	settlementLockedAt: z.string().datetime().nullable(),
+	refundStartedAt: z.string().datetime().nullable(),
 	participants: z.array(
 		z.object({ userId: UserIdSchema, displayName: UserNameSchema }),
 	),

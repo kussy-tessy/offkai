@@ -100,12 +100,25 @@ describe("EventFinance", () => {
 		).toThrow("同じ名前");
 	});
 
-	it("返金開始日時を設定し、再設定しても最初の日時を保持する", () => {
+	it("経費精算を確定してから返金を開始する", () => {
 		const first = new Date("2026-08-20T01:00:00.000Z");
-		const locked = EventFinance.create(eventId).lockRefund(first);
+		const locked = EventFinance.create(eventId)
+			.lockFeeCalculation(new Date("2026-08-19T01:00:00.000Z"))
+			.lockSettlement(new Date("2026-08-19T02:00:00.000Z"))
+			.markRefundStarted(first);
 		expect(
-			locked.lockRefund(new Date("2026-08-21T01:00:00.000Z")).refundLockedAt,
+			locked.markRefundStarted(new Date("2026-08-21T01:00:00.000Z"))
+				.refundStartedAt,
 		).toEqual(first);
+		expect(() => locked.unlockSettlement()).toThrow("返金を開始");
+	});
+
+	it("返金開始前なら経費精算の確定を解除できる", () => {
+		const finance = EventFinance.create(eventId)
+			.lockFeeCalculation(new Date("2026-08-19T01:00:00.000Z"))
+			.lockSettlement(new Date("2026-08-20T01:00:00.000Z"));
+		expect(finance.unlockSettlement().settlementLockedAt).toBeNull();
+		expect(() => finance.unlockFeeCalculation()).toThrow("経費精算を確定");
 	});
 
 	it("参加者がいる区分の削除を拒否する", () => {

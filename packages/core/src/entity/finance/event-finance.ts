@@ -12,7 +12,8 @@ export class EventFinance {
 		readonly categories: SettlementCategory[],
 		readonly feeCalculationLockedAt: Date | null,
 		readonly collectionStartedAt: Date | null,
-		readonly refundLockedAt: Date | null,
+		readonly settlementLockedAt: Date | null,
+		readonly refundStartedAt: Date | null,
 	) {}
 
 	static reconstruct(params: {
@@ -21,7 +22,8 @@ export class EventFinance {
 		categories: SettlementCategory[];
 		feeCalculationLockedAt?: Date | null;
 		collectionStartedAt?: Date | null;
-		refundLockedAt?: Date | null;
+		settlementLockedAt?: Date | null;
+		refundStartedAt?: Date | null;
 	}): EventFinance {
 		RefundRoundingUnitSchema.parse(params.refundRoundingUnit);
 		EventFinance.assertUniqueCategoryNames(params.categories);
@@ -36,7 +38,8 @@ export class EventFinance {
 			params.categories,
 			params.feeCalculationLockedAt ?? null,
 			params.collectionStartedAt ?? null,
-			params.refundLockedAt ?? null,
+			params.settlementLockedAt ?? null,
+			params.refundStartedAt ?? null,
 		);
 	}
 
@@ -47,7 +50,8 @@ export class EventFinance {
 			categories: [],
 			feeCalculationLockedAt: null,
 			collectionStartedAt: null,
-			refundLockedAt: null,
+			settlementLockedAt: null,
+			refundStartedAt: null,
 		});
 	}
 
@@ -64,6 +68,8 @@ export class EventFinance {
 			throw new Error("参加費は確定されていません。");
 		if (this.collectionStartedAt)
 			throw new Error("徴収を開始した参加費は確定解除できません。");
+		if (this.settlementLockedAt)
+			throw new Error("経費精算を確定した参加費は確定解除できません。");
 		return EventFinance.reconstruct({ ...this, feeCalculationLockedAt: null });
 	}
 
@@ -75,10 +81,30 @@ export class EventFinance {
 		return EventFinance.reconstruct({ ...this, collectionStartedAt: at });
 	}
 
-	lockRefund(at: Date): EventFinance {
-		if (this.refundLockedAt) return this;
+	lockSettlement(at: Date): EventFinance {
+		if (this.settlementLockedAt)
+			throw new Error("経費精算はすでに確定されています。");
+		if (!this.feeCalculationLockedAt)
+			throw new Error("参加費を確定してから経費精算を確定してください。");
+		if (Number.isNaN(at.getTime()))
+			throw new Error("経費精算の確定日時が不正です。");
+		return EventFinance.reconstruct({ ...this, settlementLockedAt: at });
+	}
+
+	unlockSettlement(): EventFinance {
+		if (!this.settlementLockedAt)
+			throw new Error("経費精算は確定されていません。");
+		if (this.refundStartedAt)
+			throw new Error("返金を開始した経費精算は確定解除できません。");
+		return EventFinance.reconstruct({ ...this, settlementLockedAt: null });
+	}
+
+	markRefundStarted(at: Date): EventFinance {
+		if (!this.settlementLockedAt)
+			throw new Error("経費精算を確定してから返金してください。");
+		if (this.refundStartedAt) return this;
 		if (Number.isNaN(at.getTime())) throw new Error("返金開始日時が不正です。");
-		return EventFinance.reconstruct({ ...this, refundLockedAt: at });
+		return EventFinance.reconstruct({ ...this, refundStartedAt: at });
 	}
 
 	changeRoundingUnit(unit: RefundRoundingUnit): EventFinance {

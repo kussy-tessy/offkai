@@ -2,6 +2,8 @@
   <OffkaiDetailHeader
     :offkai="data.offkai"
     :has-answered="hasAnswered"
+    :can-view-participant-guide="data.viewer.permissions.canViewParticipantGuide"
+    :can-manage-participants="canManageParticipants"
   />
 
 	<section
@@ -164,6 +166,11 @@
   }>();
 
 	const hasAnswered = computed(() => data.viewer.isParticipant);
+	const canManageParticipants = computed(
+		() =>
+			data.viewer.permissions.canManageDiscordRole ||
+			data.viewer.permissions.canManagePayments,
+	);
 	const loginRoute = computed(() => ({
 		path: "/login",
 		query: { redirect: `/offkai/${data.offkai.id}/answers` },

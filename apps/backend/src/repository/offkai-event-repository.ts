@@ -152,7 +152,6 @@ export class OffkaiEventRepository {
 			seriesId: event.seriesId,
 			name: event.name,
 			description: event.description,
-			participantDescription: event.participantDescription,
 			eventStartDate: event.eventPeriod.startDate,
 			eventEndDate: event.eventPeriod.endDate,
 			applicationStartDate: event.applicationStartDate,
@@ -223,6 +222,13 @@ export class OffkaiEventRepository {
 					skipDuplicates: true,
 				});
 			}
+		});
+	}
+
+	async updateParticipantDescription(event: OffkaiEvent): Promise<void> {
+		await this.prisma.offkaiEvent.update({
+			where: { id: event.id },
+			data: { participantDescription: event.participantDescription },
 		});
 	}
 

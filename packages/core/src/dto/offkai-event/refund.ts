@@ -16,11 +16,6 @@ const ParticipantRouteSchema = EventRouteSchema.extend({
 export const GetEventRefundRequestSchema = EventRouteSchema;
 export type GetEventRefundRequest = z.infer<typeof GetEventRefundRequestSchema>;
 
-export const CalculateEventRefundRequestSchema = EventRouteSchema;
-export type CalculateEventRefundRequest = z.infer<
-	typeof CalculateEventRefundRequestSchema
->;
-
 export const UpdateParticipantRefundRequestSchema =
 	ParticipantRouteSchema.extend({ refunded: z.boolean() });
 export type UpdateParticipantRefundRequest = z.infer<
@@ -52,7 +47,8 @@ const RefundParticipantSchema = z.object({
 
 export const GetEventRefundResponseSchema = z.object({
 	refundRoundingUnit: RefundRoundingUnitSchema,
-	refundLockedAt: z.string().datetime().nullable(),
+	settlementLockedAt: z.string().datetime().nullable(),
+	refundStartedAt: z.string().datetime().nullable(),
 	refundCalculatedAt: z.string().datetime().nullable(),
 	canCalculate: z.boolean(),
 	negativeParticipantNames: z.array(UserNameSchema),

@@ -20,7 +20,9 @@ import Dashboard from "../views/dashboard/Dashboard.vue";
 import Login from "../views/LoginPage.vue";
 import CreateOffkaiEvent from "../views/offkaiEvent/create.vue";
 import EditOffkaiEvent from "../views/offkaiEvent/edit.vue";
+import EditParticipantGuide from "../views/offkaiEvent/editParticipantGuide.vue";
 import OffkaiOverview from "../views/offkaiEvent/overview.vue";
+import ParticipantGuide from "../views/offkaiEvent/participantGuide.vue";
 import Participants from "../views/offkaiEvent/participants.vue";
 import PhotoShare from "../views/photoShare/index.vue";
 import Signup from "../views/SignupPage.vue";
@@ -48,6 +50,12 @@ const routes = [
 	{
 		path: "/offkai/:id/edit",
 		component: EditOffkaiEvent,
+		props: true,
+		meta: { requiresAuth: true, requiresSeriesOwner: true },
+	},
+	{
+		path: "/offkai/:id/participant-guide/edit",
+		component: EditParticipantGuide,
 		props: true,
 		meta: { requiresAuth: true, requiresSeriesOwner: true },
 	},
@@ -82,6 +90,12 @@ const routes = [
 		path: "/offkai/:id/overview",
 		component: OffkaiOverview,
 		props: true,
+	},
+	{
+		path: "/offkai/:id/participant-guide",
+		component: ParticipantGuide,
+		props: true,
+		...requiresAuth,
 	},
 	{
 		path: "/offkai/:id/answers",

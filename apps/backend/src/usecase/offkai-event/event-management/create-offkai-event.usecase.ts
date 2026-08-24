@@ -39,7 +39,6 @@ export async function createOffkaiEvent(
 				new Date(input.applicationStartDate),
 			),
 			description: input.description,
-			participantDescription: input.participantDescription,
 			discordRoleId: input.discordRoleId,
 			askBringingKigurumi: input.askBringingKigurumi,
 			overviewVisibility: input.overviewVisibility,

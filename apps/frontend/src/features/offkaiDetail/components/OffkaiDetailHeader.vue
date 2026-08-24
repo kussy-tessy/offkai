@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { faCircleInfo, faClipboardList, faImages } from "@fortawesome/free-solid-svg-icons";
+import { faCircleInfo, faClipboardList, faImages, faUserGear, faUsers } from "@fortawesome/free-solid-svg-icons";
 import type { OffkaiDetail, Unbrand } from "@offkai/core";
 import { computed } from "vue";
 import type { RouteTabItem } from "@/common/components/RouteTabs.types";
@@ -15,13 +15,26 @@ import RouteTabs from "@/common/components/RouteTabs.vue";
 const props = defineProps<{
   offkai: Unbrand<OffkaiDetail>["offkai"];
   hasAnswered: boolean;
+  canViewParticipantGuide: boolean;
+  canManageParticipants: boolean;
 }>();
 
 const contentTabs = computed<RouteTabItem[]>(() => [
   { label: "概要", to: `/offkai/${props.offkai.id}/overview`, icon: faCircleInfo },
+  ...(props.canViewParticipantGuide
+    ? [{ label: "参加者向け情報", to: `/offkai/${props.offkai.id}/participant-guide`, icon: faUsers }]
+    : []),
   { label: "回答一覧", to: `/offkai/${props.offkai.id}/answers`, icon: faClipboardList },
   ...(props.hasAnswered
     ? [{ label: "写真共有", to: `/offkai/${props.offkai.id}/photos`, icon: faImages }]
+    : []),
+  ...(props.canManageParticipants
+    ? [{
+        label: "参加者管理",
+        to: `/offkai/${props.offkai.id}/participants`,
+        icon: faUserGear,
+        exact: false,
+      }]
     : []),
 ]);
 </script>
