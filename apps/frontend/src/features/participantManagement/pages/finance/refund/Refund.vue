@@ -122,10 +122,11 @@
         <h3 class="font-bold text-slate-900">参加者ごとの返金</h3>
         <label class="block text-sm text-slate-600"
           >名前検索<input
-            v-model="search"
+            :value="search"
             type="search"
             class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base"
             placeholder="参加者名を入力"
+            @input="onSearchInput"
         /></label>
         <nav
           class="flex border-b border-slate-200"
@@ -345,6 +346,10 @@ const unrefundTarget = ref<RefundParticipant | null>(null);
 const search = ref("");
 const filter = ref<Filter>("unrefunded");
 const expandedIds = ref(new Set<string>());
+
+const onSearchInput = (event: Event) => {
+  search.value = (event.target as HTMLInputElement).value;
+};
 const refundableParticipants = computed(
   () =>
     page.value?.participants.filter(

@@ -46,19 +46,24 @@
     </div>
     <div
       v-if="showStartFade"
-      class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent"
+      class="pointer-events-none absolute inset-y-0 left-0 flex w-8 items-center bg-gradient-to-r from-white via-white/90 to-transparent pl-1 text-slate-500"
       aria-hidden="true"
-    />
+    >
+      <FontAwesomeIcon :icon="faCaretLeft" />
+    </div>
     <div
       v-if="showEndFade"
-      class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"
+      class="pointer-events-none absolute inset-y-0 right-0 flex w-8 items-center justify-end bg-gradient-to-l from-white via-white/90 to-transparent pr-1 text-slate-500"
       aria-hidden="true"
-    />
+    >
+      <FontAwesomeIcon :icon="faCaretRight" />
+    </div>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCaretLeft, faCaretRight } from "@fortawesome/free-solid-svg-icons";
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import type { RouteTabItem } from "./RouteTabs.types";

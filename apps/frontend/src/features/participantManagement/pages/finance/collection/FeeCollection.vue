@@ -9,10 +9,11 @@
       </div>
       <label class="block text-sm text-slate-600"
         >名前検索<input
-          v-model="search"
+          :value="search"
           type="search"
           class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base"
           placeholder="参加者名を入力"
+          @input="onSearchInput"
       /></label>
       <nav
         class="flex border-b border-slate-200"
@@ -237,6 +238,10 @@ const search = ref("");
 const filter = ref<Filter>("uncollected");
 const savingUserId = ref<string | null>(null);
 const expandedIds = ref(new Set<string>());
+
+const onSearchInput = (event: Event) => {
+  search.value = (event.target as HTMLInputElement).value;
+};
 const uncollectDialogOpen = ref(false);
 const uncollectTarget = ref<Participant | null>(null);
 const basePath = `/offkai-event/${eventId}/finance`;

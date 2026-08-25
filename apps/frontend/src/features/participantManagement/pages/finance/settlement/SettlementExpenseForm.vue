@@ -24,9 +24,8 @@
     </div>
     <label class="block text-sm text-slate-600">内容<input v-model="title" required maxlength="100"
         class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2" placeholder="例：更衣室代、車出し協力金" /></label>
-    <label v-if="kind === 'normal'" class="block text-sm text-slate-600">金額<input v-model="normalAmount" required
-        type="number" min="1" step="1"
-        class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2" /></label>
+    <MoneyExpressionInput v-if="kind === 'normal'" ref="normalAmountInput" v-model="normalAmount" label="金額"
+      required />
 
     <section v-else class="space-y-3">
       <div class="relative">
@@ -74,11 +73,10 @@
           </span>
         </MyBadge>
       </div>
-      <label class="block text-sm text-slate-600">1人あたりの協力金<span class="mt-1 flex items-center gap-1"><input
-            v-model="cooperationAmount" required type="number" min="1" step="1"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-right" /><span>円</span></span></label>
+      <MoneyExpressionInput ref="cooperationAmountInput" v-model="cooperationAmount" label="1人あたりの協力金"
+        suffix="円" align="right" required />
       <p class="text-right text-sm font-medium text-slate-700">
-        {{ money(Number(cooperationAmount) || 0) }} ×
+        {{ money(cooperationAmount ?? 0) }} ×
         {{ recipientDrafts.length }}人 ＝ {{ money(recipientTotal) }}
       </p>
     </section>
@@ -98,6 +96,7 @@
   import { computed, ref } from "vue";
   import MyBadge from "@/common/components/MyBadge.vue";
   import MyButton from "@/common/components/MyButton.vue";
+  import MoneyExpressionInput from "@/common/components/MoneyExpressionInput.vue";
   import type {
     SettlementExpense,
     SettlementExpenseInput,
@@ -120,24 +119,28 @@
     props.expense?.recipients.length ? "recipient" : "normal",
   );
   const title = ref(props.expense?.title ?? "");
-  const normalAmount = ref(
+  const normalAmount = ref<number | null>(
     props.expense && props.expense.recipients.length === 0
-      ? String(props.expense.amount)
-      : "",
+      ? props.expense.amount
+      : null,
   );
   const note = ref(props.expense?.note ?? "");
   const recipientPickerOpen = ref(false);
   const recipientSearch = ref("");
-  const cooperationAmount = ref(
+  const cooperationAmount = ref<number | null>(
     props.expense?.recipients[0]
-      ? String(props.expense.recipients[0].amount)
-      : "",
+      ? props.expense.recipients[0].amount
+      : null,
   );
   const recipientDrafts = ref(
     (props.expense?.recipients ?? []).map((recipient) => ({
       userId: recipient.userId,
     })),
   );
+
+  type MoneyExpressionInputInstance = InstanceType<typeof MoneyExpressionInput>;
+  const normalAmountInput = ref<MoneyExpressionInputInstance | null>(null);
+  const cooperationAmountInput = ref<MoneyExpressionInputInstance | null>(null);
 
   const filteredParticipants = computed(() => {
     const query = recipientSearch.value.trim().toLocaleLowerCase("ja");
@@ -147,19 +150,18 @@
     );
   });
   const recipientTotal = computed(
-    () => recipientDrafts.value.length * (Number(cooperationAmount.value) || 0),
+    () => recipientDrafts.value.length * (cooperationAmount.value ?? 0),
   );
   const valid = computed(() => {
     if (!title.value.trim()) return false;
     if (kind.value === "normal")
       return (
-        Number.isInteger(Number(normalAmount.value)) &&
-        Number(normalAmount.value) > 0
+        Number.isInteger(normalAmount.value) && (normalAmount.value ?? 0) > 0
       );
     return (
       recipientDrafts.value.length > 0 &&
-      Number.isInteger(Number(cooperationAmount.value)) &&
-      Number(cooperationAmount.value) > 0
+      Number.isInteger(cooperationAmount.value) &&
+      (cooperationAmount.value ?? 0) > 0
     );
   });
   const money = (amount: number) =>
@@ -179,19 +181,23 @@
     recipientPickerOpen.value = false;
   };
   const submit = async () => {
+    const amount =
+      kind.value === "normal"
+        ? (normalAmountInput.value?.evaluate() ?? null)
+        : (cooperationAmountInput.value?.evaluate() ?? null);
     if (!valid.value) return;
     const recipients =
       kind.value === "recipient"
         ? recipientDrafts.value.map((recipient) => ({
           userId: recipient.userId,
-          amount: Number(cooperationAmount.value),
+          amount: amount as number,
         }))
         : [];
     const saved = await props.save(
       {
         categoryId: props.categoryId,
         title: title.value.trim(),
-        amount: kind.value === "normal" ? Number(normalAmount.value) : null,
+        amount: kind.value === "normal" ? amount : null,
         note: note.value.trim() || null,
         recipients,
       },
