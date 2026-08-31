@@ -5,14 +5,18 @@ import { getMe } from "./get-me.usecase";
 
 export async function connectDiscord(
 	userId: UserId,
-	discordUsername: string,
-	discordUserId: string,
+	discordProfile: {
+		username: string;
+		userId: string;
+		displayName: string;
+		avatarHash: string | null;
+	},
 ): Promise<Unbrand<GetMeResponse>> {
 	const repository = new UserRepository();
 
 	const [user, linkedUserByUserId] = await Promise.all([
 		repository.findById(userId),
-		repository.findByDiscordUserId(discordUserId),
+		repository.findByDiscordUserId(discordProfile.userId),
 	]);
 
 	if (!user) {
@@ -30,8 +34,14 @@ export async function connectDiscord(
 	}
 
 	await repository.save(
-		runBusinessRule(() => user.connectDiscord(discordUsername, discordUserId)),
+		runBusinessRule(() =>
+			user.connectDiscord(discordProfile.username, discordProfile.userId),
+		),
 	);
+	await repository.updateDiscordProfile(user.id, {
+		displayName: discordProfile.displayName,
+		avatarHash: discordProfile.avatarHash,
+	});
 
 	const me = await getMe(userId);
 	if (!me) {

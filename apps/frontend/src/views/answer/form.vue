@@ -233,7 +233,7 @@
       success(isOwnerEdit.value ? "回答を更新しました。" : "回答を送信しました。")
       await router.push(
         isOwnerEdit.value
-          ? `/offkai/${props.id}/participants/answers`
+          ? `/offkai/${props.id}/participant-management/answers`
           : `/offkai/${props.id}/answers`,
       );
     } catch (cause) {

@@ -29,7 +29,16 @@
     </MyFormField>
 
     <section class="space-y-4 rounded-xl border border-teal-100 bg-teal-50/50 p-4">
-      <h2 class="text-xl font-semibold text-slate-800">公開範囲</h2>
+      <h2 class="text-xl font-semibold text-slate-800">アクセス設定</h2>
+      <MyFormField v-slot="{ id }" label="参加表明できる人">
+        <MySelectBox
+          :id="id"
+          :value="participationEligibility.value"
+          :options="participationEligibilityOptions"
+          :on-change="value => participationEligibility.set(toParticipationEligibility(value))"
+        />
+      </MyFormField>
+      <h3 class="pt-2 text-base font-semibold text-slate-700">公開範囲</h3>
       <MyFormField v-slot="{ id }" label="オフ会概要">
         <MySelectBox
           :id="id"
@@ -78,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { EventVisibility } from "@offkai/core"
+  import type { EventVisibility, ParticipationEligibility } from "@offkai/core"
 	import { isVisibilityAtLeastAsRestricted } from "@offkai/core"
   import { computed, nextTick, ref, watch } from "vue"
   import MyButton from "@/common/components/MyButton.vue"
@@ -93,10 +102,11 @@
   import CommitmentQuestions from "./CommitmentQuestions.vue"
   import PreferenceQuestions from "./PreferenceQuestions.vue"
 
-  const { initialValue, handleSubmit, isEdit = false } = defineProps<{
+  const { initialValue, handleSubmit, isEdit = false, hasDiscordGuild = true } = defineProps<{
     initialValue: OffkaiEventInitializeProps,
     handleSubmit: (payload: unknown) => void,
-    isEdit?: boolean
+    isEdit?: boolean,
+    hasDiscordGuild?: boolean,
   }>()
 
   const {
@@ -108,6 +118,7 @@
     askBringingKigurumi,
 		overviewVisibility,
 		participantsVisibility,
+    participationEligibility,
     commitment,
     preference,
     errors,
@@ -120,9 +131,15 @@
 	const visibilityOptions: SelectOption[] = [
 		{ value: "PUBLIC", label: "誰でも" },
 		{ value: "AUTHENTICATED", label: "ログインユーザー" },
-		{ value: "GUILD_MEMBERS", label: "Discordサーバー参加者" },
+		{ value: "GUILD_MEMBERS", label: "Discordサーバー参加者", disabled: !hasDiscordGuild },
 		{ value: "PARTICIPANTS", label: "オフ会参加表明者" },
 	]
+	const participationEligibilityOptions: SelectOption[] = [
+		{ value: "AUTHENTICATED", label: "ログインユーザー" },
+		{ value: "GUILD_MEMBERS", label: "Discordサーバー参加者", disabled: !hasDiscordGuild },
+	]
+	const toParticipationEligibility = (value: string | number): ParticipationEligibility =>
+		String(value) as ParticipationEligibility
 	const overviewVisibilityOptions = visibilityOptions.filter(
 		(option) => option.value !== "PARTICIPANTS",
 	)

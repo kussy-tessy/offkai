@@ -1,6 +1,7 @@
 import {
 	type CreateOffkaiEventRequest,
 	type EventVisibility,
+	type ParticipationEligibility,
 	isVisibilityAtLeastAsRestricted,
 	type Unbrand,
 } from "@offkai/core";
@@ -32,6 +33,7 @@ export type OffkaiEventInitializeProps = {
 	askBringingKigurumi: boolean;
 	overviewVisibility: EventVisibility;
 	participantsVisibility: EventVisibility;
+	participationEligibility: ParticipationEligibility;
 	commitmentQuestions: CommitmentQuestionInitializeProps["questions"];
 	preferenceQuestions: PreferenceQuestionInitializeProps["questions"];
 };
@@ -46,6 +48,8 @@ export const useQuestionsForm = () => {
 	const askBringingKigurumi = useField(false);
 	const overviewVisibility = useField<EventVisibility>("AUTHENTICATED");
 	const participantsVisibility = useField<EventVisibility>("AUTHENTICATED");
+	const participationEligibility =
+		useField<ParticipationEligibility>("AUTHENTICATED");
 
 	// 子フォーム（サブコレクション）
 	const commitment = useCommitmentQuestions();
@@ -152,6 +156,7 @@ export const useQuestionsForm = () => {
 		askBringingKigurumi.set(props.askBringingKigurumi);
 		overviewVisibility.set(props.overviewVisibility);
 		participantsVisibility.set(props.participantsVisibility);
+		participationEligibility.set(props.participationEligibility);
 		commitment.initialize({
 			questions: props.commitmentQuestions,
 		});
@@ -172,6 +177,7 @@ export const useQuestionsForm = () => {
 		askBringingKigurumi: askBringingKigurumi.value.value,
 		overviewVisibility: overviewVisibility.value.value,
 		participantsVisibility: participantsVisibility.value.value,
+		participationEligibility: participationEligibility.value.value,
 		commitmentQuestions: commitment.questions.value
 			.filter((question) => !isBlankCommitmentQuestion(question))
 			.map((question) => ({
@@ -228,6 +234,7 @@ export const useQuestionsForm = () => {
 		askBringingKigurumi,
 		overviewVisibility,
 		participantsVisibility,
+		participationEligibility,
 		commitment,
 		preference,
 		initialize,

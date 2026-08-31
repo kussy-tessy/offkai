@@ -21,10 +21,7 @@
     </section>
 
     <div v-if="user?.isSeriesOwner" class="flex justify-end">
-      <div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
-        <MyButton color="secondary" variant="ghost" @click="router.push('/series/question-template')">
-          テンプレート設定
-        </MyButton>
+      <div class="grid w-full grid-cols-1 gap-2 sm:w-auto">
         <MyButton color="primary" @click="router.push('/offkai/create')">
           オフ会を作成する
         </MyButton>

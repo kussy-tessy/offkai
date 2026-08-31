@@ -8,6 +8,7 @@ import {
 	PreferenceQuestionAnswerFormSchema,
 	QuestionIdSchema,
 	SeriesRoleSchema,
+	StaffPermissionsSchema,
 	UserIdSchema,
 	UserNameSchema,
 } from ".";
@@ -38,6 +39,7 @@ export const AnswerRowSchema = z.object({
 	user: z.object({
 		id: UserIdSchema,
 		displayName: UserNameSchema,
+		avatarUrl: z.string().url().nullable(),
 	}),
 	createdAt: ISODateTimeStringSchema,
 	commitmentAnswers: z.record(
@@ -63,6 +65,7 @@ export const OffkaiDetailSchema = z.object({
 	viewer: z.object({
 		seriesRole: SeriesRoleSchema.nullable(),
 		isParticipant: z.boolean(),
+		staffPermissions: StaffPermissionsSchema.nullable(),
 		permissions: z.object({
 			canViewOverview: z.boolean(),
 			canViewParticipantGuide: z.boolean(),
@@ -71,6 +74,7 @@ export const OffkaiDetailSchema = z.object({
 			canEditEvent: z.boolean(),
 			canDeleteEvent: z.boolean(),
 			canEditAnswers: z.boolean(),
+			canDeleteAnswers: z.boolean(),
 			canManageDiscordRole: z.boolean(),
 			canManagePayments: z.boolean(),
 		}),
@@ -83,6 +87,17 @@ export const OffkaiDetailSchema = z.object({
 				"DISCORD_NOT_CONNECTED",
 				"NOT_GUILD_MEMBER",
 				"NOT_PARTICIPANT",
+				"MEMBERSHIP_CHECK_UNAVAILABLE",
+			])
+			.optional(),
+	}),
+	participationAccess: z.object({
+		granted: z.boolean(),
+		reason: z
+			.enum([
+				"AUTHENTICATION_REQUIRED",
+				"DISCORD_NOT_CONNECTED",
+				"NOT_GUILD_MEMBER",
 				"MEMBERSHIP_CHECK_UNAVAILABLE",
 			])
 			.optional(),

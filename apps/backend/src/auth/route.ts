@@ -330,6 +330,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 						),
 					);
 				}
+				await repository.updateDiscordProfile(user.id, {
+					displayName: discordUser.displayName,
+					avatarHash: discordUser.avatarHash,
+				});
 				await issueSession(user.id, reply);
 				return reply.redirect(`${frontendUrl}/dashboard?discord=logged_in`);
 			}
@@ -338,7 +342,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 					discordOAuthResultUrl(frontendUrl, flow, "login_required"),
 				);
 			}
-			await connectDiscord(currentUserId, discordUser.username, discordUser.id);
+			await connectDiscord(currentUserId, {
+				username: discordUser.username,
+				userId: discordUser.id,
+				displayName: discordUser.displayName,
+				avatarHash: discordUser.avatarHash,
+			});
 			return reply.redirect(
 				discordOAuthResultUrl(frontendUrl, flow, "connected"),
 			);

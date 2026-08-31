@@ -36,14 +36,24 @@ const { id } = defineProps<{
   id: string;
 }>();
 
-const tabs = createParticipantManagementTabs(id);
+const tabs = computed(() => {
+  const viewer = detail.value?.viewer;
+  const owner = viewer?.seriesRole === "owner";
+  const permissions = viewer?.staffPermissions;
+  return createParticipantManagementTabs(id, {
+    discord: owner || permissions?.discordRole !== "none",
+    finance: owner || Boolean(permissions && [permissions.feeCalculation, permissions.feeCollection, permissions.settlement, permissions.refund].some(level => level !== "none")),
+    answers: owner || (viewer?.seriesRole === "staff" && viewer.isParticipant),
+  });
+});
 const { get } = useApi();
 const detail = ref<Unbrand<OffkaiDetail> | null>(null);
 const loadError = ref("");
 const canManageParticipants = computed(
   () =>
     detail.value?.viewer.permissions.canManageDiscordRole === true ||
-    detail.value?.viewer.permissions.canManagePayments === true,
+    detail.value?.viewer.permissions.canManagePayments === true ||
+    (detail.value?.viewer.seriesRole === "staff" && detail.value.viewer.isParticipant),
 );
 
 onMounted(async () => {

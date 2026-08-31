@@ -44,6 +44,38 @@ export type OffkaiSeriesId = z.infer<typeof OffkaiSeriesIdSchema>;
 export const SeriesRoleSchema = z.enum(["owner", "staff"]);
 export type SeriesRole = z.infer<typeof SeriesRoleSchema>;
 
+export const AnswerManagementPermissionSchema = z.enum(["read", "edit", "delete"]);
+export const DiscordRolePermissionSchema = z.enum(["none", "read", "assign", "manage"]);
+export const FeeCalculationPermissionSchema = z.enum(["none", "read", "edit", "confirm"]);
+export const FeeCollectionPermissionSchema = z.enum(["none", "read", "record"]);
+export const SettlementPermissionSchema = z.enum(["none", "read", "edit", "confirm"]);
+export const RefundPermissionSchema = z.enum(["none", "read", "record"]);
+
+export const StaffPermissionsSchema = z.object({
+	showUnansweredEvents: z.boolean(),
+	allowApplicationBeforeStart: z.boolean(),
+	eventManagement: z.boolean(),
+	answerManagement: AnswerManagementPermissionSchema,
+	discordRole: DiscordRolePermissionSchema,
+	feeCalculation: FeeCalculationPermissionSchema,
+	feeCollection: FeeCollectionPermissionSchema,
+	settlement: SettlementPermissionSchema,
+	refund: RefundPermissionSchema,
+});
+export type StaffPermissions = z.infer<typeof StaffPermissionsSchema>;
+
+export const LegacyStaffPermissions: StaffPermissions = {
+	showUnansweredEvents: true,
+	allowApplicationBeforeStart: false,
+	eventManagement: false,
+	answerManagement: "read",
+	discordRole: "manage",
+	feeCalculation: "confirm",
+	feeCollection: "record",
+	settlement: "confirm",
+	refund: "record",
+};
+
 export const EventVisibilitySchema = z.enum([
 	"PUBLIC",
 	"AUTHENTICATED",
@@ -51,6 +83,14 @@ export const EventVisibilitySchema = z.enum([
 	"PARTICIPANTS",
 ]);
 export type EventVisibility = z.infer<typeof EventVisibilitySchema>;
+
+export const ParticipationEligibilitySchema = z.enum([
+	"AUTHENTICATED",
+	"GUILD_MEMBERS",
+]);
+export type ParticipationEligibility = z.infer<
+	typeof ParticipationEligibilitySchema
+>;
 
 const EventVisibilityLevel: Record<EventVisibility, number> = {
 	PUBLIC: 0,

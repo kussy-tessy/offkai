@@ -50,6 +50,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { getMyAnswerForm } from "./answer-command/get-my-answer-form.usecase";
 import {
 	deleteGuestAnswer,
+	deleteManagedOffkaiAnswer,
 	getManagedGuestAnswerForm,
 	getManagedOffkaiAnswerForm,
 	getNewGuestAnswerForm,
@@ -678,6 +679,13 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 			eventId: params.eventId,
 		});
 		return saveManagedOffkaiAnswer(params, input, ownerUserId);
+	});
+
+	app.delete("/:eventId/answers/:userId", requireUser, async (request, reply) => {
+		const viewerUserId = UserIdSchema.parse(request.user.userId);
+		const input = ManageOffkaiAnswerRequestSchema.parse(request.params);
+		await deleteManagedOffkaiAnswer(input, viewerUserId);
+		return reply.code(204).send();
 	});
 
 	app.put("/:eventId/answers", requireUser, async (request) => {

@@ -52,7 +52,7 @@
         <table class="w-full border-collapse text-center table-fixed">
           <thead class="bg-gradient-to-r from-teal-50 to-sky-50 align-top">
             <tr>
-              <th class="sticky left-0 z-20 bg-teal-50 p-1 text-left w-24 text-sm font-semibold [box-shadow:1px_0_0_0_theme(colors.teal.100)]">名前</th>
+			  <th class="sticky left-0 z-20 w-32 bg-teal-50 p-1 text-left text-sm font-semibold [box-shadow:1px_0_0_0_theme(colors.teal.100)]">名前</th>
               <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 p-0">
                 <div class="font-semibold text-slate-800 text-xs">{{ q.questionShort }}</div>
               </th>
@@ -87,9 +87,12 @@
           <tbody>
             <tr v-for="(row, rowIndex) in data.answers" :key="row.user.id"
               class="group odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
-              <td class="sticky left-0 z-10 group-hover:bg-sky-50 border-b border-slate-100 p-1 text-left w-24 truncate font-medium text-slate-700 text-sm [box-shadow:1px_0_0_0_theme(colors.slate.100)]"
+              <td class="sticky left-0 z-10 w-32 border-b border-slate-100 p-1 text-left text-sm font-medium text-slate-700 group-hover:bg-sky-50 [box-shadow:1px_0_0_0_theme(colors.slate.100)]"
                 :class="rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'">
-				<span>{{ row.user.displayName }}</span>
+				<div class="flex min-w-0 items-center gap-1.5">
+				  <DiscordAvatar :avatar-url="row.user.avatarUrl" :display-name="row.user.displayName" size="sm" />
+				  <span class="truncate">{{ row.user.displayName }}</span>
+				</div>
               </td>
               <td v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 border-b border-slate-100 p-0 text-lg">
                 <span v-if="row.commitmentAnswers[q.id] === 'yes'">
@@ -123,14 +126,19 @@
       <table class="w-full border-collapse table-fixed">
         <thead class="bg-gradient-to-r from-teal-50 to-sky-50 border-b border-teal-100">
           <tr>
-            <th class="border-b border-teal-100 p-2 text-left w-24">名前</th>
+            <th class="w-32 border-b border-teal-100 p-2 text-left">名前</th>
             <th class="border-b border-teal-100 p-2 text-left">回答</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="row in data.answers" :key="row.user.id"
             class="odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
-            <td class="border-b border-slate-100 p-2 w-24 font-medium text-slate-700">{{ row.user.displayName }}</td>
+            <td class="w-32 border-b border-slate-100 p-2 font-medium text-slate-700">
+              <div class="flex min-w-0 items-center gap-1.5">
+                <DiscordAvatar :avatar-url="row.user.avatarUrl" :display-name="row.user.displayName" size="sm" />
+                <span class="truncate">{{ row.user.displayName }}</span>
+              </div>
+            </td>
             <td class="border-b border-slate-100 p-2 text-gray-700 whitespace-pre-line">
 			  <MyBadge
 					v-if="isChoiceQuestion && selectedAnswer(row) !== '―'"
@@ -156,6 +164,7 @@
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import { formatWithSeconds, type OffkaiDetail, type Unbrand } from "@offkai/core";
   import { computed, ref } from "vue";
+  import DiscordAvatar from "@/common/components/DiscordAvatar.vue";
   import MyBadge from "@/common/components/MyBadge.vue";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
 	import { usePreferenceAnswerBadge } from "@/features/answerList/composables/usePreferenceAnswerBadge";

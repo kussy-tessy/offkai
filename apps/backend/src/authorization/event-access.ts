@@ -1,4 +1,9 @@
-import type { EventVisibility, SeriesRole } from "@offkai/core";
+import type {
+	EventVisibility,
+	ParticipationEligibility,
+	SeriesRole,
+	StaffPermissions,
+} from "@offkai/core";
 
 export type DiscordMembershipStatus =
 	| "NOT_CHECKED"
@@ -17,6 +22,13 @@ export type EventAccessDeniedReason =
 export type EventAccessDecision =
 	| { granted: true }
 	| { granted: false; reason: EventAccessDeniedReason };
+
+export type ParticipationAccessDecision =
+	| { granted: true }
+	| {
+			granted: false;
+			reason: Exclude<EventAccessDeniedReason, "NOT_PARTICIPANT">;
+	  };
 
 const roleLevels: Record<SeriesRole, number> = {
 	staff: 1,
@@ -41,7 +53,10 @@ export function evaluateEventVisibility(
 		discordMembership: DiscordMembershipStatus;
 	},
 ): EventAccessDecision {
-	if (hasSeriesRole(viewer.seriesRole, "staff")) return { granted: true };
+	if (
+		hasSeriesRole(viewer.seriesRole, "owner") ||
+		(viewer.seriesRole === "staff" && viewer.isParticipant)
+	) return { granted: true };
 
 	switch (visibility) {
 		case "PUBLIC":
@@ -73,22 +88,73 @@ export function evaluateEventVisibility(
 	}
 }
 
+export function evaluateParticipationEligibility(
+	eligibility: ParticipationEligibility,
+	viewer: {
+		isAuthenticated: boolean;
+		seriesRole: SeriesRole | null;
+		isParticipant: boolean;
+		discordMembership: DiscordMembershipStatus;
+	},
+): ParticipationAccessDecision {
+	if (hasSeriesRole(viewer.seriesRole, "owner") || viewer.isParticipant) {
+		return { granted: true };
+	}
+	if (!viewer.isAuthenticated) {
+		return { granted: false, reason: "AUTHENTICATION_REQUIRED" };
+	}
+	if (eligibility === "AUTHENTICATED") return { granted: true };
+	if (viewer.discordMembership === "NOT_CONNECTED") {
+		return { granted: false, reason: "DISCORD_NOT_CONNECTED" };
+	}
+	if (viewer.discordMembership === "UNAVAILABLE") {
+		return { granted: false, reason: "MEMBERSHIP_CHECK_UNAVAILABLE" };
+	}
+	return viewer.discordMembership === "MEMBER"
+		? { granted: true }
+		: { granted: false, reason: "NOT_GUILD_MEMBER" };
+}
+
 export function createEventViewerPermissions(input: {
 	seriesRole: SeriesRole | null;
 	isParticipant: boolean;
 	overviewAccess: EventAccessDecision;
 	participantsAccess: EventAccessDecision;
+	staffPermissions?: StaffPermissions | null;
 }) {
+	const isOwner = hasSeriesRole(input.seriesRole, "owner");
+	const isParticipatingStaff = input.seriesRole === "staff" && input.isParticipant;
+	const answerLevel = input.staffPermissions?.answerManagement;
+	const canEditAnswers =
+		isOwner ||
+		(isParticipatingStaff &&
+			(answerLevel === "edit" || answerLevel === "delete"));
 	return {
 		canViewOverview: input.overviewAccess.granted,
-		canViewParticipantGuide:
-			input.isParticipant || hasSeriesRole(input.seriesRole, "staff"),
+		canViewParticipantGuide: input.isParticipant || isOwner,
 		canViewParticipants: input.participantsAccess.granted,
 		canViewPrivateAnswers: input.isParticipant,
-		canEditEvent: hasSeriesRole(input.seriesRole, "owner"),
+		canEditEvent:
+			isOwner ||
+			(isParticipatingStaff && input.staffPermissions?.eventManagement === true),
 		canDeleteEvent: hasSeriesRole(input.seriesRole, "owner"),
-		canEditAnswers: hasSeriesRole(input.seriesRole, "owner"),
-		canManageDiscordRole: hasSeriesRole(input.seriesRole, "staff"),
-		canManagePayments: hasSeriesRole(input.seriesRole, "staff"),
+		canEditAnswers,
+		canDeleteAnswers:
+			isOwner || (isParticipatingStaff && answerLevel === "delete"),
+		canManageDiscordRole:
+			isOwner ||
+			(isParticipatingStaff && input.staffPermissions?.discordRole !== "none"),
+		canManagePayments:
+			isOwner ||
+			(isParticipatingStaff &&
+				Boolean(
+					input.staffPermissions &&
+						[
+							input.staffPermissions.feeCalculation,
+							input.staffPermissions.feeCollection,
+							input.staffPermissions.settlement,
+							input.staffPermissions.refund,
+						].some((level) => level !== "none"),
+				)),
 	};
 }

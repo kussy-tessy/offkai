@@ -122,6 +122,16 @@ export class UserRepository {
 		return this.toEntity(record);
 	}
 
+	async updateDiscordProfile(
+		userId: UserId,
+		profile: { displayName: string; avatarHash: string | null },
+	): Promise<void> {
+		await this.prisma.discordIdentity.update({
+			where: { userId },
+			data: profile,
+		});
+	}
+
 	private toEntity(record: UserRecord): User {
 		return User.reconstruct({
 			id: UserIdSchema.parse(record.id),

@@ -10,7 +10,7 @@ import {
 } from "@offkai/core";
 import { v7 as uuidv7 } from "uuid";
 import { AppError, runBusinessRule } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import { OffkaiEventRepository } from "../../../repository";
 
 export function assignQuestionIds<T>(
@@ -43,17 +43,11 @@ export async function updateOffkaiEvent(
 ) {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(params.id);
-	const seriesRole = await repository.findSeriesMemberRole(
-		userId,
-		event.seriesId,
-	);
-
-	if (!hasSeriesRole(seriesRole, "owner")) {
-		throw new AppError("FORBIDDEN", "このオフ会を編集する権限がありません。");
-	}
+	await requireEventPermission(event.id, userId, { area: "eventManagement" });
 	if (
 		(input.overviewVisibility === "GUILD_MEMBERS" ||
-			input.participantsVisibility === "GUILD_MEMBERS") &&
+			input.participantsVisibility === "GUILD_MEMBERS" ||
+			input.participationEligibility === "GUILD_MEMBERS") &&
 		!(await repository.findSeriesDiscordGuildId(event.seriesId))
 	) {
 		throw new AppError(
@@ -110,6 +104,7 @@ export async function updateOffkaiEvent(
 			askBringingKigurumi: input.askBringingKigurumi,
 			overviewVisibility: input.overviewVisibility,
 			participantsVisibility: input.participantsVisibility,
+			participationEligibility: input.participationEligibility,
 			commitmentQuestions: nextCommitmentQuestions,
 			preferenceQuestions: nextPreferenceQuestions,
 		}),

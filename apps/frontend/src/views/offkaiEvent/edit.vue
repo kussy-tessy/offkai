@@ -1,10 +1,11 @@
 <template>
-  <OffkaiEvent :initial-value="initialValue" :handle-submit="update" :is-edit="true" />
+  <OffkaiEvent :initial-value="initialValue" :handle-submit="update" :is-edit="true"
+    :has-discord-guild="hasDiscordGuild" />
 
 </template>
 
 <script setup lang="ts">
-  import { CreateOffkaiEventRequest, OffkaiEventResponse } from "@offkai/core";
+  import { CreateOffkaiEventRequest, GetSeriesSettingsResponse, OffkaiEventResponse } from "@offkai/core";
   import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { getApiErrorMessage, useApi, useToast } from '@/common/composables';
@@ -18,6 +19,7 @@
   const { get, put } = useApi();
   const { success, error } = useToast();
   const router = useRouter();
+  const hasDiscordGuild = ref(false);
 
   const initialValue = ref<OffkaiEventInitializeProps>({
     title: "",
@@ -31,13 +33,18 @@
     askBringingKigurumi: false,
 		overviewVisibility: "AUTHENTICATED",
 		participantsVisibility: "AUTHENTICATED",
+    participationEligibility: "AUTHENTICATED",
     commitmentQuestions: [] as CommitmentQuestion[],
     preferenceQuestions: [] as PreferenceQuestion[],
   })
 
   onMounted(async () => {
     try {
-      const data = await get<OffkaiEventResponse>(`/offkai-event/${id}`);
+      const [data, settings] = await Promise.all([
+        get<OffkaiEventResponse>(`/offkai-event/${id}`),
+        get<GetSeriesSettingsResponse>("/series/my/settings"),
+      ]);
+      hasDiscordGuild.value = Boolean(settings?.discordGuildId);
       if (data) {
         initialValue.value = data;
       }

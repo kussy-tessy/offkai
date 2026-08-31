@@ -2,11 +2,11 @@
   <div v-if="initialLoading" class="py-8 text-center text-sm text-gray-400">
     テンプレートを読み込み中…
   </div>
-  <OffkaiEvent v-else :initial-value="initialValue" :handle-submit="create" />
+  <OffkaiEvent v-else :initial-value="initialValue" :handle-submit="create" :has-discord-guild="hasDiscordGuild" />
 </template>
 
 <script setup lang="ts">
-  import type { GetSeriesQuestionTemplateResponse } from "@offkai/core";
+  import type { GetSeriesQuestionTemplateResponse, GetSeriesSettingsResponse } from "@offkai/core";
   import { onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
   import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
@@ -17,6 +17,7 @@
   const { success, error } = useToast();
   const router = useRouter();
   const initialLoading = ref(true);
+  const hasDiscordGuild = ref(false);
 
   const initialValue = ref<OffkaiEventInitializeProps>({
     title: "",
@@ -29,7 +30,8 @@
     discordRoleId: null,
     askBringingKigurumi: false,
 		overviewVisibility: "AUTHENTICATED",
-		participantsVisibility: "AUTHENTICATED",
+    participantsVisibility: "AUTHENTICATED",
+    participationEligibility: "AUTHENTICATED",
     commitmentQuestions: [{
       question: "",
       questionShort: "",
@@ -43,11 +45,19 @@
 
   onMounted(async () => {
     try {
-      const template = await get<GetSeriesQuestionTemplateResponse>("/series/my/question-template");
+      const [template, settings] = await Promise.all([
+        get<GetSeriesQuestionTemplateResponse>("/series/my/question-template"),
+        get<GetSeriesSettingsResponse>("/series/my/settings"),
+      ]);
+      hasDiscordGuild.value = Boolean(settings?.discordGuildId);
       if (template) {
         initialValue.value = {
           ...initialValue.value,
           preferenceQuestions: template.preferenceQuestions,
+          askBringingKigurumi: template.askBringingKigurumi,
+          overviewVisibility: template.overviewVisibility,
+          participantsVisibility: template.participantsVisibility,
+          participationEligibility: template.participationEligibility,
         };
       }
     } catch (cause) {

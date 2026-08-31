@@ -7,3 +7,4 @@ export * from "./offkai-event";
 export * from "./kigurumi";
 export * from "./photo-share";
 export * from "./series-question-template";
+export * from "./series-settings";

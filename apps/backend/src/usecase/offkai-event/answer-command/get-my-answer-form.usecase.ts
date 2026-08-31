@@ -7,6 +7,7 @@ import type {
 } from "@offkai/core";
 import { formatForForm, isPassed } from "@offkai/core";
 import { hasSeriesRole } from "../../../authorization/event-access";
+import { getEventAuthorizationContext } from "../../../authorization/staff-permissions";
 import {
 	KigurumiRepository,
 	OffkaiAnswerRepository,
@@ -16,6 +17,7 @@ import {
 	isApplicationStarted,
 	rejectBeforeApplicationStart,
 } from "./application-start";
+import { requireParticipationEligibility } from "./participation-eligibility";
 
 export async function getMyAnswerForm(
 	input: GetMyAnswerFormRequest,
@@ -35,6 +37,12 @@ export async function getAnswerForm(
 	const seriesRole = userId
 		? await eventRepository.findSeriesMemberRole(userId, event.seriesId)
 		: null;
+	const authorization = userId
+		? await getEventAuthorizationContext(event.id, userId)
+		: null;
+	const canApplyBeforeStart =
+		authorization?.role === "staff" &&
+		authorization.permissions.allowApplicationBeforeStart;
 	const canBypassParticipationRestrictions =
 		bypassBusinessRules || hasSeriesRole(seriesRole, "owner");
 	const answerRepository = new OffkaiAnswerRepository();
@@ -44,7 +52,11 @@ export async function getAnswerForm(
 			? await answerRepository.findByEventAndUser(input.eventId, userId)
 			: null;
 	if (!canBypassParticipationRestrictions && !myAnswer) {
-		rejectBeforeApplicationStart(event);
+		if (!canApplyBeforeStart) rejectBeforeApplicationStart(event);
+		if (!userId) {
+			throw new Error("参加表明にはログインが必要です");
+		}
+		await requireParticipationEligibility(event, userId);
 	}
 
 	const [allAnswers, kigurumiOptions] = await Promise.all([
@@ -68,7 +80,7 @@ export async function getAnswerForm(
 	}
 
 	const now = new Date();
-	const applicationStarted = isApplicationStarted(event, now);
+	const applicationStarted = isApplicationStarted(event, now) || canApplyBeforeStart;
 
 	const commitmentQuestions = event.commitmentQuestions.map((q) => {
 		const currentCount = counts.get(q.id) ?? 0;

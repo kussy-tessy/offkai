@@ -5,8 +5,7 @@ import {
 	type Unbrand,
 	type UserId,
 } from "@offkai/core";
-import { AppError } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import { OffkaiEventRepository } from "../../../repository";
 
 export async function getOffkaiEvent(
@@ -15,13 +14,7 @@ export async function getOffkaiEvent(
 ): Promise<Unbrand<OffkaiEventResponse>> {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(input.id);
-	const seriesRole = await repository.findSeriesMemberRole(
-		userId,
-		event.seriesId,
-	);
-	if (!hasSeriesRole(seriesRole, "owner")) {
-		throw new AppError("FORBIDDEN", "このオフ会を編集する権限がありません。");
-	}
+	await requireEventPermission(event.id, userId, { area: "eventManagement" });
 
 	return {
 		id: event.id,
@@ -37,6 +30,7 @@ export async function getOffkaiEvent(
 		askBringingKigurumi: event.askBringingKigurumi,
 		overviewVisibility: event.overviewVisibility,
 		participantsVisibility: event.participantsVisibility,
+		participationEligibility: event.participationEligibility,
 		commitmentQuestions: event.commitmentQuestions.map((question) => ({
 			...question,
 			deadline: formatForForm(question.deadline),

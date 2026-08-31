@@ -37,6 +37,7 @@ export class SettlementPageAssembler {
 		);
 
 		return GetEventSettlementResponseSchema.parse({
+			refundRoundingUnit: finance.refundRoundingUnit,
 			feeCalculationLockedAt:
 				finance.feeCalculationLockedAt?.toISOString() ?? null,
 			settlementLockedAt: finance.settlementLockedAt?.toISOString() ?? null,

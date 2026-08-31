@@ -16,7 +16,7 @@ import {
 	type UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import {
 	EventFinanceRepository,
 	OffkaiEventRepository,
@@ -30,7 +30,7 @@ import { FinanceUsecase } from "./finance.usecase";
 
 export class SettlementUsecase {
 	constructor(
-		private readonly eventRepository = new OffkaiEventRepository(),
+		readonly _eventRepository = new OffkaiEventRepository(),
 		private readonly financeRepository = new EventFinanceRepository(),
 		private readonly expenseRepository = new SettlementExpenseRepository(),
 		private readonly incomeRepository = new SettlementIncomeRepository(),
@@ -43,7 +43,7 @@ export class SettlementUsecase {
 		input: GetEventSettlementRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "read" });
 		await this.financeUsecase.getPage(input, viewerUserId);
 		return this.pageAssembler.build(input.eventId);
 	}
@@ -52,7 +52,7 @@ export class SettlementUsecase {
 		input: UpdateSettlementLockRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "confirm" });
 		const [finance, expenses, incomes, participants] = await Promise.all([
 			this.financeRepository.findByEventId(input.eventId),
 			this.expenseRepository.findManyByEventId(input.eventId),
@@ -116,7 +116,7 @@ export class SettlementUsecase {
 		input: UpdateSettlementLockRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "confirm" });
 		const finance = await this.financeRepository.findByEventId(input.eventId);
 		const unlocked = runBusinessRule(() => finance.unlockSettlement());
 		await prisma.$transaction(async (tx) => {
@@ -132,7 +132,7 @@ export class SettlementUsecase {
 		input: CreateSettlementExpenseRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "edit" });
 		await this.requireSettlementUnlocked(input.eventId);
 		await this.requireCategory(input.eventId, input.categoryId);
 		const expense = runBusinessRule(() => SettlementExpense.create(input));
@@ -157,7 +157,7 @@ export class SettlementUsecase {
 		input: UpdateSettlementExpenseRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "edit" });
 		await this.requireSettlementUnlocked(input.eventId);
 		const existing = await this.expenseRepository.findByEventAndId(
 			input.eventId,
@@ -183,7 +183,7 @@ export class SettlementUsecase {
 		input: DeleteSettlementExpenseRequest,
 		viewerUserId: UserId,
 	): Promise<void> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "edit" });
 		await this.requireSettlementUnlocked(input.eventId);
 		if (
 			!(await this.expenseRepository.delete(input.eventId, input.expenseId))
@@ -199,7 +199,7 @@ export class SettlementUsecase {
 		input: CreateSettlementIncomeRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "edit" });
 		await this.requireSettlementUnlocked(input.eventId);
 		await this.requireCategory(input.eventId, input.categoryId);
 		const income = runBusinessRule(() => SettlementIncome.create(input));
@@ -214,7 +214,7 @@ export class SettlementUsecase {
 		input: UpdateSettlementIncomeRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "edit" });
 		await this.requireSettlementUnlocked(input.eventId);
 		const existing = await this.incomeRepository.findByEventAndId(
 			input.eventId,
@@ -241,7 +241,7 @@ export class SettlementUsecase {
 		input: DeleteSettlementIncomeRequest,
 		viewerUserId: UserId,
 	): Promise<void> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "edit" });
 		await this.requireSettlementUnlocked(input.eventId);
 		if (!(await this.incomeRepository.delete(input.eventId, input.incomeId))) {
 			throw new AppError("VALIDATION_ERROR", "収入が見つかりません。");
@@ -275,20 +275,4 @@ export class SettlementUsecase {
 		return category;
 	}
 
-	private async authorize(
-		eventId: GetEventSettlementRequest["eventId"],
-		userId: UserId,
-	) {
-		const event = await this.eventRepository.findById(eventId);
-		const role = await this.eventRepository.findSeriesMemberRole(
-			userId,
-			event.seriesId,
-		);
-		if (!hasSeriesRole(role, "staff")) {
-			throw new AppError(
-				"FORBIDDEN",
-				"このオフ会の経費を管理する権限がありません。",
-			);
-		}
-	}
 }

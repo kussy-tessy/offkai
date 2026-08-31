@@ -14,6 +14,11 @@ enum EventVisibility {
   PARTICIPANTS
 }
 
+enum ParticipationEligibility {
+  AUTHENTICATED
+  GUILD_MEMBERS
+}
+
 enum RefundRoundingUnit {
   TEN
   HUNDRED
@@ -79,10 +84,15 @@ model AuthSession {
 }
 
 model Series {
-  id                         String  @id @default(uuid(7))
-  name                       String
-  preferenceQuestionTemplate Json    @default("[]")
-  discordGuildId             String?
+  id                               String                   @id @default(uuid(7))
+  name                             String
+  preferenceQuestionTemplate       Json                     @default("[]")
+  discordGuildId                   String?
+  templateAskBringingKigurumi      Boolean                  @default(false)
+  templateOverviewVisibility       EventVisibility          @default(AUTHENTICATED)
+  templateParticipantsVisibility   EventVisibility          @default(AUTHENTICATED)
+  templateParticipationEligibility ParticipationEligibility @default(AUTHENTICATED)
+  staffPermissions                 Json                     @default("{\"showUnansweredEvents\":true,\"allowApplicationBeforeStart\":false,\"eventManagement\":false,\"answerManagement\":\"read\",\"discordRole\":\"manage\",\"feeCalculation\":\"confirm\",\"feeCollection\":\"record\",\"settlement\":\"confirm\",\"refund\":\"record\"}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -113,13 +123,14 @@ model OffkaiEvent {
   description            String?
   participantDescription String?
 
-  eventStartDate         DateTime        @db.Date
-  eventEndDate           DateTime        @db.Date
-  applicationStartDate   DateTime
-  discordRoleId          String?
-  askBringingKigurumi    Boolean         @default(false)
-  overviewVisibility     EventVisibility @default(AUTHENTICATED)
-  participantsVisibility EventVisibility @default(AUTHENTICATED)
+  eventStartDate           DateTime                 @db.Date
+  eventEndDate             DateTime                 @db.Date
+  applicationStartDate     DateTime
+  discordRoleId            String?
+  askBringingKigurumi      Boolean                  @default(false)
+  overviewVisibility       EventVisibility          @default(AUTHENTICATED)
+  participantsVisibility   EventVisibility          @default(AUTHENTICATED)
+  participationEligibility ParticipationEligibility @default(AUTHENTICATED)
 
   preferenceQuestions Json
 
@@ -260,7 +271,7 @@ model SettlementExpenseRecipient {
   amount    Int
 
   expense SettlementExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  answer  OffkaiAnswer      @relation(fields: [answerId], references: [id], onDelete: Restrict)
+  answer  OffkaiAnswer      @relation(fields: [answerId], references: [id], onDelete: Cascade)
 
   @@id([expenseId, answerId])
   @@index([answerId])

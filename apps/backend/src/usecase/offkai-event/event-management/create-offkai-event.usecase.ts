@@ -18,7 +18,8 @@ export async function createOffkaiEvent(
 	const seriesId = await repository.findOwnerSeriesId(userId);
 	if (
 		(input.overviewVisibility === "GUILD_MEMBERS" ||
-			input.participantsVisibility === "GUILD_MEMBERS") &&
+			input.participantsVisibility === "GUILD_MEMBERS" ||
+			input.participationEligibility === "GUILD_MEMBERS") &&
 		!(await repository.findSeriesDiscordGuildId(seriesId))
 	) {
 		throw new AppError(
@@ -43,6 +44,7 @@ export async function createOffkaiEvent(
 			askBringingKigurumi: input.askBringingKigurumi,
 			overviewVisibility: input.overviewVisibility,
 			participantsVisibility: input.participantsVisibility,
+			participationEligibility: input.participationEligibility,
 			commitmentQuestions: CommitmentQuestionSchema.omit({ id: true })
 				.array()
 				.parse(

@@ -4,8 +4,7 @@ import type {
 	Unbrand,
 	UserId,
 } from "@offkai/core";
-import { AppError } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import {
 	OffkaiEventRepository,
 	ParticipantPaymentRepository,
@@ -17,16 +16,7 @@ export async function getParticipantPayments(
 ): Promise<Unbrand<GetParticipantPaymentsResponse>> {
 	const eventRepository = new OffkaiEventRepository();
 	const event = await eventRepository.findById(input.eventId);
-	const seriesRole = await eventRepository.findSeriesMemberRole(
-		viewerUserId,
-		event.seriesId,
-	);
-	if (!hasSeriesRole(seriesRole, "staff")) {
-		throw new AppError(
-			"FORBIDDEN",
-			"このオフ会の金銭を管理する権限がありません。",
-		);
-	}
+	await requireEventPermission(event.id, viewerUserId, { area: "feeCollection", level: "read" });
 
 	return new ParticipantPaymentRepository().getPage(event.id);
 }

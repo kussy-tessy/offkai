@@ -198,6 +198,7 @@ const props = defineProps<{
   ) => Promise<boolean>;
   deleteCategory: (categoryId: string) => Promise<boolean>;
   syncMembers: () => Promise<boolean>;
+  readonly?: boolean;
 }>();
 
 const editing = ref(false);
@@ -210,7 +211,7 @@ const draft = reactive({
   baseParticipationFeeAmount: "0",
   commitmentQuestionId: "",
 });
-const locked = computed(() => props.finance.feeCalculationLockedAt !== null);
+const locked = computed(() => props.readonly || props.finance.feeCalculationLockedAt !== null);
 const validDraft = computed(
   () =>
     draft.name.trim() !== "" &&

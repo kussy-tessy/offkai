@@ -73,11 +73,18 @@
                   <FontAwesomeIcon :icon="faPenToSquare" />
                 </button>
                 <button
-                  v-if="data.canManageGuests && participant.isGuest"
+                  v-if="data.canDeleteAnswers && participant.isGuest"
                   type="button"
                   class="ml-2 text-rose-600 hover:text-rose-800"
                   :aria-label="`${participant.displayName}さんを削除`"
                   @click="deleteGuest(participant)"
+                >削除</button>
+                <button
+                  v-if="data.canDeleteAnswers && !participant.isGuest"
+                  type="button"
+                  class="ml-2 text-rose-600 hover:text-rose-800"
+                  :aria-label="`${participant.displayName}さんを削除`"
+                  @click="deleteParticipant(participant)"
                 >削除</button>
               </template>
               <template v-else>{{ cell.value }}</template>
@@ -182,6 +189,16 @@ const deleteGuest = async (participant: Participant) => {
     await load();
   } catch (cause) {
     error(getApiErrorMessage(cause, "ゲストを削除できませんでした。"));
+  }
+};
+const deleteParticipant = async (participant: Participant) => {
+  if (!participant.userId || !window.confirm(`${participant.displayName}さんの参加表明を削除しますか？`)) return;
+  try {
+    await del(`/offkai-event/${eventId}/answers/${participant.userId}`);
+    success("参加表明を削除しました。");
+    await load();
+  } catch (cause) {
+    error(getApiErrorMessage(cause, "参加表明を削除できませんでした。"));
   }
 };
 const load = async () => {

@@ -6,7 +6,7 @@ import type {
 	UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import {
 	EventFinanceRepository,
 	OffkaiEventRepository,
@@ -17,7 +17,7 @@ import { RefundPageAssembler } from "../../../service/refund.service";
 
 export class RefundUsecase {
 	constructor(
-		private readonly eventRepository = new OffkaiEventRepository(),
+		readonly _eventRepository = new OffkaiEventRepository(),
 		private readonly financeRepository = new EventFinanceRepository(),
 		private readonly participantRepository = new ParticipantFinanceRepository(),
 		private readonly pageAssembler = new RefundPageAssembler(),
@@ -27,7 +27,7 @@ export class RefundUsecase {
 		input: GetEventRefundRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventRefundResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "refund", level: "read" });
 		return this.pageAssembler.build(input.eventId);
 	}
 
@@ -35,7 +35,7 @@ export class RefundUsecase {
 		input: UpdateParticipantRefundRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventRefundResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "refund", level: "record" });
 		const finance = await this.financeRepository.findByEventId(input.eventId);
 		if (!finance.settlementLockedAt)
 			throw new AppError(
@@ -65,19 +65,4 @@ export class RefundUsecase {
 		return this.pageAssembler.build(input.eventId);
 	}
 
-	private async authorize(
-		eventId: GetEventRefundRequest["eventId"],
-		userId: UserId,
-	) {
-		const event = await this.eventRepository.findById(eventId);
-		const role = await this.eventRepository.findSeriesMemberRole(
-			userId,
-			event.seriesId,
-		);
-		if (!hasSeriesRole(role, "staff"))
-			throw new AppError(
-				"FORBIDDEN",
-				"このオフ会の返金を管理する権限がありません。",
-			);
-	}
 }

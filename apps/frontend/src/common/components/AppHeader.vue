@@ -11,11 +11,16 @@
           {{ user.name }} さん
         </span>
         <div v-if="isMenuOpen"
-          class="absolute right-0 z-20 mt-24 min-w-[160px] rounded-md border border-sky-200 bg-white p-1 shadow-lg">
+          class="absolute right-0 top-full z-20 mt-2 min-w-[160px] rounded-md border border-sky-200 bg-white p-1 shadow-lg">
           <button type="button"
             class="w-full rounded px-3 py-2 text-left text-sm text-sky-800 transition hover:bg-sky-50"
             @click="handleAccount">
             アカウント設定
+          </button>
+          <button v-if="user.isSeriesOwner" type="button"
+            class="w-full rounded px-3 py-2 text-left text-sm text-sky-800 transition hover:bg-sky-50"
+            @click="handleSeriesSettings">
+            オフ会の設定
           </button>
           <button type="button"
             class="w-full rounded px-3 py-2 text-left text-sm text-red-700 transition hover:bg-red-50"
@@ -59,6 +64,11 @@
   const handleAccount = async () => {
     isMenuOpen.value = false;
     await router.push("/account");
+  };
+
+  const handleSeriesSettings = async () => {
+    isMenuOpen.value = false;
+    await router.push("/series/settings");
   };
 
   const handleLogout = async () => {

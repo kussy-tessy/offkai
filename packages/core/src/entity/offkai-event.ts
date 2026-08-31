@@ -7,6 +7,7 @@ import type {
 	EventVisibility,
 	OffkaiEventId,
 	OffkaiSeriesId,
+	ParticipationEligibility,
 	PreferenceQuestion,
 	QuestionId,
 } from "../schema";
@@ -25,6 +26,7 @@ export class OffkaiEvent {
 		readonly askBringingKigurumi: boolean,
 		readonly overviewVisibility: EventVisibility,
 		readonly participantsVisibility: EventVisibility,
+		readonly participationEligibility: ParticipationEligibility,
 		readonly commitmentQuestions: CommitmentQuestion[],
 		readonly preferenceQuestions: PreferenceQuestion[],
 	) {}
@@ -41,6 +43,7 @@ export class OffkaiEvent {
 		askBringingKigurumi?: boolean;
 		overviewVisibility?: EventVisibility;
 		participantsVisibility?: EventVisibility;
+		participationEligibility?: ParticipationEligibility;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}) {
@@ -56,6 +59,7 @@ export class OffkaiEvent {
 			params.askBringingKigurumi ?? false,
 			params.overviewVisibility ?? "AUTHENTICATED",
 			params.participantsVisibility ?? "AUTHENTICATED",
+			params.participationEligibility ?? "AUTHENTICATED",
 			params.commitmentQuestions,
 			params.preferenceQuestions,
 		);
@@ -71,6 +75,7 @@ export class OffkaiEvent {
 		askBringingKigurumi?: boolean;
 		overviewVisibility?: EventVisibility;
 		participantsVisibility?: EventVisibility;
+		participationEligibility?: ParticipationEligibility;
 		commitmentQuestions: Omit<CommitmentQuestion, "id">[];
 		preferenceQuestions: Omit<PreferenceQuestion, "id">[];
 	}): OffkaiEvent {
@@ -89,6 +94,7 @@ export class OffkaiEvent {
 			params.askBringingKigurumi ?? false,
 			params.overviewVisibility ?? "AUTHENTICATED",
 			params.participantsVisibility ?? "AUTHENTICATED",
+			params.participationEligibility ?? "AUTHENTICATED",
 			params.commitmentQuestions.map((question) => ({
 				...question,
 				id: uuidv7() as QuestionId,
@@ -109,6 +115,7 @@ export class OffkaiEvent {
 		askBringingKigurumi?: boolean;
 		overviewVisibility: EventVisibility;
 		participantsVisibility: EventVisibility;
+		participationEligibility: ParticipationEligibility;
 		commitmentQuestions: CommitmentQuestion[];
 		preferenceQuestions: PreferenceQuestion[];
 	}): OffkaiEvent {
@@ -127,6 +134,7 @@ export class OffkaiEvent {
 			params.askBringingKigurumi ?? this.askBringingKigurumi,
 			params.overviewVisibility,
 			params.participantsVisibility,
+			params.participationEligibility,
 			params.commitmentQuestions,
 			params.preferenceQuestions,
 		);
@@ -145,6 +153,7 @@ export class OffkaiEvent {
 			this.askBringingKigurumi,
 			this.overviewVisibility,
 			this.participantsVisibility,
+			this.participationEligibility,
 			this.commitmentQuestions,
 			this.preferenceQuestions,
 		);

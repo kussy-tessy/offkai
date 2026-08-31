@@ -45,14 +45,14 @@
           </p>
         </div>
         <MyButton
-          v-if="!page.settlementLockedAt"
+          v-if="canConfirm && !page.settlementLockedAt"
           size="sm"
           :disabled="saving !== null || !page.feeCalculationLockedAt"
           @click="lockDialogOpen = true"
           >経費精算を確定</MyButton
         >
         <MyButton
-          v-else-if="!page.refundStartedAt"
+          v-else-if="canConfirm && !page.refundStartedAt"
           size="sm"
           color="gray"
           variant="ghost"
@@ -60,7 +60,7 @@
           @click="unlockDialogOpen = true"
           >確定を解除</MyButton
         >
-        <span v-else class="text-xs font-medium text-emerald-800"
+        <span v-else-if="page.refundStartedAt" class="text-xs font-medium text-emerald-800"
           >返金開始済み・解除不可</span
         >
       </div>
@@ -80,6 +80,19 @@
       <div class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         個別追加請求はこの経費精算には含まれません。必要な返金はシステム外で対応してください。
       </div>
+      <label class="block text-sm text-slate-600">
+        返金額の切り捨て単位
+        <select
+          :value="page.refundRoundingUnit"
+          class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base disabled:bg-slate-100 disabled:text-slate-500 sm:w-48"
+          :disabled="!canConfirm || page.settlementLockedAt !== null || saving !== null"
+          @change="updateRoundingUnit"
+        >
+          <option :value="10">10円単位</option>
+          <option :value="100">100円単位</option>
+          <option :value="500">500円単位</option>
+        </select>
+      </label>
       <div
         v-if="page.categories.length === 0"
         class="rounded-xl border border-dashed border-slate-300 px-4 py-12 text-center text-sm text-slate-500"
@@ -94,7 +107,7 @@
           :participants="page.participants"
           :initially-open="index === 0"
           :saving-action="saving"
-          :locked="page.settlementLockedAt !== null"
+          :locked="!canEdit || page.settlementLockedAt !== null"
           :save-expense="saveExpense"
           :delete-expense="deleteExpense"
           :save-income="saveIncome"
@@ -124,10 +137,11 @@
 
 <script setup lang="ts">
 import { format } from "@offkai/core";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
 import SettlementCategoryPanel from "./SettlementCategoryPanel.vue";
 import type {
   SettlementExpenseInput,
@@ -145,6 +159,9 @@ const loadError = ref("");
 const saving = ref<string | null>(null);
 const lockDialogOpen = ref(false);
 const unlockDialogOpen = ref(false);
+const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
+const canEdit = computed(() => isOwner.value || permissions.value?.settlement === "edit" || permissions.value?.settlement === "confirm");
+const canConfirm = computed(() => isOwner.value || permissions.value?.settlement === "confirm");
 
 const load = async () => {
   loading.value = true;
@@ -279,5 +296,26 @@ const unlockSettlement = async () => {
   }
 };
 
-onMounted(() => void load());
+const updateRoundingUnit = async (event: Event) => {
+  if (!page.value || saving.value) return;
+  const select = event.target as HTMLSelectElement;
+  const previousUnit = page.value.refundRoundingUnit;
+  const refundRoundingUnit = Number(select.value) as SettlementPage["refundRoundingUnit"];
+  if (refundRoundingUnit === previousUnit) return;
+  saving.value = "settings";
+  try {
+    await put(`${basePath}/settings`, { refundRoundingUnit });
+    const result = await get<SettlementPage>(`${basePath}/settlement`);
+    if (!result) throw new Error();
+    page.value = result;
+    toast.success("切り捨て単位を変更しました。");
+  } catch (cause) {
+    select.value = String(previousUnit);
+    toast.error(getApiErrorMessage(cause, "切り捨て単位を変更できませんでした。"));
+  } finally {
+    saving.value = null;
+  }
+};
+
+onMounted(() => void Promise.all([load(), loadAccess()]));
 </script>

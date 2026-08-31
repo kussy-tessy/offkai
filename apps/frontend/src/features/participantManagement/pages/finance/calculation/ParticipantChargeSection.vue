@@ -134,10 +134,11 @@ const props = defineProps<{
   addExtra: (userId: string, input: ExtraChargeInput) => Promise<boolean>;
   removeExtra: (userId: string, extraChargeId: string) => Promise<boolean>;
   saveNote: (userId: string, note: string | null) => Promise<boolean>;
+  readonly?: boolean;
 }>();
 
 const selectedUserId = ref<string | null>(null);
-const locked = computed(() => props.finance.feeCalculationLockedAt !== null);
+const locked = computed(() => props.readonly || props.finance.feeCalculationLockedAt !== null);
 const selectedParticipant = computed(
   () =>
     props.finance.participants.find(

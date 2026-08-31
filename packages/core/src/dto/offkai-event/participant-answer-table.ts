@@ -17,6 +17,7 @@ export type GetParticipantAnswerTableRequest = z.infer<
 >;
 export const GetParticipantAnswerTableResponseSchema = z.object({
 	canEditAnswers: z.boolean(),
+	canDeleteAnswers: z.boolean(),
 	canManageGuests: z.boolean(),
 	commitmentQuestions: z.array(QuestionSchema),
 	preferenceQuestions: z.array(QuestionSchema),

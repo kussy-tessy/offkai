@@ -98,7 +98,7 @@
                     class="h-5 w-5 cursor-pointer accent-teal-600 disabled:cursor-not-allowed"
                     :checked="participant.collectedAt !== null"
                     :disabled="
-                      savingUserId !== null || !finance.feeCalculationLockedAt
+                      !canRecord || savingUserId !== null || !finance.feeCalculationLockedAt
                     "
                     :aria-label="`${participant.displayName}を徴収済みにする`"
                     @click.prevent="toggleCollection(participant)"
@@ -224,6 +224,7 @@ import { computed, onMounted, ref } from "vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
 
 type Finance = Unbrand<GetEventFinanceResponse>;
 type Participant = Finance["participants"][number];
@@ -237,6 +238,8 @@ const loadError = ref("");
 const search = ref("");
 const filter = ref<Filter>("uncollected");
 const savingUserId = ref<string | null>(null);
+const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
+const canRecord = computed(() => isOwner.value || permissions.value?.feeCollection === "record");
 const expandedIds = ref(new Set<string>());
 
 const onSearchInput = (event: Event) => {
@@ -363,5 +366,5 @@ const saveCollection = async (userId: string, collected: boolean) => {
     savingUserId.value = null;
   }
 };
-onMounted(() => void load());
+onMounted(() => void Promise.all([load(), loadAccess()]));
 </script>

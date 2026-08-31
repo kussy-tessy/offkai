@@ -7,6 +7,7 @@ import type {
 } from "@offkai/core";
 import { AppError } from "../../../app-error";
 import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import { OffkaiEventRepository } from "../../../repository";
 
 export async function getParticipantGuide(
@@ -20,7 +21,7 @@ export async function getParticipantGuide(
 		repository.isParticipant(event.id, userId),
 	]);
 
-	if (!isParticipant && !hasSeriesRole(seriesRole, "staff")) {
+	if (!isParticipant && !hasSeriesRole(seriesRole, "owner")) {
 		throw new AppError(
 			"FORBIDDEN",
 			"参加者向け情報を閲覧する権限がありません。",
@@ -36,17 +37,7 @@ export async function updateParticipantGuide(
 ): Promise<Unbrand<ParticipantGuideResponse>> {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(input.eventId);
-	const seriesRole = await repository.findSeriesMemberRole(
-		userId,
-		event.seriesId,
-	);
-
-	if (!hasSeriesRole(seriesRole, "owner")) {
-		throw new AppError(
-			"FORBIDDEN",
-			"参加者向け情報を編集する権限がありません。",
-		);
-	}
+	await requireEventPermission(event.id, userId, { area: "eventManagement" });
 
 	const updated = event.updateParticipantDescription(input.description);
 	await repository.updateParticipantDescription(updated);

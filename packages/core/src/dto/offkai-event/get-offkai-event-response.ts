@@ -7,6 +7,7 @@ import {
 	QuestionIdSchema,
 	DiscordRoleIdSchema,
 	EventVisibilitySchema,
+	ParticipationEligibilitySchema,
 } from "../../schema";
 
 export const OffkaiEventResponseSchema = z.object({
@@ -20,6 +21,7 @@ export const OffkaiEventResponseSchema = z.object({
 	askBringingKigurumi: z.boolean().default(false),
 	overviewVisibility: EventVisibilitySchema,
 	participantsVisibility: EventVisibilitySchema,
+	participationEligibility: ParticipationEligibilitySchema,
 	commitmentQuestions: z.array(
 		z.object({
 			id: QuestionIdSchema,

@@ -13,13 +13,13 @@
             :value="selectedRoleId"
             :options="roleOptions"
             :on-change="onRoleChange"
-            :disabled="loadingConfiguration || savingConfiguration"
+            :disabled="!canManage || loadingConfiguration || savingConfiguration"
           />
         </MyFormField>
         <MyButton
           class="border border-transparent"
           :disabled="
-            loadingConfiguration ||
+            !canManage || loadingConfiguration ||
             savingConfiguration ||
             selectedRoleId === currentRoleId
           "
@@ -86,12 +86,10 @@
             </td>
             <td class="border-b border-slate-100 p-3 text-sm text-slate-600">
               <div class="flex items-center gap-2">
-                <img
-                  v-if="member.discordAvatarUrl"
-                  :src="member.discordAvatarUrl"
-                  alt=""
-                  class="h-6 w-6 rounded-full"
-                  loading="lazy"
+                <DiscordAvatar
+                  :avatar-url="member.discordAvatarUrl"
+                  :display-name="member.discordUsername ?? member.displayName"
+                  size="sm"
                 />
                 <span v-if="member.discordUsername">{{
                   member.discordUsername
@@ -108,7 +106,7 @@
             <td class="border-b border-slate-100 p-3 text-center">
               <MyAsyncCheckbox
                 :value="member.hasRole"
-                :disabled="!member.canManageRole"
+                :disabled="!canAssign || !member.canManageRole"
                 :save="(value) => saveRole(member.userId, value)"
                 @change="(value) => updateMemberRole(member.userId, value)"
                 @error="onSaveError"
@@ -130,6 +128,7 @@ import type {
   UpdateOffkaiEventDiscordRoleResponse,
 } from "@offkai/core";
 import { computed, onMounted, ref } from "vue";
+import DiscordAvatar from "@/common/components/DiscordAvatar.vue";
 import MyAsyncCheckbox from "@/common/components/MyAsyncCheckbox.vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyFormField from "@/common/components/MyFormField.vue";
@@ -137,6 +136,7 @@ import MySelectBox, {
   type SelectOption,
 } from "@/common/components/MySelectBox.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
 
 const { eventId } = defineProps<{
   eventId: string;
@@ -148,6 +148,9 @@ const { get, put } = useApi();
 const { error, success } = useToast();
 const loadingConfiguration = ref(true);
 const savingConfiguration = ref(false);
+const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
+const canAssign = computed(() => isOwner.value || permissions.value?.discordRole === "assign" || permissions.value?.discordRole === "manage");
+const canManage = computed(() => isOwner.value || permissions.value?.discordRole === "manage");
 const configurationError = ref("");
 const selectedRoleId = ref("");
 const currentRoleId = ref("");
@@ -265,6 +268,7 @@ const unavailableReasonLabel = (reason: DiscordRoleMemberUnavailableReason) => {
 };
 
 onMounted(async () => {
+  await loadAccess();
   await fetchConfiguration();
   await fetchMembers();
 });

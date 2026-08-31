@@ -77,20 +77,11 @@
       <h2 class="mb-4 text-lg font-semibold text-slate-900">Discord</h2>
       <div class="max-w-md space-y-4">
         <div v-if="user?.discordUserId" class="flex items-center gap-3">
-          <img
-            v-if="discordProfile?.avatarUrl"
-            :src="discordProfile.avatarUrl"
-            :alt="`${discordProfile.username}のDiscord Avatar`"
-            class="h-12 w-12 rounded-full bg-slate-100 object-cover"
-            referrerpolicy="no-referrer"
+          <DiscordAvatar
+            :avatar-url="discordProfile?.avatarUrl ?? null"
+            :display-name="discordProfile?.username ?? user.discordUsername ?? '?'"
+            size="lg"
           />
-          <div
-            v-else
-            class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-lg font-semibold text-slate-600"
-            aria-hidden="true"
-          >
-            {{ (discordProfile?.username ?? user.discordUsername ?? "?").slice(0, 1).toUpperCase() }}
-          </div>
           <p class="text-sm text-slate-700">
             <span class="font-medium">{{ discordProfile?.username ?? user.discordUsername }}</span>
             と連携済みです。
@@ -134,6 +125,7 @@
   import { type GetMyDiscordProfileResponse, UserLoginIdSchema } from "@offkai/core";
   import { onMounted, ref, watch } from "vue";
   import { useRoute, useRouter } from "vue-router";
+  import DiscordAvatar from "@/common/components/DiscordAvatar.vue";
   import MyBackLink from "@/common/components/MyBackLink.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyFormField from "@/common/components/MyFormField.vue";

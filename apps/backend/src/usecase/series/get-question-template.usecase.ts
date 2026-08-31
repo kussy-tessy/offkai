@@ -9,5 +9,9 @@ export async function getQuestionTemplate(
 
 	return {
 		preferenceQuestions: template.preferenceQuestions,
+		askBringingKigurumi: template.askBringingKigurumi,
+		overviewVisibility: template.overviewVisibility,
+		participantsVisibility: template.participantsVisibility,
+		participationEligibility: template.participationEligibility,
 	};
 }

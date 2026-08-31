@@ -4,6 +4,7 @@ import {
 	LocalDateTimeMinuteStringSchema,
 	DiscordRoleIdSchema,
 	EventVisibilitySchema,
+	ParticipationEligibilitySchema,
 	QuestionIdSchema,
 	isVisibilityAtLeastAsRestricted,
 } from "../../schema";
@@ -24,6 +25,8 @@ export const CreateOffkaiEventRequestSchema = z
 		askBringingKigurumi: z.boolean().default(false),
 		overviewVisibility: EventVisibilitySchema.default("AUTHENTICATED"),
 		participantsVisibility: EventVisibilitySchema.default("AUTHENTICATED"),
+		participationEligibility:
+			ParticipationEligibilitySchema.default("AUTHENTICATED"),
 		commitmentQuestions: z.array(
 			z.object({
 				id: QuestionIdSchema.optional(),

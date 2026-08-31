@@ -33,7 +33,7 @@
         {{ hasAnswered ? "参加表明を編集する" : "参加表明をする" }}
       </MyButton>
       <p v-if="!canAnswer" class="text-sm text-gray-500">
-        募集開始前です。{{ formatWithDay(data.offkai.applicationStartDate, true) }} から参加表明できます。
+        {{ participationDeniedMessage }}
       </p>
     </div>
 
@@ -66,8 +66,17 @@ const deleting = ref(false);
 const hasAnswered = computed(() => props.data.viewer.isParticipant);
 const canAnswer = computed(() =>
   props.data.viewer.permissions.canEditAnswers || hasAnswered.value ||
-  Date.now() >= new Date(props.data.offkai.applicationStartDate).getTime(),
+  (props.data.participationAccess.granted &&
+    Date.now() >= new Date(props.data.offkai.applicationStartDate).getTime()),
 );
+const participationDeniedMessage = computed(() => {
+  const reason = props.data.participationAccess.reason;
+  if (reason === "AUTHENTICATION_REQUIRED") return "参加表明するにはログインが必要です。";
+  if (reason === "DISCORD_NOT_CONNECTED") return "参加表明するにはDiscordアカウントの連携が必要です。";
+  if (reason === "NOT_GUILD_MEMBER") return "このオフ会はDiscordサーバー参加者のみ参加表明できます。";
+  if (reason === "MEMBERSHIP_CHECK_UNAVAILABLE") return "Discordサーバーへの所属を確認できませんでした。";
+  return `募集開始前です。${formatWithDay(props.data.offkai.applicationStartDate, true)} から参加表明できます。`;
+});
 const canManageParticipants = computed(() =>
   props.data.viewer.permissions.canManageDiscordRole || props.data.viewer.permissions.canManagePayments,
 );

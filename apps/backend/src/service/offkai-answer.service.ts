@@ -15,6 +15,7 @@ import {
 	rejectBeforeApplicationStart,
 	rejectNewParticipationBeforeApplicationStart,
 } from "../usecase/offkai-event/answer-command/application-start";
+import { requireParticipationEligibility } from "../usecase/offkai-event/answer-command/participation-eligibility";
 
 export class OffkaiAnswerService {
 	async prepareAnswerEntity(
@@ -45,6 +46,7 @@ export class OffkaiAnswerService {
 				);
 			} else {
 				rejectBeforeApplicationStart(event);
+				await requireParticipationEligibility(event, userId);
 			}
 		}
 

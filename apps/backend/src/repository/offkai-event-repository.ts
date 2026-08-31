@@ -10,10 +10,12 @@ import {
 	type OffkaiEventId,
 	type OffkaiEventSummary,
 	type OffkaiSeriesId,
+	type ParticipationEligibility,
 	type PreferenceQuestion,
 	type QuestionId,
 	type SeriesRole,
 	SeriesRoleSchema,
+	StaffPermissionsSchema,
 	type UserId,
 	type UserName,
 } from "@offkai/core";
@@ -70,6 +72,8 @@ export class OffkaiEventRepository {
 			askBringingKigurumi: record.askBringingKigurumi,
 			overviewVisibility: record.overviewVisibility as EventVisibility,
 			participantsVisibility: record.participantsVisibility as EventVisibility,
+			participationEligibility:
+				record.participationEligibility as ParticipationEligibility,
 			commitmentQuestions: record.commitmentQuestions.map(
 				toDomainCommitmentQuestion,
 			),
@@ -114,8 +118,10 @@ export class OffkaiEventRepository {
 				eventStartDate: true,
 				eventEndDate: true,
 				description: true,
+				answers: { where: { userId }, select: { id: true }, take: 1 },
 				series: {
 					select: {
+						staffPermissions: true,
 						members: {
 							where: {
 								userId,
@@ -132,7 +138,12 @@ export class OffkaiEventRepository {
 			},
 		});
 
-		return records.map((record) => ({
+		return records.filter((record) => {
+			const role = record.series.members[0]?.role;
+			if (role !== "staff" || record.answers.length > 0) return true;
+			return StaffPermissionsSchema.parse(record.series.staffPermissions)
+				.showUnansweredEvents;
+		}).map((record) => ({
 			id: record.id as OffkaiEventId,
 			title: record.name,
 			eventPeriod: {
@@ -159,6 +170,7 @@ export class OffkaiEventRepository {
 			askBringingKigurumi: event.askBringingKigurumi,
 			overviewVisibility: event.overviewVisibility,
 			participantsVisibility: event.participantsVisibility,
+			participationEligibility: event.participationEligibility,
 			preferenceQuestions: event.preferenceQuestions,
 		};
 

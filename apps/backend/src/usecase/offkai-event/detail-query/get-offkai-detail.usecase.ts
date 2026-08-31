@@ -8,9 +8,11 @@ import { AppError } from "../../../app-error";
 import {
 	createEventViewerPermissions,
 	evaluateEventVisibility,
+	evaluateParticipationEligibility,
 	hasSeriesRole,
 	type DiscordMembershipStatus,
 } from "../../../authorization/event-access";
+import { getEventAuthorizationContext } from "../../../authorization/staff-permissions";
 import { discordService } from "../../../discord";
 import {
 	OffkaiAnswerRepository,
@@ -33,10 +35,14 @@ export async function getOffkaiDetail(
 		: [null, false, null];
 
 	let discordMembership: DiscordMembershipStatus = "NOT_CHECKED";
+	const bypassVisibility =
+		hasSeriesRole(seriesRole, "owner") ||
+		(seriesRole === "staff" && isParticipant);
 	const needsDiscordMembership =
-		!hasSeriesRole(seriesRole, "staff") &&
+		!bypassVisibility &&
 		(event.overviewVisibility === "GUILD_MEMBERS" ||
-			event.participantsVisibility === "GUILD_MEMBERS");
+			event.participantsVisibility === "GUILD_MEMBERS" ||
+			event.participationEligibility === "GUILD_MEMBERS");
 
 	if (needsDiscordMembership) {
 		if (!user?.discordUserId) {
@@ -92,14 +98,24 @@ export async function getOffkaiDetail(
 		event.participantsVisibility,
 		accessViewer,
 	);
+	const participationAccess = evaluateParticipationEligibility(
+		event.participationEligibility,
+		accessViewer,
+	);
+	const staffPermissions =
+		userId && seriesRole
+			? (await getEventAuthorizationContext(event.id, userId)).permissions
+			: null;
 	const viewer = {
 		seriesRole,
 		isParticipant,
+		staffPermissions,
 		permissions: createEventViewerPermissions({
 			seriesRole,
 			isParticipant,
 			overviewAccess,
 			participantsAccess,
+			staffPermissions,
 		}),
 	};
 
@@ -107,5 +123,6 @@ export async function getOffkaiDetail(
 		input.eventId,
 		viewer,
 		participantsAccess,
+		participationAccess,
 	);
 }

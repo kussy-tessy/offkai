@@ -3,9 +3,7 @@
     <header>
       <h2 class="text-xl font-bold text-slate-900">返金</h2>
       <p class="mt-1 text-sm text-slate-600">
-        精算区分を参加者ごとに合算し、{{
-          page?.refundRoundingUnit ?? "―"
-        }}円単位で切り捨てて返金します。
+        経費精算で確定した金額を参加者ごとに返金します。
       </p>
     </header>
 
@@ -67,55 +65,22 @@
       </div>
 
       <section
-        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        class="overflow-hidden rounded-xl border border-teal-200 bg-teal-50/30 shadow-sm"
       >
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 class="font-bold text-slate-900">返金計算</h3>
-            <p v-if="page.refundCalculatedAt" class="mt-1 text-xs text-slate-500">
-              {{ format(page.refundCalculatedAt) }}に計算
-            </p>
-          </div>
-        </div>
-        <label class="mt-4 block text-sm text-slate-600">
-          切り捨て単位
-          <select
-            :value="page.refundRoundingUnit"
-            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base disabled:bg-slate-100 disabled:text-slate-500 sm:w-48"
-            :disabled="page.settlementLockedAt !== null || saving !== null"
-            @change="updateRoundingUnit"
-          >
-            <option :value="10">10円単位</option>
-            <option :value="100">100円単位</option>
-            <option :value="500">500円単位</option>
-          </select>
-        </label>
-        <dl class="mt-4 divide-y divide-slate-100 text-sm">
-          <div class="flex justify-between gap-3 py-2">
-            <dt class="text-slate-600">切り捨て前返金原資</dt>
-            <dd class="font-semibold tabular-nums">
-              {{ money(page.totalUnroundedRefundAmount) }}
-            </dd>
-          </div>
-          <div class="flex justify-between gap-3 py-2">
-            <dt class="text-slate-600">返金額合計</dt>
-            <dd class="font-semibold tabular-nums">
-              {{
-                money(page.totalRefundAmount ?? page.proposedTotalRefundAmount)
-              }}
-            </dd>
-          </div>
-          <div
-            class="flex justify-between gap-3 border-t border-slate-300 py-2"
-          >
-            <dt class="font-semibold text-slate-700">
-              切り捨てによってイベントに残る金額
-            </dt>
-            <dd class="font-bold tabular-nums text-teal-800">
-              {{ money(page.roundingRemainder) }}
-            </dd>
-          </div>
+        <dl class="flex items-baseline justify-between gap-3 p-4">
+          <dt class="text-lg font-bold text-slate-900">返金額合計</dt>
+          <dd class="text-2xl font-bold tabular-nums text-slate-900">
+            {{
+              money(page.totalRefundAmount ?? page.proposedTotalRefundAmount)
+            }}
+          </dd>
         </dl>
+        <p
+          v-if="page.refundCalculatedAt"
+          class="border-t border-teal-200 bg-white/60 px-4 py-2 text-right text-xs text-slate-500"
+        >
+          {{ format(page.refundCalculatedAt) }}に計算
+        </p>
       </section>
 
       <section class="space-y-3">
@@ -187,7 +152,7 @@
                       class="h-5 w-5 cursor-pointer accent-teal-600 disabled:cursor-not-allowed"
                       :checked="participant.refundedAt !== null"
                       :disabled="
-                        saving !== null || !page.settlementLockedAt || participant.refundAmount === null
+                        !canRecord || saving !== null || !page.settlementLockedAt || participant.refundAmount === null
                       "
                       :aria-label="`${participant.displayName}を返金済みにする`"
                       @click.prevent="toggleRefund(participant)"
@@ -327,6 +292,7 @@ import { computed, onMounted, ref } from "vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
 import type { RefundPage, RefundParticipant } from "./types";
 
 type Filter = "unrefunded" | "refunded" | "all";
@@ -346,6 +312,8 @@ const unrefundTarget = ref<RefundParticipant | null>(null);
 const search = ref("");
 const filter = ref<Filter>("unrefunded");
 const expandedIds = ref(new Set<string>());
+const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
+const canRecord = computed(() => isOwner.value || permissions.value?.refund === "record");
 
 const onSearchInput = (event: Event) => {
   search.value = (event.target as HTMLInputElement).value;
@@ -427,32 +395,6 @@ const load = async () => {
     loading.value = false;
   }
 };
-const updateRoundingUnit = async (event: Event) => {
-  if (!page.value || saving.value) return;
-  const select = event.target as HTMLSelectElement;
-  const previousUnit = page.value.refundRoundingUnit;
-  const refundRoundingUnit = Number(
-    select.value,
-  ) as RefundPage["refundRoundingUnit"];
-  if (refundRoundingUnit === previousUnit) return;
-  saving.value = "settings";
-  try {
-    await put(`/offkai-event/${eventId}/finance/settings`, {
-      refundRoundingUnit,
-    });
-    const result = await get<RefundPage>(basePath);
-    if (!result) throw new Error();
-    page.value = result;
-    toast.success("切り捨て単位を変更しました。");
-  } catch (cause) {
-    select.value = String(previousUnit);
-    toast.error(
-      getApiErrorMessage(cause, "切り捨て単位を変更できませんでした。"),
-    );
-  } finally {
-    saving.value = null;
-  }
-};
 const toggleExpanded = (userId: string) => {
   const next = new Set(expandedIds.value);
   next.has(userId) ? next.delete(userId) : next.add(userId);
@@ -506,5 +448,5 @@ const updateRefund = async (
   }
 };
 
-onMounted(() => void load());
+onMounted(() => void Promise.all([load(), loadAccess()]));
 </script>

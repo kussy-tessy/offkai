@@ -5,7 +5,7 @@ import type {
 	UserId,
 } from "@offkai/core";
 import { AppError } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import { discordService } from "../../../discord";
 import { OffkaiEventRepository } from "../../../repository";
 
@@ -15,16 +15,7 @@ export async function getOffkaiEventDiscordRole(
 ): Promise<Unbrand<GetOffkaiEventDiscordRoleResponse>> {
 	const repository = new OffkaiEventRepository();
 	const event = await repository.findById(input.eventId);
-	const seriesRole = await repository.findSeriesMemberRole(
-		userId,
-		event.seriesId,
-	);
-	if (!hasSeriesRole(seriesRole, "staff")) {
-		throw new AppError(
-			"FORBIDDEN",
-			"このオフ会のDiscordロールを管理する権限がありません。",
-		);
-	}
+	await requireEventPermission(event.id, userId, { area: "discordRole", level: "read" });
 
 	const discordGuildId = await repository.findSeriesDiscordGuildId(
 		event.seriesId,

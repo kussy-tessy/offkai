@@ -22,16 +22,16 @@ const props = defineProps<{
 const contentTabs = computed<RouteTabItem[]>(() => [
   { label: "概要", to: `/offkai/${props.offkai.id}/overview`, icon: faCircleInfo },
   ...(props.canViewParticipantGuide
-    ? [{ label: "参加者向け情報", to: `/offkai/${props.offkai.id}/participant-guide`, icon: faUsers }]
+    ? [{ label: "参加者向け情報", to: `/offkai/${props.offkai.id}/participant-guide`, icon: faClipboardList }]
     : []),
-  { label: "回答一覧", to: `/offkai/${props.offkai.id}/answers`, icon: faClipboardList },
+  { label: "参加者一覧", to: `/offkai/${props.offkai.id}/answers`, icon: faUsers },
   ...(props.hasAnswered
     ? [{ label: "写真共有", to: `/offkai/${props.offkai.id}/photos`, icon: faImages }]
     : []),
   ...(props.canManageParticipants
     ? [{
         label: "参加者管理",
-        to: `/offkai/${props.offkai.id}/participants`,
+        to: `/offkai/${props.offkai.id}/participant-management`,
         icon: faUserGear,
         exact: false,
       }]

@@ -27,6 +27,7 @@ import Participants from "../views/offkaiEvent/participants.vue";
 import PhotoShare from "../views/photoShare/index.vue";
 import Signup from "../views/SignupPage.vue";
 import QuestionTemplate from "../views/series/questionTemplate.vue";
+import TemplateSettings from "../views/series/templateSettings.vue";
 
 const requiresAuth = { meta: { requiresAuth: true } };
 const routes = [
@@ -43,21 +44,26 @@ const routes = [
 		meta: { requiresAuth: true, requiresSeriesOwner: true },
 	},
 	{
-		path: "/series/question-template",
+		path: "/series/settings",
 		component: QuestionTemplate,
+		meta: { requiresAuth: true, requiresSeriesOwner: true },
+	},
+	{
+		path: "/series/question-template",
+		component: TemplateSettings,
 		meta: { requiresAuth: true, requiresSeriesOwner: true },
 	},
 	{
 		path: "/offkai/:id/edit",
 		component: EditOffkaiEvent,
 		props: true,
-		meta: { requiresAuth: true, requiresSeriesOwner: true },
+		meta: { requiresAuth: true },
 	},
 	{
 		path: "/offkai/:id/participant-guide/edit",
 		component: EditParticipantGuide,
 		props: true,
-		meta: { requiresAuth: true, requiresSeriesOwner: true },
+		meta: { requiresAuth: true },
 	},
 	{
 		path: "/offkai/:id/answers/:userId/edit",
@@ -108,7 +114,7 @@ const routes = [
 			`/offkai/${String(to.params.id)}/overview`,
 	},
 	{
-		path: "/offkai/:id/participants",
+		path: "/offkai/:id/participant-management",
 		component: Participants,
 		props: true,
 		...requiresAuth,
@@ -116,7 +122,7 @@ const routes = [
 			{
 				path: "",
 				redirect: (to: RouteLocationGeneric) =>
-					`/offkai/${String(to.params.id)}/participants/discord`,
+					`/offkai/${String(to.params.id)}/participant-management/discord`,
 			},
 			{
 				path: "discord",
@@ -135,7 +141,7 @@ const routes = [
 					{
 						path: "",
 						redirect: (to: RouteLocationGeneric) =>
-							`/offkai/${String(to.params.id)}/participants/finance/calculation`,
+							`/offkai/${String(to.params.id)}/participant-management/finance/calculation`,
 					},
 					{
 						path: "calculation",
@@ -170,17 +176,17 @@ const routes = [
 			{
 				path: "fee-calculation",
 				redirect: (to: RouteLocationGeneric) =>
-					`/offkai/${String(to.params.id)}/participants/finance/calculation`,
+					`/offkai/${String(to.params.id)}/participant-management/finance/calculation`,
 			},
 			{
 				path: "fee-collection",
 				redirect: (to: RouteLocationGeneric) =>
-					`/offkai/${String(to.params.id)}/participants/finance/collection`,
+					`/offkai/${String(to.params.id)}/participant-management/finance/collection`,
 			},
 			{
 				path: "payments",
 				redirect: (to: RouteLocationGeneric) =>
-					`/offkai/${String(to.params.id)}/participants/finance/collection`,
+					`/offkai/${String(to.params.id)}/participant-management/finance/collection`,
 			},
 			{
 				path: "legacy-payments",

@@ -9,11 +9,8 @@ import type {
 	UserId,
 } from "@offkai/core";
 import { AppError } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
-import {
-	OffkaiAnswerRepository,
-	OffkaiEventRepository,
-} from "../../../repository";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
+import { OffkaiAnswerRepository } from "../../../repository";
 import { OffkaiAnswerService } from "../../../service/offkai-answer.service";
 import { getAnswerForm } from "./get-my-answer-form.usecase";
 
@@ -21,7 +18,7 @@ export async function getManagedOffkaiAnswerForm(
 	input: ManageOffkaiAnswerRequest,
 	ownerUserId: UserId,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
-	await requireEventOwner(input, ownerUserId);
+	await requireAnswerPermission(input.eventId, ownerUserId, "edit");
 
 	const answerRepository = new OffkaiAnswerRepository();
 	const answer = await answerRepository.findByEventAndUser(
@@ -51,7 +48,7 @@ export async function getManagedGuestAnswerForm(
 	input: ManageGuestAnswerRequest,
 	ownerUserId: UserId,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
-	await requireEventOwner(input, ownerUserId);
+	await requireAnswerPermission(input.eventId, ownerUserId, "edit");
 	const answer = await new OffkaiAnswerRepository().findById(input.answerId);
 	if (!answer || answer.eventId !== input.eventId || answer.userId !== null)
 		throw new AppError(
@@ -78,7 +75,7 @@ export async function getNewGuestAnswerForm(
 	eventId: ManageGuestAnswerRequest["eventId"],
 	ownerUserId: UserId,
 ): Promise<Unbrand<GetMyAnswerFormResponse>> {
-	await requireEventOwner({ eventId }, ownerUserId);
+	await requireAnswerPermission(eventId, ownerUserId, "edit");
 	return getAnswerForm({ eventId }, null, true);
 }
 
@@ -86,7 +83,7 @@ export async function saveGuestAnswer(
 	input: SaveGuestAnswerRequest,
 	ownerUserId: UserId,
 ): Promise<Unbrand<SaveOffkaiAnswerResponse>> {
-	await requireEventOwner(input, ownerUserId);
+	await requireAnswerPermission(input.eventId, ownerUserId, "edit");
 	if (!input.respondentName.trim())
 		throw new AppError("VALIDATION_ERROR", "ゲストの名前を入力してください。");
 	const answer = await new OffkaiAnswerService().prepareGuestAnswerEntity(
@@ -105,7 +102,7 @@ export async function deleteGuestAnswer(
 	input: ManageGuestAnswerRequest,
 	ownerUserId: UserId,
 ): Promise<void> {
-	await requireEventOwner(input, ownerUserId);
+	await requireAnswerPermission(input.eventId, ownerUserId, "delete");
 	const repository = new OffkaiAnswerRepository();
 	const answer = await repository.findById(input.answerId);
 	if (!answer || answer.eventId !== input.eventId || answer.userId !== null)
@@ -113,12 +110,26 @@ export async function deleteGuestAnswer(
 			"ANSWER_NOT_FOUND",
 			"削除対象のゲスト回答が見つかりません。",
 		);
-	if (await repository.hasFinancialData(input.answerId))
+	if (await repository.isCollectionStarted(input.eventId))
 		throw new AppError(
 			"VALIDATION_ERROR",
-			"会計データがあるゲストは削除できません。",
+			"参加費の徴収開始後は回答を削除できません。",
 		);
 	await repository.delete(input.answerId);
+}
+
+export async function deleteManagedOffkaiAnswer(
+	input: ManageOffkaiAnswerRequest,
+	viewerUserId: UserId,
+): Promise<void> {
+	await requireAnswerPermission(input.eventId, viewerUserId, "delete");
+	const repository = new OffkaiAnswerRepository();
+	const answer = await repository.findByEventAndUser(input.eventId, input.userId);
+	if (!answer) throw new AppError("ANSWER_NOT_FOUND", "削除対象の回答が見つかりません。");
+	if (await repository.isCollectionStarted(input.eventId)) {
+		throw new AppError("VALIDATION_ERROR", "参加費の徴収開始後は回答を削除できません。");
+	}
+	await repository.delete(answer.id);
 }
 
 export async function saveManagedOffkaiAnswer(
@@ -126,7 +137,7 @@ export async function saveManagedOffkaiAnswer(
 	input: SaveOffkaiAnswerRequest,
 	ownerUserId: UserId,
 ): Promise<Unbrand<SaveOffkaiAnswerResponse>> {
-	await requireEventOwner(params, ownerUserId);
+	await requireAnswerPermission(params.eventId, ownerUserId, "edit");
 
 	const answer = await new OffkaiAnswerService().prepareForcedEditAnswerEntity(
 		params.eventId,
@@ -140,18 +151,10 @@ export async function saveManagedOffkaiAnswer(
 	return { ok: true };
 }
 
-async function requireEventOwner(
-	input: { eventId: ManageOffkaiAnswerRequest["eventId"] },
-	ownerUserId: UserId,
+async function requireAnswerPermission(
+	eventId: ManageOffkaiAnswerRequest["eventId"],
+	viewerUserId: UserId,
+	level: "edit" | "delete",
 ) {
-	const repository = new OffkaiEventRepository();
-	const event = await repository.findById(input.eventId);
-	const role = await repository.findSeriesMemberRole(
-		ownerUserId,
-		event.seriesId,
-	);
-
-	if (!hasSeriesRole(role, "owner")) {
-		throw new AppError("FORBIDDEN", "この回答を編集する権限がありません。");
-	}
+	await requireEventPermission(eventId, viewerUserId, { area: "answerManagement", level });
 }

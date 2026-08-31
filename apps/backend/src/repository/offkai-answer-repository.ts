@@ -17,6 +17,7 @@ import {
 } from "@offkai/core";
 import type { PrismaClient } from "@prisma/client";
 import { AppError } from "../app-error";
+import { toDiscordAvatarUrl } from "../discord";
 import {
 	toDomainCommitmentAnswer,
 	toPersistenceCommitmentAnswer,
@@ -142,6 +143,7 @@ export class OffkaiAnswerRepository {
 		eventId: OffkaiEventId,
 		viewer: Unbrand<OffkaiDetail>["viewer"],
 		participantsAccess: Unbrand<OffkaiDetail>["participantsAccess"],
+		participationAccess: Unbrand<OffkaiDetail>["participationAccess"],
 	): Promise<OffkaiDetail> {
 		const event = await prisma.offkaiEvent.findUnique({
 			where: { id: eventId },
@@ -153,6 +155,13 @@ export class OffkaiAnswerRepository {
 				answers: {
 					orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 					include: {
+						user: {
+							select: {
+								discordIdentity: {
+									select: { discordUserId: true, avatarHash: true },
+								},
+							},
+						},
 						commitmentAnswers: {
 							where: { question: { archivedAt: null } },
 							select: { questionId: true, answer: true },
@@ -183,6 +192,12 @@ export class OffkaiAnswerRepository {
 			user: {
 				id: a.userId ?? a.id,
 				displayName: a.respondentName,
+				avatarUrl: a.user?.discordIdentity
+					? toDiscordAvatarUrl({
+							discordUserId: a.user.discordIdentity.discordUserId,
+							avatarHash: a.user.discordIdentity.avatarHash,
+						})
+					: null,
 			},
 			createdAt: a.createdAt.toISOString(),
 			commitmentAnswers: this.toCommitmentAnswerRecord(a.commitmentAnswers),
@@ -216,6 +231,7 @@ export class OffkaiAnswerRepository {
 			},
 			viewer,
 			participantsAccess,
+			participationAccess,
 			commitmentQuestions: commitmentQuestionsWithCounts,
 			preferenceQuestions: canViewPrivateAnswers ? preferenceQuestions : null,
 			answers: participantsAccess.granted ? answerRows : null,
@@ -318,6 +334,14 @@ export class OffkaiAnswerRepository {
 					answer.settlementCategoryMembers.length ||
 					answer.settlementExpenseRecipients.length),
 		);
+	}
+
+	async isCollectionStarted(eventId: OffkaiEventId): Promise<boolean> {
+		const finance = await this.prisma.eventFinance.findUnique({
+			where: { eventId },
+			select: { collectionStartedAt: true },
+		});
+		return finance?.collectionStartedAt !== null && finance !== null;
 	}
 
 	async delete(id: AnswerId): Promise<void> {

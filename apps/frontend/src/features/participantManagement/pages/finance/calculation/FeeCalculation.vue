@@ -51,14 +51,14 @@
           </p>
         </div>
         <MyButton
-          v-if="!finance.feeCalculationLockedAt"
+          v-if="canConfirm && !finance.feeCalculationLockedAt"
           size="sm"
           :disabled="saving !== null"
           @click="lockDialogOpen = true"
           >参加費を確定</MyButton
         >
         <MyButton
-          v-else-if="!finance.collectionStartedAt"
+          v-else-if="canConfirm && !finance.collectionStartedAt"
           size="sm"
           color="gray"
           variant="ghost"
@@ -66,7 +66,7 @@
           @click="unlockDialogOpen = true"
           >確定を解除</MyButton
         >
-        <span v-else class="text-xs font-medium text-emerald-800"
+        <span v-else-if="finance.collectionStartedAt" class="text-xs font-medium text-emerald-800"
           >徴収開始済み・解除不可</span
         >
       </div>
@@ -77,6 +77,7 @@
         :save-category="saveCategory"
         :delete-category="deleteCategory"
         :sync-members="syncMembers"
+        :readonly="!canEdit"
       />
       <ParticipantChargeSection
         :finance="finance"
@@ -85,6 +86,7 @@
         :add-extra="addExtra"
         :remove-extra="removeExtra"
         :save-note="saveNote"
+        :readonly="!canEdit"
       />
     </template>
 
@@ -114,10 +116,11 @@ import {
   type SyncSettlementCategoryMembersResponse,
   type Unbrand,
 } from "@offkai/core";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
 import ParticipantChargeSection from "./ParticipantChargeSection.vue";
 import SettlementCategorySection from "./SettlementCategorySection.vue";
 import type {
@@ -134,6 +137,9 @@ const loading = ref(true);
 const loadError = ref("");
 const finance = ref<Finance | null>(null);
 const saving = ref<string | null>(null);
+const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
+const canEdit = computed(() => isOwner.value || permissions.value?.feeCalculation === "edit" || permissions.value?.feeCalculation === "confirm");
+const canConfirm = computed(() => isOwner.value || permissions.value?.feeCalculation === "confirm");
 const lockDialogOpen = ref(false);
 const unlockDialogOpen = ref(false);
 
@@ -340,5 +346,5 @@ const unlockFeeCalculation = async () => {
   }
 };
 
-onMounted(() => void load());
+onMounted(() => void Promise.all([load(), loadAccess()]));
 </script>

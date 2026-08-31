@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
 	OffkaiEventIdSchema,
 	PaymentAmountSchema,
+	RefundRoundingUnitSchema,
 	SettlementExpenseIdSchema,
 	SettlementCategoryIdSchema,
 	SettlementIncomeIdSchema,
@@ -131,6 +132,7 @@ const SettlementCategoryResultSchema = z.object({
 });
 
 export const GetEventSettlementResponseSchema = z.object({
+	refundRoundingUnit: RefundRoundingUnitSchema,
 	feeCalculationLockedAt: z.string().datetime().nullable(),
 	settlementLockedAt: z.string().datetime().nullable(),
 	refundStartedAt: z.string().datetime().nullable(),

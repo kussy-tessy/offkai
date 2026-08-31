@@ -20,7 +20,7 @@ import {
 	type UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
-import { hasSeriesRole } from "../../../authorization/event-access";
+import { requireAnyEventPermission, requireEventPermission } from "../../../authorization/staff-permissions";
 import {
 	EventFinanceRepository,
 	OffkaiAnswerRepository,
@@ -50,7 +50,12 @@ export class FinanceUsecase {
 		input: GetEventFinanceRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireAnyEventPermission(input.eventId, viewerUserId, [
+			{ area: "feeCalculation", level: "read" },
+			{ area: "feeCollection", level: "read" },
+			{ area: "settlement", level: "read" },
+			{ area: "refund", level: "read" },
+		]);
 		await this.initializeFinance(input.eventId);
 		return this.pageAssembler.build(input.eventId);
 	}
@@ -92,7 +97,7 @@ export class FinanceUsecase {
 		input: UpdateFinanceSettingsRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "confirm" });
 		const finance = await this.financeRepository.findByEventId(input.eventId);
 		if (finance.settlementLockedAt) {
 			throw new AppError(
@@ -114,7 +119,7 @@ export class FinanceUsecase {
 		input: UpdateFeeCalculationLockRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "confirm" });
 		const finance = await this.requireFeeCalculationUnlocked(input.eventId);
 		const updated = runBusinessRule(() =>
 			finance.lockFeeCalculation(new Date()),
@@ -127,7 +132,7 @@ export class FinanceUsecase {
 		input: UpdateFeeCalculationLockRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "confirm" });
 		const finance = await this.requireFeeCalculationLocked(input.eventId);
 		if (finance.collectionStartedAt) {
 			throw new AppError(
@@ -147,7 +152,7 @@ export class FinanceUsecase {
 		input: CreateSettlementCategoryRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		await this.validateQuestion(input.eventId, input.commitmentQuestionId);
 		const finance = await this.requireFeeCalculationUnlocked(input.eventId);
 		const category = runBusinessRule(() =>
@@ -167,7 +172,7 @@ export class FinanceUsecase {
 		input: UpdateSettlementCategoryRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		await this.validateQuestion(input.eventId, input.commitmentQuestionId);
 		const finance = await this.requireFeeCalculationUnlocked(input.eventId);
 		const category = this.requireCategory(finance.categories, input.categoryId);
@@ -189,7 +194,7 @@ export class FinanceUsecase {
 		input: DeleteSettlementCategoryRequest,
 		viewerUserId: UserId,
 	): Promise<void> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		const finance = await this.requireFeeCalculationUnlocked(input.eventId);
 		if (
 			await this.settlementExpenseRepository.hasByCategoryId(input.categoryId)
@@ -217,7 +222,7 @@ export class FinanceUsecase {
 		input: SyncSettlementCategoryMembersRequest,
 		viewerUserId: UserId,
 	): Promise<SyncSettlementCategoryMembersResponse> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		const finance = await this.requireFeeCalculationUnlocked(input.eventId);
 		const category = this.requireCategory(finance.categories, input.categoryId);
 		if (!category.commitmentQuestionId) {
@@ -251,7 +256,7 @@ export class FinanceUsecase {
 		input: UpdateSettlementCategoryMemberRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		if (
 			!(await this.participantRepository.findByEventAndUser(
 				input.eventId,
@@ -276,7 +281,7 @@ export class FinanceUsecase {
 		input: DeleteSettlementCategoryMemberRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		const finance = await this.requireFeeCalculationUnlocked(input.eventId);
 		const category = this.requireCategory(finance.categories, input.categoryId);
 		const updatedCategory = runBusinessRule(() =>
@@ -293,7 +298,7 @@ export class FinanceUsecase {
 		input: CreateParticipantExtraChargeRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		await this.requireFeeCalculationUnlocked(input.eventId);
 		const participant = await this.participantRepository.findByEventAndUser(
 			input.eventId,
@@ -315,7 +320,7 @@ export class FinanceUsecase {
 		input: UpdateParticipantExtraChargeRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		await this.requireFeeCalculationUnlocked(input.eventId);
 		const participant = await this.participantRepository.findByEventAndUser(
 			input.eventId,
@@ -339,7 +344,7 @@ export class FinanceUsecase {
 		input: DeleteParticipantExtraChargeRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		await this.requireFeeCalculationUnlocked(input.eventId);
 		const participant = await this.participantRepository.findByEventAndUser(
 			input.eventId,
@@ -363,7 +368,7 @@ export class FinanceUsecase {
 		input: UpdateParticipantFinanceNoteRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCalculation", level: "edit" });
 		await this.requireFeeCalculationUnlocked(input.eventId);
 		const participant = await this.participantRepository.findByEventAndUser(
 			input.eventId,
@@ -385,7 +390,7 @@ export class FinanceUsecase {
 		input: UpdateParticipantCollectionRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await this.authorize(input.eventId, viewerUserId);
+		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCollection", level: "record" });
 		const finance = await this.requireFeeCalculationLocked(input.eventId);
 		const participant = await this.participantRepository.findByEventAndUser(
 			input.eventId,
@@ -409,24 +414,6 @@ export class FinanceUsecase {
 			financeWithCollectionStarted,
 		);
 		return this.pageAssembler.build(input.eventId);
-	}
-
-	private async authorize(
-		eventId: GetEventFinanceRequest["eventId"],
-		userId: UserId,
-	) {
-		const event = await this.eventRepository.findById(eventId);
-		const role = await this.eventRepository.findSeriesMemberRole(
-			userId,
-			event.seriesId,
-		);
-		if (!hasSeriesRole(role, "staff")) {
-			throw new AppError(
-				"FORBIDDEN",
-				"このオフ会の金銭を管理する権限がありません。",
-			);
-		}
-		return event;
 	}
 
 	private async requireFeeCalculationUnlocked(
