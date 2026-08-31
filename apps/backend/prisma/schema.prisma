@@ -223,7 +223,7 @@ model SettlementCategory {
   updatedAt DateTime @default(now()) @updatedAt
 
   finance            EventFinance               @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
-  commitmentQuestion CommitmentQuestion?        @relation(fields: [commitmentQuestionId], references: [id], onDelete: Restrict)
+  commitmentQuestion CommitmentQuestion?        @relation(fields: [commitmentQuestionId], references: [id], onDelete: SetNull)
   members            SettlementCategoryMember[]
   expenses           SettlementExpense[]
   incomes            SettlementIncome[]
@@ -241,7 +241,7 @@ model SettlementCategoryMember {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  category SettlementCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category SettlementCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   answer   OffkaiAnswer       @relation(fields: [answerId], references: [id], onDelete: Cascade)
 
   @@id([categoryId, answerId])
@@ -259,7 +259,7 @@ model SettlementExpense {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  category   SettlementCategory           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category   SettlementCategory           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   recipients SettlementExpenseRecipient[]
 
   @@index([categoryId, createdAt])
@@ -288,7 +288,7 @@ model SettlementIncome {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  category SettlementCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category SettlementCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId, createdAt])
 }
