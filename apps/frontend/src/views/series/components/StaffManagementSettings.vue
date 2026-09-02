@@ -29,11 +29,15 @@
       </p>
       <ul v-else class="divide-y divide-slate-200 rounded-lg border border-slate-200">
         <li v-for="member in staff" :key="member.userId" class="flex items-center justify-between gap-4 p-4">
-          <div class="min-w-0">
-            <p class="truncate font-medium text-slate-900">{{ member.userName }}</p>
-            <p class="truncate text-sm text-slate-500">
-              {{ member.discordUsername ? `@${member.discordUsername}` : "Discord未連携" }}
-            </p>
+          <div class="flex min-w-0 items-center gap-3">
+            <DiscordAvatar :avatar-url="member.discordAvatarUrl"
+              :display-name="member.discordUsername ?? member.userName" />
+            <div class="min-w-0">
+              <p class="truncate font-medium text-slate-900">{{ member.userName }}</p>
+              <p class="truncate text-sm text-slate-500">
+                {{ member.discordUsername ? `@${member.discordUsername}` : "Discord未連携" }}
+              </p>
+            </div>
           </div>
           <MyButton color="red" variant="ghost" size="sm" @click="requestRemoval(member)">
             削除
@@ -56,6 +60,7 @@
     type SeriesStaff,
   } from "@offkai/core";
   import { onMounted, ref } from "vue";
+  import DiscordAvatar from "@/common/components/DiscordAvatar.vue";
   import MyButton from "@/common/components/MyButton.vue";
   import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
   import { getApiErrorMessage, useApi, useToast } from "@/common/composables";

@@ -57,11 +57,16 @@ export const FinanceParticipantSchema = z.object({
 	userId: UserIdSchema,
 	displayName: UserNameSchema,
 	note: z.string().nullable(),
+	collectionNote: z.string().nullable(),
+	settlementNote: z.string().nullable(),
+	refundNote: z.string().nullable(),
 	chargeAmount: PaymentAmountSchema,
 	collectedAt: z.string().datetime().nullable(),
+	collectedByName: UserNameSchema.nullable(),
 	refundAmount: PaymentAmountSchema.nullable(),
 	refundCalculatedAt: z.string().datetime().nullable(),
 	refundedAt: z.string().datetime().nullable(),
+	refundedByName: UserNameSchema.nullable(),
 	extraCharges: z.array(FinanceExtraChargeSchema),
 });
 
@@ -178,4 +183,10 @@ export const UpdateParticipantCollectionRequestSchema =
 	FinanceParticipantRouteSchema.extend({ collected: z.boolean() });
 export type UpdateParticipantCollectionRequest = z.infer<
 	typeof UpdateParticipantCollectionRequestSchema
+>;
+
+export const UpdateParticipantCollectionNoteRequestSchema =
+	FinanceParticipantRouteSchema.extend({ note: z.string().nullable() });
+export type UpdateParticipantCollectionNoteRequest = z.infer<
+	typeof UpdateParticipantCollectionNoteRequestSchema
 >;

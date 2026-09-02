@@ -41,6 +41,8 @@ model User {
   authSessions          AuthSession[]
   passwordCredential    PasswordCredential?
   discordIdentity       DiscordIdentity?
+  collectedFinances     ParticipantFinance[]  @relation("FinanceCollector")
+  refundedFinances      ParticipantFinance[]  @relation("FinanceRefunder")
 }
 
 model PasswordCredential {
@@ -296,19 +298,29 @@ model SettlementIncome {
 model ParticipantFinance {
   answerId String @id
 
-  chargeAmount Int       @default(0)
-  note         String?
-  collectedAt  DateTime?
+  chargeAmount      Int       @default(0)
+  note              String?
+  collectionNote    String?
+  settlementNote    String?
+  refundNote        String?
+  collectedAt       DateTime?
+  collectedByUserId String?
 
   refundAmount       Int?
   refundCalculatedAt DateTime?
   refundedAt         DateTime?
+  refundedByUserId   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   answer       OffkaiAnswer             @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  collectedBy  User?                    @relation("FinanceCollector", fields: [collectedByUserId], references: [id], onDelete: SetNull)
+  refundedBy   User?                    @relation("FinanceRefunder", fields: [refundedByUserId], references: [id], onDelete: SetNull)
   extraCharges ParticipantExtraCharge[]
+
+  @@index([collectedByUserId])
+  @@index([refundedByUserId])
 }
 
 model ParticipantExtraCharge {

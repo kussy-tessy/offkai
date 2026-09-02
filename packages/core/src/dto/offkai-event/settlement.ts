@@ -17,6 +17,7 @@ const ExpenseRouteSchema = EventRouteSchema.extend({
 const IncomeRouteSchema = EventRouteSchema.extend({
 	incomeId: SettlementIncomeIdSchema,
 });
+const ParticipantRouteSchema = EventRouteSchema.extend({ userId: UserIdSchema });
 
 export const SettlementRecipientInputSchema = z.object({
 	userId: UserIdSchema,
@@ -39,6 +40,12 @@ export type GetEventSettlementRequest = z.infer<
 export const UpdateSettlementLockRequestSchema = EventRouteSchema;
 export type UpdateSettlementLockRequest = z.infer<
 	typeof UpdateSettlementLockRequestSchema
+>;
+
+export const UpdateParticipantSettlementNoteRequestSchema =
+	ParticipantRouteSchema.extend({ note: z.string().nullable() });
+export type UpdateParticipantSettlementNoteRequest = z.infer<
+	typeof UpdateParticipantSettlementNoteRequestSchema
 >;
 
 export const CreateSettlementExpenseRequestSchema = EventRouteSchema.merge(
@@ -137,7 +144,20 @@ export const GetEventSettlementResponseSchema = z.object({
 	settlementLockedAt: z.string().datetime().nullable(),
 	refundStartedAt: z.string().datetime().nullable(),
 	participants: z.array(
-		z.object({ userId: UserIdSchema, displayName: UserNameSchema }),
+		z.object({
+			userId: UserIdSchema,
+			displayName: UserNameSchema,
+			settlementNote: z.string().nullable(),
+			categoryBreakdowns: z.array(
+				z.object({
+					categoryId: SettlementCategoryIdSchema,
+					categoryName: z.string(),
+					amount: RationalAmountSchema,
+				}),
+			),
+			unroundedTotal: RationalAmountSchema,
+			proposedRefundAmount: z.number().int(),
+		}),
 	),
 	categories: z.array(SettlementCategoryResultSchema),
 	extraChargesExcluded: z.boolean(),

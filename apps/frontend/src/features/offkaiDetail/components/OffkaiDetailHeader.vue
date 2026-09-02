@@ -1,5 +1,5 @@
 <template>
-  <header class="mb-8 space-y-6">
+  <header :class="compact ? 'mb-4' : 'mb-8'" class="space-y-6">
     <h1 class="text-center text-4xl font-bold tracking-tight">{{ offkai.title }}</h1>
     <RouteTabs label="オフ会コンテンツ" :items="contentTabs" variant="equal" />
   </header>
@@ -17,6 +17,7 @@ const props = defineProps<{
   hasAnswered: boolean;
   canViewParticipantGuide: boolean;
   canManageParticipants: boolean;
+  compact?: boolean;
 }>();
 
 const contentTabs = computed<RouteTabItem[]>(() => [

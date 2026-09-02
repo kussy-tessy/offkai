@@ -164,10 +164,26 @@
                       {{ participant.displayName }}
                     </p>
                     <p
+                      v-if="participant.settlementNote"
+                      class="truncate text-xs text-rose-700"
+                      :title="participant.settlementNote"
+                    >
+                      <span class="font-medium">経費精算：</span>{{ participant.settlementNote }}
+                    </p>
+                    <p
+                      v-if="participant.refundNote"
+                      class="truncate text-xs text-rose-700"
+                      :title="participant.refundNote"
+                    >
+                      <span class="font-medium">返金：</span>{{ participant.refundNote }}
+                    </p>
+                    <p
                       v-if="participant.refundedAt"
                       class="truncate text-xs text-slate-400"
                     >
-                      {{ format(participant.refundedAt) }}
+                      {{ format(participant.refundedAt) }}<template
+                        v-if="participant.refundedByName"
+                      >（{{ participant.refundedByName }}）</template>
                     </p>
                     <p
                       v-else-if="displayRefundAmount(participant) === 0"
@@ -251,6 +267,28 @@
                         </dd>
                       </div>
                     </dl>
+                    <form
+                      class="mt-3 border-t border-slate-200 pt-3"
+                      @submit.prevent="saveRefundNote(participant.userId, $event)"
+                    >
+                      <label class="block text-xs font-medium text-slate-600">
+                        返金時の備考
+                        <textarea
+                          name="note"
+                          rows="2"
+                          :value="participant.refundNote ?? ''"
+                          :disabled="!canRecord || saving !== null"
+                          class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm disabled:bg-slate-100"
+                        ></textarea>
+                      </label>
+                      <MyButton
+                        v-if="canRecord"
+                        class="mt-2"
+                        size="sm"
+                        type="submit"
+                        :disabled="saving !== null"
+                      >備考を保存</MyButton>
+                    </form>
                   </td>
                 </tr>
               </template>
@@ -304,7 +342,7 @@ const basePath = `/offkai-event/${eventId}/finance/refunds`;
 const page = ref<RefundPage | null>(null);
 const loading = ref(true);
 const loadError = ref("");
-const saving = ref<"settings" | "toggle" | null>(null);
+const saving = ref<"settings" | "toggle" | "note" | null>(null);
 const startConfirmOpen = ref(false);
 const pendingParticipant = ref<RefundParticipant | null>(null);
 const unrefundDialogOpen = ref(false);
@@ -443,6 +481,25 @@ const updateRefund = async (
     );
   } catch (cause) {
     toast.error(getApiErrorMessage(cause, "返金状態を更新できませんでした。"));
+  } finally {
+    saving.value = null;
+  }
+};
+
+const saveRefundNote = async (userId: string, event: Event) => {
+  if (saving.value) return;
+  saving.value = "note";
+  const form = event.currentTarget as HTMLFormElement;
+  const value = String(new FormData(form).get("note") ?? "").trim();
+  try {
+    const result = await put<RefundPage>(`${basePath}/${userId}/note`, {
+      note: value || null,
+    });
+    if (!result) throw new Error();
+    page.value = result;
+    toast.success("返金時の備考を保存しました。");
+  } catch (cause) {
+    toast.error(getApiErrorMessage(cause, "返金時の備考を保存できませんでした。"));
   } finally {
     saving.value = null;
   }

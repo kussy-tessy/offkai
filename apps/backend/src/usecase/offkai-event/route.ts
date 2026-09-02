@@ -1,5 +1,6 @@
 import {
 	CreateOffkaiEventRequestSchema,
+	CreateDiscordChannelRoleRequestSchema,
 	CreateParticipantExtraChargeRequestSchema,
 	CreatePhotoShareRequestSchema,
 	CreateSettlementCategoryRequestSchema,
@@ -11,8 +12,10 @@ import {
 	DeleteSettlementExpenseRequestSchema,
 	DeleteSettlementIncomeRequestSchema,
 	GetEventFinanceRequestSchema,
+	GetEventFeeCollectionRequestSchema,
 	GetEventRefundRequestSchema,
 	GetEventSettlementRequestSchema,
+	GetDiscordChannelConfigurationRequestSchema,
 	GetMyAnswerFormRequestSchema,
 	GetOffkaiDetailRequestSchema,
 	GetOffkaiEventDiscordRoleMembersRequestSchema,
@@ -32,10 +35,12 @@ import {
 	UpdateOffkaiEventDiscordRoleMemberRequestSchema,
 	UpdateOffkaiEventDiscordRoleRequestSchema,
 	UpdateParticipantCollectionRequestSchema,
+	UpdateParticipantCollectionNoteRequestSchema,
 	UpdateParticipantExtraChargeRequestSchema,
 	UpdateParticipantFinanceNoteRequestSchema,
 	UpdateParticipantPaymentRequestSchema,
 	UpdateParticipantRefundRequestSchema,
+	UpdateParticipantRefundNoteRequestSchema,
 	UpdatePhotoDownloadStatusRequestSchema,
 	UpdatePhotoShareRequestSchema,
 	UpdateParticipantGuideRequestSchema,
@@ -44,6 +49,7 @@ import {
 	UpdateSettlementExpenseRequestSchema,
 	UpdateSettlementIncomeRequestSchema,
 	UpdateSettlementLockRequestSchema,
+	UpdateParticipantSettlementNoteRequestSchema,
 	UserIdSchema,
 } from "@offkai/core";
 import type { FastifyPluginAsync } from "fastify";
@@ -60,6 +66,8 @@ import {
 import { saveOffkaiAnswer } from "./answer-command/save-offkai-answer.usecase";
 import { getOffkaiDetail } from "./detail-query/get-offkai-detail.usecase";
 import {
+	createDiscordChannelRole,
+	getDiscordChannelConfiguration,
 	getOffkaiEventDiscordRole,
 	getOffkaiEventDiscordRoleMembers,
 	updateOffkaiEventDiscordRole,
@@ -195,6 +203,29 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return getOffkaiEventDiscordRole(input, userId);
 	});
 
+	app.get(
+		"/:eventId/discord-channel-configuration",
+		requireUser,
+		async (request) => {
+			const userId = UserIdSchema.parse(request.user.userId);
+			const input = GetDiscordChannelConfigurationRequestSchema.parse(
+				request.params,
+			);
+			return getDiscordChannelConfiguration(input, userId);
+		},
+	);
+
+	app.post("/:eventId/discord-channel-role", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		const params = request.params as Record<string, unknown>;
+		const body = request.body as Record<string, unknown>;
+		const input = CreateDiscordChannelRoleRequestSchema.parse({
+			...body,
+			...params,
+		});
+		return createDiscordChannelRole(input, userId);
+	});
+
 	app.put("/:eventId/discord-role", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		const params = request.params as Record<string, unknown>;
@@ -231,6 +262,14 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		const userId = UserIdSchema.parse(request.user.userId);
 		return finance.getPage(
 			GetEventFinanceRequestSchema.parse(request.params),
+			userId,
+		);
+	});
+
+	app.get("/:eventId/finance/collection", requireUser, async (request) => {
+		const userId = UserIdSchema.parse(request.user.userId);
+		return finance.getCollectionPage(
+			GetEventFeeCollectionRequestSchema.parse(request.params),
 			userId,
 		);
 	});
@@ -383,6 +422,21 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		},
 	);
 
+	app.put(
+		"/:eventId/finance/participants/:userId/collection-note",
+		requireUser,
+		async (request) => {
+			const viewerUserId = UserIdSchema.parse(request.user.userId);
+			return finance.updateParticipantCollectionNote(
+				UpdateParticipantCollectionNoteRequestSchema.parse({
+					...(request.params as object),
+					...(request.body as object),
+				}),
+				viewerUserId,
+			);
+		},
+	);
+
 	app.post(
 		"/:eventId/finance/participants/:userId/extra-charges",
 		requireUser,
@@ -454,6 +508,21 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 			return settlement.unlock(
 				UpdateSettlementLockRequestSchema.parse(request.params),
 				userId,
+			);
+		},
+	);
+
+	app.put(
+		"/:eventId/finance/settlement/participants/:userId/note",
+		requireUser,
+		async (request) => {
+			const viewerUserId = UserIdSchema.parse(request.user.userId);
+			return settlement.updateParticipantNote(
+				UpdateParticipantSettlementNoteRequestSchema.parse({
+					...(request.params as object),
+					...(request.body as object),
+				}),
+				viewerUserId,
 			);
 		},
 	);
@@ -564,6 +633,20 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 			viewerUserId,
 		);
 	});
+	app.put(
+		"/:eventId/finance/refunds/:userId/note",
+		requireUser,
+		async (request) => {
+			const viewerUserId = UserIdSchema.parse(request.user.userId);
+			return refund.updateParticipantNote(
+				UpdateParticipantRefundNoteRequestSchema.parse({
+					...(request.params as object),
+					...(request.body as object),
+				}),
+				viewerUserId,
+			);
+		},
+	);
 	app.get(
 		"/:eventId/participant-answer-table",
 		requireUser,

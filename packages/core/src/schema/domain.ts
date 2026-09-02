@@ -38,6 +38,12 @@ export const DiscordRoleIdSchema = z
 	.brand("DiscordRoleId");
 export type DiscordRoleId = z.infer<typeof DiscordRoleIdSchema>;
 
+export const DiscordChannelIdSchema = z
+	.string()
+	.regex(/^\d{17,20}$/)
+	.brand("DiscordChannelId");
+export type DiscordChannelId = z.infer<typeof DiscordChannelIdSchema>;
+
 export const OffkaiSeriesIdSchema = z.string().uuid().brand("OffkaiSeriesId");
 export type OffkaiSeriesId = z.infer<typeof OffkaiSeriesIdSchema>;
 

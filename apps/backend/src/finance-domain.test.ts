@@ -146,9 +146,12 @@ describe("ParticipantFinance", () => {
 		});
 		const collectedAt = new Date("2026-08-18T12:34:56.000Z");
 
-		const collected = finance.markCollected(collectedAt);
+		const collected = finance.markCollected(collectedAt, userA);
 		expect(collected.collectedAt).toEqual(collectedAt);
-		expect(collected.markUncollected().collectedAt).toBeNull();
+		expect(collected.collectedByUserId).toBe(userA);
+		const uncollected = collected.markUncollected();
+		expect(uncollected.collectedAt).toBeNull();
+		expect(uncollected.collectedByUserId).toBeNull();
 	});
 
 	it("返金額を保存して返金済みを切り替えられる", () => {
@@ -162,9 +165,28 @@ describe("ParticipantFinance", () => {
 		}).setRefundCalculation(1700, calculatedAt);
 		expect(finance.refundAmount).toBe(1700);
 		expect(finance.refundCalculatedAt).toEqual(calculatedAt);
-		expect(
-			finance.markRefunded(refundedAt).markUnrefunded().refundedAt,
-		).toBeNull();
+		const refunded = finance.markRefunded(refundedAt, userA);
+		expect(refunded.refundedByUserId).toBe(userA);
+		const unrefunded = refunded.markUnrefunded();
+		expect(unrefunded.refundedAt).toBeNull();
+		expect(unrefunded.refundedByUserId).toBeNull();
+	});
+
+	it("用途別の備考を独立して保存できる", () => {
+		const finance = ParticipantFinance.reconstruct({
+			userId: userA,
+			note: "参加費計算",
+			extraCharges: [],
+			chargeAmount: 5000,
+		})
+			.changeCollectionNote("徴収")
+			.changeSettlementNote("経費精算")
+			.changeRefundNote("返金");
+
+		expect(finance.note).toBe("参加費計算");
+		expect(finance.collectionNote).toBe("徴収");
+		expect(finance.settlementNote).toBe("経費精算");
+		expect(finance.refundNote).toBe("返金");
 	});
 
 	it("区分金額と追加請求から総請求額を計算する", () => {

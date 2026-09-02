@@ -13,47 +13,67 @@ export class ParticipantFinance {
 	private constructor(
 		readonly userId: UserId,
 		readonly note: string | null,
+		readonly collectionNote: string | null,
+		readonly settlementNote: string | null,
+		readonly refundNote: string | null,
 		readonly extraCharges: ExtraCharge[],
 		readonly chargeAmount: PaymentAmount,
 		readonly collectedAt: Date | null,
+		readonly collectedByUserId: UserId | null,
 		readonly refundAmount: PaymentAmount | null,
 		readonly refundCalculatedAt: Date | null,
 		readonly refundedAt: Date | null,
+		readonly refundedByUserId: UserId | null,
 	) {}
 
 	static reconstruct(params: {
 		userId: UserId;
 		note: string | null;
+		collectionNote?: string | null;
+		settlementNote?: string | null;
+		refundNote?: string | null;
 		extraCharges: ExtraCharge[];
 		chargeAmount: number;
 		collectedAt?: Date | null;
+		collectedByUserId?: UserId | null;
 		refundAmount?: number | null;
 		refundCalculatedAt?: Date | null;
 		refundedAt?: Date | null;
+		refundedByUserId?: UserId | null;
 	}): ParticipantFinance {
 		return new ParticipantFinance(
 			params.userId,
 			params.note,
+			params.collectionNote ?? null,
+			params.settlementNote ?? null,
+			params.refundNote ?? null,
 			params.extraCharges.map(ParticipantFinance.validateExtraCharge),
 			MoneyAmount.from(params.chargeAmount).value,
 			params.collectedAt ?? null,
+			params.collectedByUserId ?? null,
 			params.refundAmount === null || params.refundAmount === undefined
 				? null
 				: MoneyAmount.from(params.refundAmount).value,
 			params.refundCalculatedAt ?? null,
 			params.refundedAt ?? null,
+			params.refundedByUserId ?? null,
 		);
 	}
 
 	static calculate(params: {
 		userId: UserId;
 		note: string | null;
+		collectionNote?: string | null;
+		settlementNote?: string | null;
+		refundNote?: string | null;
 		categoryAmounts: number[];
 		extraCharges: ExtraCharge[];
 		collectedAt?: Date | null;
+		collectedByUserId?: UserId | null;
 		refundAmount?: number | null;
 		refundCalculatedAt?: Date | null;
 		refundedAt?: Date | null;
+		refundedByUserId?: UserId | null;
 	}): ParticipantFinance {
 		const charges = params.extraCharges.map(
 			ParticipantFinance.validateExtraCharge,
@@ -67,14 +87,19 @@ export class ParticipantFinance {
 		return new ParticipantFinance(
 			params.userId,
 			params.note,
+			params.collectionNote ?? null,
+			params.settlementNote ?? null,
+			params.refundNote ?? null,
 			charges,
 			total.value,
 			params.collectedAt ?? null,
+			params.collectedByUserId ?? null,
 			params.refundAmount === null || params.refundAmount === undefined
 				? null
 				: MoneyAmount.from(params.refundAmount).value,
 			params.refundCalculatedAt ?? null,
 			params.refundedAt ?? null,
+			params.refundedByUserId ?? null,
 		);
 	}
 
@@ -97,25 +122,25 @@ export class ParticipantFinance {
 		});
 	}
 
-	markRefunded(at: Date): ParticipantFinance {
+	markRefunded(at: Date, userId: UserId): ParticipantFinance {
 		if (this.refundAmount === null)
 			throw new Error("返金額を計算してから返金してください。");
 		if (this.refundAmount === 0) throw new Error("返金額が0円の参加者です。");
 		if (Number.isNaN(at.getTime())) throw new Error("返金日時が不正です。");
-		return ParticipantFinance.reconstruct({ ...this, refundedAt: at });
+		return ParticipantFinance.reconstruct({ ...this, refundedAt: at, refundedByUserId: userId });
 	}
 
 	markUnrefunded(): ParticipantFinance {
-		return ParticipantFinance.reconstruct({ ...this, refundedAt: null });
+		return ParticipantFinance.reconstruct({ ...this, refundedAt: null, refundedByUserId: null });
 	}
 
-	markCollected(at: Date): ParticipantFinance {
+	markCollected(at: Date, userId: UserId): ParticipantFinance {
 		if (Number.isNaN(at.getTime())) throw new Error("徴収日時が不正です。");
-		return ParticipantFinance.reconstruct({ ...this, collectedAt: at });
+		return ParticipantFinance.reconstruct({ ...this, collectedAt: at, collectedByUserId: userId });
 	}
 
 	markUncollected(): ParticipantFinance {
-		return ParticipantFinance.reconstruct({ ...this, collectedAt: null });
+		return ParticipantFinance.reconstruct({ ...this, collectedAt: null, collectedByUserId: null });
 	}
 
 	static createExtraCharge(params: {
@@ -133,6 +158,18 @@ export class ParticipantFinance {
 
 	changeNote(note: string | null): ParticipantFinance {
 		return ParticipantFinance.reconstruct({ ...this, note });
+	}
+
+	changeCollectionNote(collectionNote: string | null): ParticipantFinance {
+		return ParticipantFinance.reconstruct({ ...this, collectionNote });
+	}
+
+	changeSettlementNote(settlementNote: string | null): ParticipantFinance {
+		return ParticipantFinance.reconstruct({ ...this, settlementNote });
+	}
+
+	changeRefundNote(refundNote: string | null): ParticipantFinance {
+		return ParticipantFinance.reconstruct({ ...this, refundNote });
 	}
 
 	addExtraCharge(params: {

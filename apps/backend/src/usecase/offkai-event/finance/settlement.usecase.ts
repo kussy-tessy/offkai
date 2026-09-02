@@ -13,6 +13,7 @@ import {
 	type UpdateSettlementExpenseRequest,
 	type UpdateSettlementIncomeRequest,
 	type UpdateSettlementLockRequest,
+	type UpdateParticipantSettlementNoteRequest,
 	type UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
@@ -44,7 +45,32 @@ export class SettlementUsecase {
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventSettlementResponse>> {
 		await requireEventPermission(input.eventId, viewerUserId, { area: "settlement", level: "read" });
-		await this.financeUsecase.getPage(input, viewerUserId);
+		await this.financeUsecase.ensureInitialized(input.eventId);
+		return this.pageAssembler.build(input.eventId);
+	}
+
+	async updateParticipantNote(
+		input: UpdateParticipantSettlementNoteRequest,
+		viewerUserId: UserId,
+	): Promise<Unbrand<GetEventSettlementResponse>> {
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "settlement",
+			level: "edit",
+		});
+		const finance = await this.financeRepository.findByEventId(input.eventId);
+		if (finance.settlementLockedAt) {
+			throw new AppError("VALIDATION_ERROR", "確定済みの経費精算は変更できません。");
+		}
+		const participant = await this.participantRepository.findByEventAndUser(
+			input.eventId,
+			input.userId,
+		);
+		if (!participant)
+			throw new AppError("RESPONDENT_NOT_FOUND", "回答者が見つかりません。");
+		await this.participantRepository.save(
+			input.eventId,
+			participant.changeSettlementNote(input.note),
+		);
 		return this.pageAssembler.build(input.eventId);
 	}
 

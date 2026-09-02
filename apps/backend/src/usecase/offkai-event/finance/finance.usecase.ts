@@ -7,6 +7,8 @@ import {
 	type DeleteSettlementCategoryRequest,
 	type GetEventFinanceRequest,
 	type GetEventFinanceResponse,
+	type GetEventFeeCollectionRequest,
+	type GetEventFeeCollectionResponse,
 	type SyncSettlementCategoryMembersRequest,
 	type SyncSettlementCategoryMembersResponse,
 	type Unbrand,
@@ -15,12 +17,13 @@ import {
 	type UpdateParticipantExtraChargeRequest,
 	type UpdateParticipantFinanceNoteRequest,
 	type UpdateParticipantCollectionRequest,
+	type UpdateParticipantCollectionNoteRequest,
 	type UpdateSettlementCategoryMemberRequest,
 	type UpdateSettlementCategoryRequest,
 	type UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
-import { requireAnyEventPermission, requireEventPermission } from "../../../authorization/staff-permissions";
+import { requireEventPermission } from "../../../authorization/staff-permissions";
 import {
 	EventFinanceRepository,
 	OffkaiAnswerRepository,
@@ -31,6 +34,7 @@ import {
 } from "../../../repository";
 import {
 	FinancePageAssembler,
+	FeeCollectionPageAssembler,
 	FinancePersistenceService,
 } from "../../../service/finance.service";
 
@@ -43,6 +47,7 @@ export class FinanceUsecase {
 		private readonly eventRepository = new OffkaiEventRepository(),
 		private readonly answerRepository = new OffkaiAnswerRepository(),
 		private readonly pageAssembler = new FinancePageAssembler(),
+		private readonly collectionPageAssembler = new FeeCollectionPageAssembler(),
 		private readonly persistenceService = new FinancePersistenceService(),
 	) {}
 
@@ -50,17 +55,27 @@ export class FinanceUsecase {
 		input: GetEventFinanceRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventFinanceResponse>> {
-		await requireAnyEventPermission(input.eventId, viewerUserId, [
-			{ area: "feeCalculation", level: "read" },
-			{ area: "feeCollection", level: "read" },
-			{ area: "settlement", level: "read" },
-			{ area: "refund", level: "read" },
-		]);
-		await this.initializeFinance(input.eventId);
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "feeCalculation",
+			level: "read",
+		});
+		await this.ensureInitialized(input.eventId);
 		return this.pageAssembler.build(input.eventId);
 	}
 
-	private async initializeFinance(
+	async getCollectionPage(
+		input: GetEventFeeCollectionRequest,
+		viewerUserId: UserId,
+	): Promise<Unbrand<GetEventFeeCollectionResponse>> {
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "feeCollection",
+			level: "read",
+		});
+		await this.ensureInitialized(input.eventId);
+		return this.collectionPageAssembler.build(input.eventId);
+	}
+
+	async ensureInitialized(
 		eventId: GetEventFinanceRequest["eventId"],
 	): Promise<void> {
 		if (await this.financeRepository.existsByEventId(eventId)) return;
@@ -389,7 +404,7 @@ export class FinanceUsecase {
 	async updateParticipantCollection(
 		input: UpdateParticipantCollectionRequest,
 		viewerUserId: UserId,
-	): Promise<Unbrand<GetEventFinanceResponse>> {
+	): Promise<Unbrand<GetEventFeeCollectionResponse>> {
 		await requireEventPermission(input.eventId, viewerUserId, { area: "feeCollection", level: "record" });
 		const finance = await this.requireFeeCalculationLocked(input.eventId);
 		const participant = await this.participantRepository.findByEventAndUser(
@@ -401,7 +416,7 @@ export class FinanceUsecase {
 		}
 		const updated = runBusinessRule(() =>
 			input.collected
-				? participant.markCollected(new Date())
+				? participant.markCollected(new Date(), viewerUserId)
 				: participant.markUncollected(),
 		);
 		const financeWithCollectionStarted =
@@ -413,7 +428,30 @@ export class FinanceUsecase {
 			updated,
 			financeWithCollectionStarted,
 		);
-		return this.pageAssembler.build(input.eventId);
+		return this.collectionPageAssembler.build(input.eventId);
+	}
+
+	async updateParticipantCollectionNote(
+		input: UpdateParticipantCollectionNoteRequest,
+		viewerUserId: UserId,
+	): Promise<Unbrand<GetEventFeeCollectionResponse>> {
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "feeCollection",
+			level: "record",
+		});
+		const participant = await this.participantRepository.findByEventAndUser(
+			input.eventId,
+			input.userId,
+		);
+		if (!participant) {
+			throw new AppError("RESPONDENT_NOT_FOUND", "回答者が見つかりません。");
+		}
+		await this.persistenceService.saveParticipantFinance(
+			input.eventId,
+			participant.changeCollectionNote(input.note),
+			false,
+		);
+		return this.collectionPageAssembler.build(input.eventId);
 	}
 
 	private async requireFeeCalculationUnlocked(

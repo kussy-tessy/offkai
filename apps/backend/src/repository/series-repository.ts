@@ -11,6 +11,7 @@ import {
 } from "@offkai/core";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { AppError } from "../app-error";
+import { toDiscordAvatarUrl } from "../discord";
 import { prisma } from "./prisma";
 
 export class SeriesRepository {
@@ -119,7 +120,13 @@ export class SeriesRepository {
 				user: {
 					select: {
 						name: true,
-						discordIdentity: { select: { username: true } },
+						discordIdentity: {
+							select: {
+								username: true,
+								discordUserId: true,
+								avatarHash: true,
+							},
+						},
 					},
 				},
 			},
@@ -131,6 +138,9 @@ export class SeriesRepository {
 				userId: member.userId,
 				userName: member.user.name,
 				discordUsername: member.user.discordIdentity?.username ?? null,
+				discordAvatarUrl: member.user.discordIdentity
+					? toDiscordAvatarUrl(member.user.discordIdentity)
+					: null,
 			}),
 		);
 	}
@@ -168,7 +178,13 @@ export class SeriesRepository {
 					user: {
 						select: {
 							name: true,
-							discordIdentity: { select: { username: true } },
+							discordIdentity: {
+								select: {
+									username: true,
+									discordUserId: true,
+									avatarHash: true,
+								},
+							},
 						},
 					},
 				},
@@ -177,6 +193,9 @@ export class SeriesRepository {
 				userId: member.userId as UserId,
 				userName: member.user.name,
 				discordUsername: member.user.discordIdentity?.username ?? null,
+				discordAvatarUrl: member.user.discordIdentity
+					? toDiscordAvatarUrl(member.user.discordIdentity)
+					: null,
 			});
 		} catch (cause) {
 			if (

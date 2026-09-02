@@ -1,13 +1,16 @@
 <template>
-  <OffkaiEvent :initial-value="initialValue" :handle-submit="update" :is-edit="true"
-    :has-discord-guild="hasDiscordGuild" />
-
+  <div class="space-y-6">
+    <MyBackLink :to="`/offkai/${id}/overview`">オフ会情報へ戻る</MyBackLink>
+    <OffkaiEvent :initial-value="initialValue" :handle-submit="update" :is-edit="true"
+      :has-discord-guild="hasDiscordGuild" />
+  </div>
 </template>
 
 <script setup lang="ts">
   import { CreateOffkaiEventRequest, GetSeriesSettingsResponse, OffkaiEventResponse } from "@offkai/core";
   import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
+  import MyBackLink from '@/common/components/MyBackLink.vue';
   import { getApiErrorMessage, useApi, useToast } from '@/common/composables';
   import OffkaiEvent from '@/features/offkaiEvent/components/OffkaiEvent.vue';
   import { CommitmentQuestion, OffkaiEventInitializeProps, PreferenceQuestion } from '@/features/offkaiEvent/composables';

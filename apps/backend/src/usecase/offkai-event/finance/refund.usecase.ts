@@ -3,6 +3,7 @@ import type {
 	GetEventRefundResponse,
 	Unbrand,
 	UpdateParticipantRefundRequest,
+	UpdateParticipantRefundNoteRequest,
 	UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
@@ -51,7 +52,7 @@ export class RefundUsecase {
 		const now = new Date();
 		const updated = runBusinessRule(() =>
 			input.refunded
-				? participant.markRefunded(now)
+				? participant.markRefunded(now, viewerUserId)
 				: participant.markUnrefunded(),
 		);
 		await prisma.$transaction(async (tx) => {
@@ -62,6 +63,27 @@ export class RefundUsecase {
 			}
 			await new ParticipantFinanceRepository(tx).save(input.eventId, updated);
 		});
+		return this.pageAssembler.build(input.eventId);
+	}
+
+	async updateParticipantNote(
+		input: UpdateParticipantRefundNoteRequest,
+		viewerUserId: UserId,
+	): Promise<Unbrand<GetEventRefundResponse>> {
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "refund",
+			level: "record",
+		});
+		const participant = await this.participantRepository.findByEventAndUser(
+			input.eventId,
+			input.userId,
+		);
+		if (!participant)
+			throw new AppError("RESPONDENT_NOT_FOUND", "回答者が見つかりません。");
+		await this.participantRepository.save(
+			input.eventId,
+			participant.changeRefundNote(input.note),
+		);
 		return this.pageAssembler.build(input.eventId);
 	}
 

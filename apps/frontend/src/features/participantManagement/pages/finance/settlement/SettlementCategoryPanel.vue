@@ -47,6 +47,8 @@
               v-for="member in participantFeeMembers"
               :key="member.userId"
               size="sm"
+              variant="custom"
+              class="border-amber-200 bg-amber-50 text-amber-800"
             >
               {{ member.displayName }}
             </MyBadge>
@@ -158,6 +160,8 @@
                   v-for="recipient in expense.recipients"
                   :key="recipient.userId"
                   size="sm"
+                  variant="custom"
+                  class="border-amber-200 bg-amber-50 text-amber-800"
                 >
                   {{ participantName(recipient.userId) }}
                 </MyBadge>

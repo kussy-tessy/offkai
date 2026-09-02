@@ -113,13 +113,22 @@
                     class="truncate text-xs text-rose-700"
                     :title="participant.note"
                   >
-                    {{ participant.note }}
+                    <span class="font-medium">参加費計算：</span>{{ participant.note }}
                   </p>
                   <p
-                    v-else-if="participant.collectedAt"
+                    v-if="participant.collectionNote"
+                    class="truncate text-xs text-rose-700"
+                    :title="participant.collectionNote"
+                  >
+                    <span class="font-medium">徴収：</span>{{ participant.collectionNote }}
+                  </p>
+                  <p
+                    v-if="participant.collectedAt"
                     class="truncate text-xs text-slate-400"
                   >
-                    {{ format(participant.collectedAt) }}
+                    {{ format(participant.collectedAt) }}<template
+                      v-if="participant.collectedByName"
+                    >（{{ participant.collectedByName }}）</template>
                   </p>
                 </td>
                 <td
@@ -181,13 +190,28 @@
                       </dd>
                     </div>
                   </dl>
-                  <p
-                    v-if="participant.note"
-                    class="mt-2 whitespace-pre-wrap rounded bg-white px-2 py-1.5 text-sm text-slate-600"
+                  <form
+                    class="mt-3 border-t border-slate-200 pt-3"
+                    @submit.prevent="saveCollectionNote(participant.userId, $event)"
                   >
-                    <span class="font-medium">備考：</span
-                    >{{ participant.note }}
-                  </p>
+                    <label class="block text-xs font-medium text-slate-600">
+                      徴収時の備考
+                      <textarea
+                        name="note"
+                        rows="2"
+                        :value="participant.collectionNote ?? ''"
+                        :disabled="!canRecord || savingUserId !== null"
+                        class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm disabled:bg-slate-100"
+                      ></textarea>
+                    </label>
+                    <MyButton
+                      v-if="canRecord"
+                      class="mt-2"
+                      size="sm"
+                      type="submit"
+                      :disabled="savingUserId !== null"
+                    >備考を保存</MyButton>
+                  </form>
                 </td>
               </tr>
             </template>
@@ -217,7 +241,7 @@ import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   format,
-  type GetEventFinanceResponse,
+  type GetEventFeeCollectionResponse,
   type Unbrand,
 } from "@offkai/core";
 import { computed, onMounted, ref } from "vue";
@@ -226,7 +250,7 @@ import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
 
-type Finance = Unbrand<GetEventFinanceResponse>;
+type Finance = Unbrand<GetEventFeeCollectionResponse>;
 type Participant = Finance["participants"][number];
 type Filter = "uncollected" | "collected" | "all";
 const { eventId } = defineProps<{ eventId: string }>();
@@ -248,6 +272,7 @@ const onSearchInput = (event: Event) => {
 const uncollectDialogOpen = ref(false);
 const uncollectTarget = ref<Participant | null>(null);
 const basePath = `/offkai-event/${eventId}/finance`;
+const collectionPath = `${basePath}/collection`;
 const collectedCount = computed(
   () => finance.value?.participants.filter((p) => p.collectedAt).length ?? 0,
 );
@@ -315,7 +340,7 @@ const load = async () => {
   loading.value = true;
   loadError.value = "";
   try {
-    const result = await get<Finance>(basePath);
+    const result = await get<Finance>(collectionPath);
     if (!result) throw new Error();
     finance.value = result;
   } catch (cause) {
@@ -362,6 +387,25 @@ const saveCollection = async (userId: string, collected: boolean) => {
     toast.success(collected ? "徴収済みにしました。" : "未徴収に戻しました。");
   } catch (cause) {
     toast.error(getApiErrorMessage(cause, "徴収状態を更新できませんでした。"));
+  } finally {
+    savingUserId.value = null;
+  }
+};
+const saveCollectionNote = async (userId: string, event: Event) => {
+  if (savingUserId.value) return;
+  savingUserId.value = userId;
+  const form = event.currentTarget as HTMLFormElement;
+  const value = String(new FormData(form).get("note") ?? "").trim();
+  try {
+    const result = await put<Finance>(
+      `${basePath}/participants/${userId}/collection-note`,
+      { note: value || null },
+    );
+    if (!result) throw new Error();
+    finance.value = result;
+    toast.success("徴収時の備考を保存しました。");
+  } catch (cause) {
+    toast.error(getApiErrorMessage(cause, "徴収時の備考を保存できませんでした。"));
   } finally {
     savingUserId.value = null;
   }

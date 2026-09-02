@@ -61,7 +61,13 @@
         受取人を1人以上選択してください。
       </div>
       <div v-else class="flex flex-wrap gap-2">
-        <MyBadge v-for="recipient in recipientDrafts" :key="recipient.userId" size="sm">
+        <MyBadge
+          v-for="recipient in recipientDrafts"
+          :key="recipient.userId"
+          size="sm"
+          variant="custom"
+          class="border-amber-200 bg-amber-50 text-amber-800"
+        >
           <span class="inline-flex min-w-0 items-center gap-1">
             <span class="truncate">{{ participantName(recipient.userId) }}</span>
             <button type="button"

@@ -22,7 +22,7 @@
             :error="errors.participantsVisibility" />
         </MyFormField>
         <p v-if="!hasDiscordGuild" class="text-xs text-amber-700">
-          Discordサーバー参加者を選ぶには、先にシリーズ設定でDiscordサーバーIDを設定してください。
+          Discordサーバー参加者を選ぶには、先にオフ会の設定でDiscordサーバーIDを設定してください。
         </p>
       </section>
       <section class="rounded-md border-2 border-teal-200 bg-teal-50 px-4 py-3 shadow-sm">
@@ -33,7 +33,7 @@
       </section>
       <section>
         <h2 class="mb-2 text-xl font-semibold">アンケート</h2>
-      <PreferenceQuestions :store="questionStore" :errors="errors" />
+        <PreferenceQuestions :store="questionStore" :errors="errors" />
       </section>
       <MyButton class="w-full" color="primary" :loading="saving" :disabled="saving" @click="save">
         テンプレートを保存する

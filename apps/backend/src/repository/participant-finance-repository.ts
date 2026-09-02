@@ -23,11 +23,16 @@ export class ParticipantFinanceRepository {
 				finance: {
 					select: {
 						note: true,
+						collectionNote: true,
+						settlementNote: true,
+						refundNote: true,
 						chargeAmount: true,
 						collectedAt: true,
+						collectedByUserId: true,
 						refundAmount: true,
 						refundCalculatedAt: true,
 						refundedAt: true,
+						refundedByUserId: true,
 						extraCharges: { orderBy: { createdAt: "asc" } },
 					},
 				},
@@ -50,11 +55,16 @@ export class ParticipantFinanceRepository {
 				finance: {
 					select: {
 						note: true,
+						collectionNote: true,
+						settlementNote: true,
+						refundNote: true,
 						chargeAmount: true,
 						collectedAt: true,
+						collectedByUserId: true,
 						refundAmount: true,
 						refundCalculatedAt: true,
 						refundedAt: true,
+						refundedByUserId: true,
 						extraCharges: { orderBy: { createdAt: "asc" } },
 					},
 				},
@@ -81,22 +91,35 @@ export class ParticipantFinanceRepository {
 			create: {
 				answerId: answer.id,
 				note: finance.note,
+				collectionNote: finance.collectionNote,
+				settlementNote: finance.settlementNote,
+				refundNote: finance.refundNote,
 				chargeAmount: finance.chargeAmount,
 				collectedAt: finance.collectedAt,
+				collectedByUserId: finance.collectedByUserId,
 				refundAmount: finance.refundAmount,
 				refundCalculatedAt: finance.refundCalculatedAt,
 				refundedAt: finance.refundedAt,
+				refundedByUserId: finance.refundedByUserId,
 			},
 			update: {
 				note: finance.note,
+				collectionNote: finance.collectionNote,
+				settlementNote: finance.settlementNote,
+				refundNote: finance.refundNote,
 				chargeAmount: finance.chargeAmount,
 				collectedAt:
 					answer.finance?.chargeAmount !== finance.chargeAmount
 						? null
 						: finance.collectedAt,
+				collectedByUserId:
+					answer.finance?.chargeAmount !== finance.chargeAmount
+						? null
+						: finance.collectedByUserId,
 				refundAmount: finance.refundAmount,
 				refundCalculatedAt: finance.refundCalculatedAt,
 				refundedAt: finance.refundedAt,
+				refundedByUserId: finance.refundedByUserId,
 			},
 		});
 		await this.client.participantExtraCharge.deleteMany({
@@ -122,11 +145,16 @@ export class ParticipantFinanceRepository {
 		userId: string,
 		finance: {
 			note: string | null;
+			collectionNote: string | null;
+			settlementNote: string | null;
+			refundNote: string | null;
 			chargeAmount: number;
 			collectedAt: Date | null;
+			collectedByUserId: string | null;
 			refundAmount: number | null;
 			refundCalculatedAt: Date | null;
 			refundedAt: Date | null;
+			refundedByUserId: string | null;
 			extraCharges: Array<{
 				id: string;
 				title: string;
@@ -138,11 +166,16 @@ export class ParticipantFinanceRepository {
 		return ParticipantFinance.reconstruct({
 			userId: userId as UserId,
 			note: finance?.note ?? null,
+			collectionNote: finance?.collectionNote ?? null,
+			settlementNote: finance?.settlementNote ?? null,
+			refundNote: finance?.refundNote ?? null,
 			chargeAmount: finance?.chargeAmount ?? 0,
 			collectedAt: finance?.collectedAt ?? null,
+			collectedByUserId: (finance?.collectedByUserId as UserId | null) ?? null,
 			refundAmount: finance?.refundAmount ?? null,
 			refundCalculatedAt: finance?.refundCalculatedAt ?? null,
 			refundedAt: finance?.refundedAt ?? null,
+			refundedByUserId: (finance?.refundedByUserId as UserId | null) ?? null,
 			extraCharges: (finance?.extraCharges ?? []).map((charge) => ({
 				id: charge.id as ExtraChargeId,
 				title: charge.title,
@@ -157,7 +190,12 @@ export class ParticipantFinanceRepository {
 	): Promise<void> {
 		await this.client.participantFinance.updateMany({
 			where: { answer: { eventId } },
-			data: { refundAmount: null, refundCalculatedAt: null, refundedAt: null },
+			data: {
+				refundAmount: null,
+				refundCalculatedAt: null,
+				refundedAt: null,
+				refundedByUserId: null,
+			},
 		});
 	}
 }

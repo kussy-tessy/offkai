@@ -22,6 +22,12 @@ export type UpdateParticipantRefundRequest = z.infer<
 	typeof UpdateParticipantRefundRequestSchema
 >;
 
+export const UpdateParticipantRefundNoteRequestSchema =
+	ParticipantRouteSchema.extend({ note: z.string().nullable() });
+export type UpdateParticipantRefundNoteRequest = z.infer<
+	typeof UpdateParticipantRefundNoteRequestSchema
+>;
+
 const RationalAmountSchema = z.object({
 	numerator: z.number().int(),
 	denominator: z.number().int().positive(),
@@ -43,6 +49,9 @@ const RefundParticipantSchema = z.object({
 	roundingDifference: RationalAmountSchema,
 	refundAmount: PaymentAmountSchema.nullable(),
 	refundedAt: z.string().datetime().nullable(),
+	refundedByName: UserNameSchema.nullable(),
+	settlementNote: z.string().nullable(),
+	refundNote: z.string().nullable(),
 });
 
 export const GetEventRefundResponseSchema = z.object({

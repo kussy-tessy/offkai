@@ -9,6 +9,7 @@ export const SeriesStaffSchema = z.object({
 	userId: UserIdSchema,
 	userName: UserNameSchema,
 	discordUsername: DiscordUsernameSchema.nullable(),
+	discordAvatarUrl: z.string().url().nullable(),
 });
 export type SeriesStaff = z.infer<typeof SeriesStaffSchema>;
 

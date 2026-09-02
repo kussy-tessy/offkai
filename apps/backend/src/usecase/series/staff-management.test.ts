@@ -43,6 +43,7 @@ describe("シリーズスタッフ追加", () => {
 			userId: staffUserId,
 			userName: UserNameSchema.parse("スタッフ"),
 			discordUsername,
+			discordAvatarUrl: null,
 		});
 
 		await expect(

@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-5">
+  <section class="space-y-4">
     <RouteTabs v-if="tabs.length" label="参加費管理メニュー" :items="tabs" variant="equal" />
     <RouterView />
   </section>

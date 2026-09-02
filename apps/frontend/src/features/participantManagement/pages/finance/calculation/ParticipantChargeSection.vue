@@ -98,6 +98,34 @@
             </td>
           </tr>
         </tbody>
+        <tfoot class="border-t-2 border-teal-200 bg-teal-50/80">
+          <tr>
+            <th
+              class="sticky left-0 z-10 bg-teal-50 px-2 py-2 text-left font-bold text-slate-900"
+              scope="row"
+            >
+              合計
+            </th>
+            <td
+              class="whitespace-nowrap px-2 py-2 text-right font-bold tabular-nums text-teal-800"
+            >
+              {{ money(totalChargeAmount) }}
+            </td>
+            <td
+              v-for="category in finance.categories"
+              :key="category.id"
+              class="whitespace-nowrap px-2 py-2 text-center font-bold tabular-nums text-slate-800"
+            >
+              {{ money(categoryTotal(category.id)) }}
+            </td>
+            <td
+              class="whitespace-nowrap px-2 py-2 text-right font-bold tabular-nums text-slate-800"
+            >
+              {{ money(totalExtraAmount) }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
 
@@ -153,6 +181,24 @@ const member = (categoryId: string, userId: string) =>
     ?.members.find((item) => item.userId === userId);
 const extraTotal = (participant: FinanceParticipant) =>
   participant.extraCharges.reduce((sum, charge) => sum + charge.amount, 0);
+const totalChargeAmount = computed(() =>
+  props.finance.participants.reduce(
+    (sum, participant) => sum + participant.chargeAmount,
+    0,
+  ),
+);
+const categoryTotal = (categoryId: string) =>
+  props.finance.participants.reduce(
+    (sum, participant) =>
+      sum + (member(categoryId, participant.userId)?.effectiveAmount ?? 0),
+    0,
+  );
+const totalExtraAmount = computed(() =>
+  props.finance.participants.reduce(
+    (sum, participant) => sum + extraTotal(participant),
+    0,
+  ),
+);
 const requireSelectedUserId = () => {
   if (!selectedUserId.value) throw new Error("参加者が選択されていません。");
   return selectedUserId.value;

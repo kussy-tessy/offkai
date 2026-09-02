@@ -13,6 +13,7 @@ import {
 	ParticipantFinanceRepository,
 	SettlementExpenseRepository,
 	SettlementIncomeRepository,
+	prisma,
 } from "../repository";
 
 const zeroAmount = (): RationalAmount => ({
@@ -65,6 +66,16 @@ export class RefundPageAssembler {
 				participant,
 			]),
 		);
+		const refunderIds = participantFinances
+			.map((participant) => participant.refundedByUserId)
+			.filter((value): value is NonNullable<typeof value> => value !== null);
+		const refunders = await prisma.user.findMany({
+			where: { id: { in: refunderIds } },
+			select: { id: true, name: true },
+		});
+		const refunderNameById = new Map(
+			refunders.map((refunder) => [refunder.id, refunder.name]),
+		);
 		const participants = respondents.map((respondent) => {
 			const result = resultByUserId.get(respondent.userId);
 			const participant = financeByUserId.get(respondent.userId);
@@ -77,6 +88,11 @@ export class RefundPageAssembler {
 				roundingDifference: result?.roundingDifference ?? zeroAmount(),
 				refundAmount: participant?.refundAmount ?? null,
 				refundedAt: participant?.refundedAt?.toISOString() ?? null,
+				refundedByName: participant?.refundedByUserId
+					? refunderNameById.get(participant.refundedByUserId) ?? null
+					: null,
+				settlementNote: participant?.settlementNote ?? null,
+				refundNote: participant?.refundNote ?? null,
 			};
 		});
 		const negativeParticipantNames = participants
