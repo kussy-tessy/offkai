@@ -10,33 +10,18 @@
     <div v-if="loading" class="py-16 text-center text-sm text-slate-400">
       返金情報を読み込み中…
     </div>
-    <div
-      v-else-if="loadError"
-      class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
-    >
+    <div v-else-if="loadError" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
       <p>{{ loadError }}</p>
-      <MyButton
-        class="mt-3"
-        size="sm"
-        color="gray"
-        variant="ghost"
-        @click="load"
-        >再読み込み</MyButton
-      >
+      <MyButton class="mt-3" size="sm" color="gray" variant="ghost" @click="load">再読み込み</MyButton>
     </div>
 
     <template v-else-if="page">
-      <div
-        v-if="page.refundStartedAt"
-        class="rounded-lg border border-slate-300 bg-slate-100 p-3 text-sm text-slate-700"
-      >
+      <div v-if="page.refundStartedAt"
+        class="rounded-lg border border-slate-300 bg-slate-100 p-3 text-sm text-slate-700">
         <strong>返金を開始しています。</strong>
         返金額・経費・収入・切り捨て単位は変更できません。個人の返金済みチェックは解除できます。
       </div>
-      <div
-        v-if="completed"
-        class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"
-      >
+      <div v-if="completed" class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
         <p class="font-bold">返金が完了しました</p>
         <p class="mt-1 text-sm">
           返金対象{{ refundableParticipants.length }}人・返金合計{{
@@ -44,10 +29,8 @@
           }}
         </p>
       </div>
-      <div
-        v-if="page.negativeParticipantNames.length"
-        class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
-      >
+      <div v-if="page.negativeParticipantNames.length"
+        class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
         <p class="font-bold">追加徴収が必要な参加者がいます。</p>
         <p class="mt-1">
           {{
@@ -55,18 +38,13 @@
           }}の最終精算がマイナスのため、返金額を計算できません。
         </p>
       </div>
-      <div
-        v-else-if="
-          !page.settlementLockedAt
-        "
-        class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
-      >
+      <div v-else-if="
+        !page.settlementLockedAt
+      " class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
         経費精算を確定すると返金を開始できます。
       </div>
 
-      <section
-        class="overflow-hidden rounded-xl border border-teal-200 bg-teal-50/30 shadow-sm"
-      >
+      <section class="overflow-hidden rounded-xl border border-teal-200 bg-teal-50/30 shadow-sm">
         <dl class="flex items-baseline justify-between gap-3 p-4">
           <dt class="text-lg font-bold text-slate-900">返金額合計</dt>
           <dd class="text-2xl font-bold tabular-nums text-slate-900">
@@ -75,54 +53,33 @@
             }}
           </dd>
         </dl>
-        <p
-          v-if="page.refundCalculatedAt"
-          class="border-t border-teal-200 bg-white/60 px-4 py-2 text-right text-xs text-slate-500"
-        >
+        <p v-if="page.refundCalculatedAt"
+          class="border-t border-teal-200 bg-white/60 px-4 py-2 text-right text-xs text-slate-500">
           {{ format(page.refundCalculatedAt) }}に計算
         </p>
       </section>
 
       <section class="space-y-3">
         <h3 class="font-bold text-slate-900">参加者ごとの返金</h3>
-        <label class="block text-sm text-slate-600"
-          >名前検索<input
-            :value="search"
-            type="search"
-            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base"
-            placeholder="参加者名を入力"
-            @input="onSearchInput"
-        /></label>
-        <nav
-          class="flex border-b border-slate-200"
-          aria-label="返金状態の絞り込み"
-        >
-          <button
-            v-for="option in filterOptions"
-            :key="option.value"
-            class="-mb-px border-b-2 px-3 py-2 text-sm font-medium"
-            :class="
-              filter === option.value
+        <label class="block text-sm text-slate-600">名前検索<input :value="search" type="search"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base" placeholder="参加者名を入力"
+            @input="onSearchInput" /></label>
+        <nav class="flex border-b border-slate-200" aria-label="返金状態の絞り込み">
+          <button v-for="option in filterOptions" :key="option.value"
+            class="-mb-px border-b-2 px-3 py-2 text-sm font-medium" :class="filter === option.value
                 ? 'border-teal-600 text-teal-700'
                 : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
-            "
-            @click="filter = option.value"
-          >
+              " @click="filter = option.value">
             {{ option.label }}
             <span class="ml-0.5 tabular-nums">{{ option.count }}</span>
           </button>
         </nav>
 
-        <div
-          v-if="visibleParticipants.length === 0"
-          class="rounded-xl border border-dashed border-slate-300 px-4 py-12 text-center text-sm text-slate-500"
-        >
+        <div v-if="visibleParticipants.length === 0"
+          class="rounded-xl border border-dashed border-slate-300 px-4 py-12 text-center text-sm text-slate-500">
           条件に該当する参加者はいません。
         </div>
-        <div
-          v-else
-          class="overflow-hidden rounded-lg border border-slate-200 bg-white"
-        >
+        <div v-else class="overflow-hidden rounded-lg border border-slate-200 bg-white">
           <table class="w-full table-fixed text-sm">
             <thead class="bg-slate-50 text-left text-xs text-slate-500">
               <tr>
@@ -133,98 +90,58 @@
               </tr>
             </thead>
             <tbody>
-              <template
-                v-for="participant in visibleParticipants"
-                :key="participant.userId"
-              >
-                <tr
-                  class="border-t border-slate-100"
-                  :class="
-                    participant.refundedAt
-                      ? 'bg-emerald-50/40'
-                      : 'hover:bg-sky-50/40'
-                  "
-                >
+              <template v-for="participant in visibleParticipants" :key="participant.userId">
+                <tr class="border-t border-slate-100" :class="participant.refundedAt
+                    ? 'bg-emerald-50/40'
+                    : 'hover:bg-sky-50/40'
+                  ">
                   <td class="px-2 py-2 text-center align-middle">
-                    <input
-                      v-if="displayRefundAmount(participant) > 0"
-                      type="checkbox"
+                    <input v-if="displayRefundAmount(participant) > 0" type="checkbox"
                       class="h-5 w-5 cursor-pointer accent-teal-600 disabled:cursor-not-allowed"
-                      :checked="participant.refundedAt !== null"
-                      :disabled="
-                        !canRecord || saving !== null || !page.settlementLockedAt || participant.refundAmount === null
-                      "
-                      :aria-label="`${participant.displayName}を返金済みにする`"
-                      @click.prevent="toggleRefund(participant)"
-                    />
+                      :checked="participant.refundedAt !== null" :disabled="!canRecord || saving !== null || !page.settlementLockedAt || participant.refundAmount === null
+                        " :aria-label="`${participant.displayName}を返金済みにする`"
+                      @click.prevent="toggleRefund(participant)" />
                     <span v-else class="text-slate-300">―</span>
                   </td>
                   <td class="min-w-0 px-1 py-2 align-middle">
                     <p class="truncate font-medium text-slate-900">
                       {{ participant.displayName }}
                     </p>
-                    <p
-                      v-if="participant.settlementNote"
-                      class="truncate text-xs text-rose-700"
-                      :title="participant.settlementNote"
-                    >
+                    <p v-if="participant.settlementNote" class="truncate text-xs text-rose-700"
+                      :title="participant.settlementNote">
                       <span class="font-medium">経費精算：</span>{{ participant.settlementNote }}
                     </p>
-                    <p
-                      v-if="participant.refundNote"
-                      class="truncate text-xs text-rose-700"
-                      :title="participant.refundNote"
-                    >
+                    <p v-if="participant.refundNote" class="truncate text-xs text-rose-700"
+                      :title="participant.refundNote">
                       <span class="font-medium">返金：</span>{{ participant.refundNote }}
                     </p>
-                    <p
-                      v-if="participant.refundedAt"
-                      class="truncate text-xs text-slate-400"
-                    >
-                      {{ format(participant.refundedAt) }}<template
-                        v-if="participant.refundedByName"
-                      >（{{ participant.refundedByName }}）</template>
+                    <p v-if="participant.refundedAt" class="truncate text-xs text-slate-400">
+                      {{ format(participant.refundedAt) }}<template v-if="participant.refundedByName">（{{
+                        participant.refundedByName }}）</template>
                     </p>
-                    <p
-                      v-else-if="displayRefundAmount(participant) === 0"
-                      class="truncate text-xs text-slate-400"
-                    >
+                    <p v-else-if="displayRefundAmount(participant) === 0" class="truncate text-xs text-slate-400">
                       返金なし
                     </p>
                   </td>
-                  <td
-                    class="whitespace-nowrap px-1 py-2 text-right align-middle font-bold tabular-nums text-teal-800"
-                  >
+                  <td class="whitespace-nowrap px-1 py-2 text-right align-middle font-bold tabular-nums text-teal-800">
                     {{ money(displayRefundAmount(participant)) }}
                   </td>
                   <td class="px-1 py-2 text-center align-middle">
-                    <button
-                      class="rounded p-2 text-slate-500 hover:bg-slate-100"
+                    <button class="rounded p-2 text-slate-500 hover:bg-slate-100"
                       :aria-label="`${participant.displayName}の返金内訳`"
-                      :aria-expanded="expandedIds.has(participant.userId)"
-                      @click="toggleExpanded(participant.userId)"
-                    >
-                      <FontAwesomeIcon
-                        :icon="
-                          expandedIds.has(participant.userId)
-                            ? faChevronUp
-                            : faChevronDown
-                        "
-                      />
+                      :aria-expanded="expandedIds.has(participant.userId)" @click="toggleExpanded(participant.userId)">
+                      <FontAwesomeIcon :icon="expandedIds.has(participant.userId)
+                          ? faChevronUp
+                          : faChevronDown
+                        " />
                     </button>
                   </td>
                 </tr>
-                <tr
-                  v-if="expandedIds.has(participant.userId)"
-                  class="border-t border-slate-100 bg-slate-50"
-                >
+                <tr v-if="expandedIds.has(participant.userId)" class="border-t border-slate-100 bg-slate-50">
                   <td colspan="4" class="px-3 py-3">
                     <dl class="space-y-1.5 text-sm">
-                      <div
-                        v-for="breakdown in participant.categoryBreakdowns"
-                        :key="breakdown.categoryId"
-                        class="flex justify-between gap-4"
-                      >
+                      <div v-for="breakdown in participant.categoryBreakdowns" :key="breakdown.categoryId"
+                        class="flex justify-between gap-4">
                         <dt class="text-slate-600">
                           {{ breakdown.categoryName }}
                         </dt>
@@ -232,30 +149,15 @@
                           {{ decimalMoney(breakdown.amount.displayAmount) }}
                         </dd>
                       </div>
-                      <div
-                        v-if="participant.categoryBreakdowns.length === 0"
-                        class="text-slate-400"
-                      >
+                      <div v-if="participant.categoryBreakdowns.length === 0" class="text-slate-400">
                         返金内訳はありません。
                       </div>
-                      <div
-                        class="flex justify-between border-t border-slate-200 pt-1.5"
-                      >
+                      <div class="flex justify-between border-t border-slate-200 pt-1.5">
                         <dt class="font-semibold">切り捨て前合計</dt>
                         <dd class="font-bold tabular-nums">
                           {{
                             decimalMoney(
                               participant.unroundedTotal.displayAmount,
-                            )
-                          }}
-                        </dd>
-                      </div>
-                      <div class="flex justify-between gap-4">
-                        <dt class="text-slate-600">切り捨て額</dt>
-                        <dd class="tabular-nums">
-                          {{
-                            decimalMoney(
-                              participant.roundingDifference.displayAmount,
                             )
                           }}
                         </dd>
@@ -267,27 +169,16 @@
                         </dd>
                       </div>
                     </dl>
-                    <form
-                      class="mt-3 border-t border-slate-200 pt-3"
-                      @submit.prevent="saveRefundNote(participant.userId, $event)"
-                    >
+                    <form class="mt-3 border-t border-slate-200 pt-3"
+                      @submit.prevent="saveRefundNote(participant.userId, $event)">
                       <label class="block text-xs font-medium text-slate-600">
                         返金時の備考
-                        <textarea
-                          name="note"
-                          rows="2"
-                          :value="participant.refundNote ?? ''"
+                        <textarea name="note" rows="2" :value="participant.refundNote ?? ''"
                           :disabled="!canRecord || saving !== null"
-                          class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm disabled:bg-slate-100"
-                        ></textarea>
+                          class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm disabled:bg-slate-100"></textarea>
                       </label>
-                      <MyButton
-                        v-if="canRecord"
-                        class="mt-2"
-                        size="sm"
-                        type="submit"
-                        :disabled="saving !== null"
-                      >備考を保存</MyButton>
+                      <MyButton v-if="canRecord" class="mt-2" size="sm" type="submit" :disabled="saving !== null">備考を保存
+                      </MyButton>
                     </form>
                   </td>
                 </tr>
@@ -298,212 +189,197 @@
       </section>
     </template>
 
-    <MyConfirmDialog
-      v-model:open="startConfirmOpen"
-      title="返金を開始しますか？"
-      message="最初の返金を記録すると返金開始となり、経費精算の確定は解除できなくなります。"
-      confirm-label="返金を開始"
-      :loading="saving === 'toggle'"
-      @confirm="confirmStartRefund"
-    />
-    <MyConfirmDialog
-      v-model:open="unrefundDialogOpen"
-      title="返金済みを解除しますか？"
-      :message="
-        unrefundTarget
-          ? `${unrefundTarget.displayName}さんを未返金に戻します。記録されている返金日時も削除されます。返金ロックは解除されません。`
-          : ''
-      "
-      confirm-label="未返金に戻す"
-      confirm-color="red"
-      :loading="saving === 'toggle'"
-      @confirm="confirmUnrefund"
-    />
+    <MyConfirmDialog v-model:open="startConfirmOpen" title="返金を開始しますか？" message="最初の返金を記録すると返金開始となり、経費精算の確定は解除できなくなります。"
+      confirm-label="返金を開始" :loading="saving === 'toggle'" @confirm="confirmStartRefund" />
+    <MyConfirmDialog v-model:open="unrefundDialogOpen" title="返金済みを解除しますか？" :message="unrefundTarget
+        ? `${unrefundTarget.displayName}さんを未返金に戻します。記録されている返金日時も削除されます。返金ロックは解除されません。`
+        : ''
+      " confirm-label="未返金に戻す" confirm-color="red" :loading="saving === 'toggle'" @confirm="confirmUnrefund" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { format } from "@offkai/core";
-import { computed, onMounted, ref } from "vue";
-import MyButton from "@/common/components/MyButton.vue";
-import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
-import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
-import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
-import type { RefundPage, RefundParticipant } from "./types";
+  import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+  import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+  import { format } from "@offkai/core";
+  import { computed, onMounted, ref } from "vue";
+  import MyButton from "@/common/components/MyButton.vue";
+  import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
+  import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+  import { useEventStaffAccess } from "@/features/participantManagement/composables/useEventStaffAccess";
+  import type { RefundPage, RefundParticipant } from "./types";
 
-type Filter = "unrefunded" | "refunded" | "all";
+  type Filter = "unrefunded" | "refunded" | "all";
 
-const { eventId } = defineProps<{ eventId: string }>();
-const { get, put } = useApi();
-const toast = useToast();
-const basePath = `/offkai-event/${eventId}/finance/refunds`;
-const page = ref<RefundPage | null>(null);
-const loading = ref(true);
-const loadError = ref("");
-const saving = ref<"settings" | "toggle" | "note" | null>(null);
-const startConfirmOpen = ref(false);
-const pendingParticipant = ref<RefundParticipant | null>(null);
-const unrefundDialogOpen = ref(false);
-const unrefundTarget = ref<RefundParticipant | null>(null);
-const search = ref("");
-const filter = ref<Filter>("unrefunded");
-const expandedIds = ref(new Set<string>());
-const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
-const canRecord = computed(() => isOwner.value || permissions.value?.refund === "record");
+  const { eventId } = defineProps<{ eventId: string }>();
+  const { get, put } = useApi();
+  const toast = useToast();
+  const basePath = `/offkai-event/${eventId}/finance/refunds`;
+  const page = ref<RefundPage | null>(null);
+  const loading = ref(true);
+  const loadError = ref("");
+  const saving = ref<"settings" | "toggle" | "note" | null>(null);
+  const startConfirmOpen = ref(false);
+  const pendingParticipant = ref<RefundParticipant | null>(null);
+  const unrefundDialogOpen = ref(false);
+  const unrefundTarget = ref<RefundParticipant | null>(null);
+  const search = ref("");
+  const filter = ref<Filter>("unrefunded");
+  const expandedIds = ref(new Set<string>());
+  const { isOwner, permissions, loadAccess } = useEventStaffAccess(eventId);
+  const canRecord = computed(() => isOwner.value || permissions.value?.refund === "record");
 
-const onSearchInput = (event: Event) => {
-  search.value = (event.target as HTMLInputElement).value;
-};
-const refundableParticipants = computed(
-  () =>
-    page.value?.participants.filter(
-      (participant) => (participant.refundAmount ?? 0) > 0,
-    ) ?? [],
-);
-const completed = computed(
-  () =>
-    refundableParticipants.value.length > 0 &&
-    refundableParticipants.value.every(
-      (participant) => participant.refundedAt !== null,
-    ),
-);
-const refundedCount = computed(
-  () =>
-    page.value?.participants.filter((participant) => participant.refundedAt)
-      .length ?? 0,
-);
-const unrefundedCount = computed(
-  () =>
-    page.value?.participants.filter(
-      (participant) =>
-        displayRefundAmount(participant) > 0 && participant.refundedAt === null,
-    ).length ?? 0,
-);
-const filterOptions = computed(() => [
-  {
-    value: "unrefunded" as const,
-    label: "未返金",
-    count: unrefundedCount.value,
-  },
-  { value: "refunded" as const, label: "返金済み", count: refundedCount.value },
-  {
-    value: "all" as const,
-    label: "すべて",
-    count: page.value?.participants.length ?? 0,
-  },
-]);
-const visibleParticipants = computed(() => {
-  const query = search.value.trim().toLocaleLowerCase("ja");
-  return (
-    page.value?.participants.filter(
-      (participant) =>
-        (!query ||
-          participant.displayName.toLocaleLowerCase("ja").includes(query)) &&
-        (filter.value === "all" ||
-          (filter.value === "refunded"
-            ? participant.refundedAt !== null
-            : participant.refundedAt === null &&
-              displayRefundAmount(participant) > 0)),
-    ) ?? []
+  const onSearchInput = (event: Event) => {
+    search.value = (event.target as HTMLInputElement).value;
+  };
+  const refundableParticipants = computed(
+    () =>
+      page.value?.participants.filter(
+        (participant) => (participant.refundAmount ?? 0) > 0,
+      ) ?? [],
   );
-});
-
-const money = (amount: number) =>
-  `${new Intl.NumberFormat("ja-JP").format(amount)}円`;
-const decimalMoney = (amount: number) =>
-  `${new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 2 }).format(amount)}円`;
-const displayRefundAmount = (participant: RefundParticipant) =>
-  participant.refundAmount ?? participant.proposedRefundAmount;
-
-const load = async () => {
-  loading.value = true;
-  loadError.value = "";
-  try {
-    const result = await get<RefundPage>(basePath);
-    if (!result) throw new Error();
-    page.value = result;
-  } catch (cause) {
-    loadError.value = getApiErrorMessage(
-      cause,
-      "返金情報を読み込めませんでした。",
+  const completed = computed(
+    () =>
+      refundableParticipants.value.length > 0 &&
+      refundableParticipants.value.every(
+        (participant) => participant.refundedAt !== null,
+      ),
+  );
+  const refundedCount = computed(
+    () =>
+      page.value?.participants.filter((participant) => participant.refundedAt)
+        .length ?? 0,
+  );
+  const unrefundedCount = computed(
+    () =>
+      page.value?.participants.filter(
+        (participant) =>
+          displayRefundAmount(participant) > 0 && participant.refundedAt === null,
+      ).length ?? 0,
+  );
+  const filterOptions = computed(() => [
+    {
+      value: "unrefunded" as const,
+      label: "未返金",
+      count: unrefundedCount.value,
+    },
+    { value: "refunded" as const, label: "返金済み", count: refundedCount.value },
+    {
+      value: "all" as const,
+      label: "すべて",
+      count: page.value?.participants.length ?? 0,
+    },
+  ]);
+  const visibleParticipants = computed(() => {
+    const query = search.value.trim().toLocaleLowerCase("ja");
+    return (
+      page.value?.participants.filter(
+        (participant) =>
+          (!query ||
+            participant.displayName.toLocaleLowerCase("ja").includes(query)) &&
+          (filter.value === "all" ||
+            (filter.value === "refunded"
+              ? participant.refundedAt !== null
+              : participant.refundedAt === null &&
+              displayRefundAmount(participant) > 0)),
+      ) ?? []
     );
-  } finally {
-    loading.value = false;
-  }
-};
-const toggleExpanded = (userId: string) => {
-  const next = new Set(expandedIds.value);
-  next.has(userId) ? next.delete(userId) : next.add(userId);
-  expandedIds.value = next;
-};
-const toggleRefund = (participant: RefundParticipant) => {
-  if (participant.refundedAt) {
-    unrefundTarget.value = participant;
-    unrefundDialogOpen.value = true;
-    return;
-  }
-  if (!page.value?.refundStartedAt) {
-    pendingParticipant.value = participant;
-    startConfirmOpen.value = true;
-    return;
-  }
-  void updateRefund(participant, true);
-};
-const confirmStartRefund = () => {
-  if (!pendingParticipant.value) return;
-  void updateRefund(pendingParticipant.value, true);
-};
-const confirmUnrefund = () => {
-  if (unrefundTarget.value) void updateRefund(unrefundTarget.value, false);
-};
-const updateRefund = async (
-  participant: RefundParticipant,
-  refunded: boolean,
-) => {
-  if (saving.value) return;
-  saving.value = "toggle";
-  try {
-    const result = await put<RefundPage>(`${basePath}/${participant.userId}`, {
-      refunded,
-    });
-    if (!result) throw new Error();
-    page.value = result;
-    startConfirmOpen.value = false;
-    pendingParticipant.value = null;
-    if (!refunded) {
-      unrefundDialogOpen.value = false;
-      unrefundTarget.value = null;
+  });
+
+  const money = (amount: number) =>
+    `${new Intl.NumberFormat("ja-JP").format(amount)}円`;
+  const decimalMoney = (amount: number) =>
+    `${new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 2 }).format(amount)}円`;
+  const displayRefundAmount = (participant: RefundParticipant) =>
+    participant.refundAmount ?? participant.proposedRefundAmount;
+
+  const load = async () => {
+    loading.value = true;
+    loadError.value = "";
+    try {
+      const result = await get<RefundPage>(basePath);
+      if (!result) throw new Error();
+      page.value = result;
+    } catch (cause) {
+      loadError.value = getApiErrorMessage(
+        cause,
+        "返金情報を読み込めませんでした。",
+      );
+    } finally {
+      loading.value = false;
     }
-    toast.success(
-      refunded ? "返金済みにしました。" : "返金済みを解除しました。",
-    );
-  } catch (cause) {
-    toast.error(getApiErrorMessage(cause, "返金状態を更新できませんでした。"));
-  } finally {
-    saving.value = null;
-  }
-};
+  };
+  const toggleExpanded = (userId: string) => {
+    const next = new Set(expandedIds.value);
+    next.has(userId) ? next.delete(userId) : next.add(userId);
+    expandedIds.value = next;
+  };
+  const toggleRefund = (participant: RefundParticipant) => {
+    if (participant.refundedAt) {
+      unrefundTarget.value = participant;
+      unrefundDialogOpen.value = true;
+      return;
+    }
+    if (!page.value?.refundStartedAt) {
+      pendingParticipant.value = participant;
+      startConfirmOpen.value = true;
+      return;
+    }
+    void updateRefund(participant, true);
+  };
+  const confirmStartRefund = () => {
+    if (!pendingParticipant.value) return;
+    void updateRefund(pendingParticipant.value, true);
+  };
+  const confirmUnrefund = () => {
+    if (unrefundTarget.value) void updateRefund(unrefundTarget.value, false);
+  };
+  const updateRefund = async (
+    participant: RefundParticipant,
+    refunded: boolean,
+  ) => {
+    if (saving.value) return;
+    saving.value = "toggle";
+    try {
+      const result = await put<RefundPage>(`${basePath}/${participant.userId}`, {
+        refunded,
+      });
+      if (!result) throw new Error();
+      page.value = result;
+      startConfirmOpen.value = false;
+      pendingParticipant.value = null;
+      if (!refunded) {
+        unrefundDialogOpen.value = false;
+        unrefundTarget.value = null;
+      }
+      toast.success(
+        refunded ? "返金済みにしました。" : "返金済みを解除しました。",
+      );
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "返金状態を更新できませんでした。"));
+    } finally {
+      saving.value = null;
+    }
+  };
 
-const saveRefundNote = async (userId: string, event: Event) => {
-  if (saving.value) return;
-  saving.value = "note";
-  const form = event.currentTarget as HTMLFormElement;
-  const value = String(new FormData(form).get("note") ?? "").trim();
-  try {
-    const result = await put<RefundPage>(`${basePath}/${userId}/note`, {
-      note: value || null,
-    });
-    if (!result) throw new Error();
-    page.value = result;
-    toast.success("返金時の備考を保存しました。");
-  } catch (cause) {
-    toast.error(getApiErrorMessage(cause, "返金時の備考を保存できませんでした。"));
-  } finally {
-    saving.value = null;
-  }
-};
+  const saveRefundNote = async (userId: string, event: Event) => {
+    if (saving.value) return;
+    saving.value = "note";
+    const form = event.currentTarget as HTMLFormElement;
+    const value = String(new FormData(form).get("note") ?? "").trim();
+    try {
+      const result = await put<RefundPage>(`${basePath}/${userId}/note`, {
+        note: value || null,
+      });
+      if (!result) throw new Error();
+      page.value = result;
+      toast.success("返金時の備考を保存しました。");
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "返金時の備考を保存できませんでした。"));
+    } finally {
+      saving.value = null;
+    }
+  };
 
-onMounted(() => void Promise.all([load(), loadAccess()]));
+  onMounted(() => void Promise.all([load(), loadAccess()]));
 </script>

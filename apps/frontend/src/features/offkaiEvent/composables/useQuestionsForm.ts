@@ -80,9 +80,6 @@ export const useQuestionsForm = () => {
 		if (isEmpty(eventStartDate.value)) {
 			errors.value.eventStartDate = "開始日を指定してください";
 		}
-		if (isEmpty(eventEndDate.value)) {
-			errors.value.eventEndDate = "終了日を指定してください";
-		}
 		if (
 			!isEmpty(eventStartDate.value) &&
 			!isEmpty(eventEndDate.value) &&
@@ -169,7 +166,7 @@ export const useQuestionsForm = () => {
 		title: title.value.value,
 		eventPeriod: {
 			startDate: eventStartDate.value.value,
-			endDate: eventEndDate.value.value,
+			endDate: eventEndDate.value.value || eventStartDate.value.value,
 		},
 		applicationStartDate: applicationStartDate.value.value,
 		description: description.value.value,

@@ -15,6 +15,7 @@
         <div class="min-w-0 flex-1">
           <MyDatePicker :id="`${id}-end`" aria-label="開催終了日" :value="eventEndDate.value"
             :on-change="eventEndDate.set" :error="errors.eventEndDate" />
+          <p class="mt-1 text-xs text-gray-500">1日の場合は省略できます</p>
         </div>
       </div>
     </MyFormField>

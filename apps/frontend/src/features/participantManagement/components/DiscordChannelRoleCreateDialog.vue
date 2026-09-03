@@ -43,7 +43,7 @@
 
               <MyRadioButton name="category-mode" value="existing" :checked="categoryMode === 'existing'"
                 :disabled="categories.length === 0" :on-change="() => (categoryMode = 'existing')">
-                既存のカテゴリ
+                既存のチャンネル
               </MyRadioButton>
               <div v-if="categoryMode === 'existing'" class="ml-6 space-y-2">
                 <MySelectBox :value="categoryId" :options="categoryOptions"
