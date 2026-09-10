@@ -1,4 +1,5 @@
 import {
+	CreateOffkaiEventRequestSchema,
 	type CreateOffkaiEventRequest,
 	type EventVisibility,
 	type ParticipationEligibility,
@@ -136,6 +137,67 @@ export const useQuestionsForm = () => {
 				} else if (hasEmptyChoice) {
 					errors.value[`preferenceQuestions.${index}.choices`] =
 						"選択肢の空欄を埋めてください";
+				}
+			}
+		}
+
+		// APIと同じ制約を検証する。空の参加表明質問は送信時に除外されるため、
+		// エラーの添字を画面上の質問の位置に戻す。
+		const commitmentIndexes = commitment.questions.value.flatMap(
+			(question, index) => (isBlankCommitmentQuestion(question) ? [] : [index]),
+		);
+		const result = CreateOffkaiEventRequestSchema.safeParse(toPayload());
+		if (!result.success) {
+			for (const issue of result.error.issues) {
+				const path = [...issue.path];
+				if (path[0] === "commitmentQuestions" && typeof path[1] === "number") {
+					path[1] = commitmentIndexes[path[1]];
+				}
+				let key = path.join(".");
+				if (key === "eventPeriod.startDate") key = "eventStartDate";
+				if (key === "eventPeriod.endDate") key = "eventEndDate";
+				key = key.replace(".answerTemplate.choices", ".choices");
+				if (errors.value[key]) continue;
+
+				const field = String(path[path.length - 1]);
+				const label =
+					(
+						{
+							title: "タイトル",
+							description: "説明",
+							question: "質問",
+							questionShort: "質問（見出し用）",
+							capacity: "定員",
+							startDate: "開始日",
+							endDate: "終了日",
+							applicationStartDate: "募集開始日時",
+							deadline: "締切",
+						} as Record<string, string>
+					)[field] ?? "入力値";
+				const isChoice = key.includes(".choices.");
+				if (issue.code === "too_big") {
+					errors.value[key] =
+						issue.type === "string"
+							? `${isChoice ? "選択肢" : label}は${issue.maximum}文字以内で入力してください`
+							: `${label}は${issue.maximum}以下で入力してください`;
+				} else if (issue.code === "too_small") {
+					errors.value[key] = isChoice
+						? "選択肢を入力してください"
+						: `${label}を入力してください`;
+				} else if (
+					["startDate", "endDate", "applicationStartDate", "deadline"].includes(
+						field,
+					)
+				) {
+					errors.value[key] =
+						issue.code === "custom" && field === "endDate"
+							? issue.message
+							: `${label}に有効な日付${field === "deadline" || field === "applicationStartDate" ? "・時刻" : ""}を入力してください`;
+				} else {
+					errors.value[key] =
+						issue.code === "custom"
+							? issue.message
+							: `${label}を確認してください`;
 				}
 			}
 		}

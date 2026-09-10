@@ -33,10 +33,17 @@
         {{ hasAnswered ? "参加表明を編集する" : "参加表明をする" }}
       </MyButton>
       <p v-if="!canAnswer" class="text-sm text-gray-500">
-        {{ participationDeniedMessage }}
+        <template v-if="data.participationAccess.reason === 'AUTHENTICATION_REQUIRED'">
+          参加表明するには<RouterLink
+            :to="{ path: '/login', query: { redirect: route.fullPath } }"
+            class="font-medium text-teal-700 underline underline-offset-2 hover:text-teal-800"
+          >ログイン</RouterLink>が必要です。
+        </template>
+        <template v-else>{{ participationDeniedMessage }}</template>
       </p>
     </div>
 
+    <OffkaiShare :event-id="data.offkai.id" :title="data.offkai.title" />
   </section>
 
   <MyConfirmDialog v-model:open="confirmDeleteOpen" title="オフ会を削除しますか？"
@@ -49,16 +56,18 @@ import { faCalendar, faPen, faPenToSquare, faTrash } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { formatPeriodWithDay, formatWithDay, type OffkaiDetail, type Unbrand } from "@offkai/core";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import LinkifiedText from "@/common/components/LinkifiedText.vue";
 import MyBadge from "@/common/components/MyBadge.vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
 import OffkaiDetailHeader from "./OffkaiDetailHeader.vue";
+import OffkaiShare from "./OffkaiShare.vue";
 
 const props = defineProps<{ data: Unbrand<OffkaiDetail> }>();
 const router = useRouter();
+const route = useRoute();
 const { del } = useApi();
 const { success, error } = useToast();
 const confirmDeleteOpen = ref(false);
@@ -71,7 +80,6 @@ const canAnswer = computed(() =>
 );
 const participationDeniedMessage = computed(() => {
   const reason = props.data.participationAccess.reason;
-  if (reason === "AUTHENTICATION_REQUIRED") return "参加表明するにはログインが必要です。";
   if (reason === "DISCORD_NOT_CONNECTED") return "参加表明するにはDiscordアカウントの連携が必要です。";
   if (reason === "NOT_GUILD_MEMBER") return "このオフ会はDiscordサーバー参加者のみ参加表明できます。";
   if (reason === "MEMBERSHIP_CHECK_UNAVAILABLE") return "Discordサーバーへの所属を確認できませんでした。";

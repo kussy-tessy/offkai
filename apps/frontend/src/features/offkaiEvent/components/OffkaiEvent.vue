@@ -26,7 +26,8 @@
     </MyFormField>
 
     <MyFormField v-slot="{ id }" label="説明">
-      <MyTextarea :id="id" :value="description.value" :on-change="description.set" rows="12" />
+      <MyTextarea :id="id" :value="description.value" :on-change="description.set" rows="12" :error="errors.description" />
+      <p class="mt-1 text-sm text-slate-500">{{ description.value.value.length }} / 10,000文字</p>
     </MyFormField>
 
     <section class="space-y-4 rounded-xl border border-teal-100 bg-teal-50/50 p-4">

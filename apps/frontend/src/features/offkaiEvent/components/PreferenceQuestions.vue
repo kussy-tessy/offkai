@@ -3,7 +3,8 @@
     <PreferenceQuestionsItem v-for="(q, index) in questions" :key="q.id" :question="q" :on-update="updateQuestion"
       :on-remove="removeQuestion" :error-question="errors?.[`preferenceQuestions.${index}.question`]"
 	  :error-description="errors?.[`preferenceQuestions.${index}.description`]"
-      :error-choices="errors?.[`preferenceQuestions.${index}.choices`]" :on-move="moveQuestion"
+      :error-choices="errors?.[`preferenceQuestions.${index}.choices`]"
+      :choice-errors="(q.answerTemplate.choices ?? []).map((_, choiceIndex) => errors?.[`preferenceQuestions.${index}.choices.${choiceIndex}`])" :on-move="moveQuestion"
       :can-move-up="index > 0" :can-move-down="index < questions.length - 1" />
   </div>
   <div class="mt-2 flex justify-center">

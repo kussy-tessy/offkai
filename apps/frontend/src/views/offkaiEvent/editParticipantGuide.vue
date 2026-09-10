@@ -11,8 +11,9 @@
           :value="description"
           :on-change="value => description = value"
           rows="16"
-          maxlength="1000"
+          :error="descriptionError"
         />
+        <p class="mt-1 text-sm text-slate-500">{{ description.length }} / 10,000文字</p>
         <p class="mt-1 text-sm text-slate-500">
           参加表明を送信したユーザーと運営者だけに表示されます。
         </p>
@@ -26,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ParticipantGuideResponse } from "@offkai/core";
+import { UpdateParticipantGuideRequestSchema, type ParticipantGuideResponse } from "@offkai/core";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import MyBackLink from "@/common/components/MyBackLink.vue";
@@ -40,6 +41,7 @@ const router = useRouter();
 const { get, put } = useApi();
 const { success, error } = useToast();
 const description = ref("");
+const descriptionError = ref("");
 const loading = ref(true);
 const saving = ref(false);
 
@@ -56,6 +58,13 @@ onMounted(async () => {
 
 const save = async () => {
   if (saving.value) return;
+  descriptionError.value = "";
+  const result = UpdateParticipantGuideRequestSchema.shape.description.safeParse(description.value);
+  if (!result.success) {
+    descriptionError.value = "参加者向け情報は10,000文字以内で入力してください";
+    error(descriptionError.value);
+    return;
+  }
   saving.value = true;
   try {
     await put(`/offkai-event/${id}/participant-guide`, { description: description.value });

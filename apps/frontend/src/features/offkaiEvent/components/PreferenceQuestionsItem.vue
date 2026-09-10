@@ -32,7 +32,9 @@
       <MyFormField label="選択肢">
         <div class="space-y-2">
           <div v-for="(choice, index) in question.answerTemplate.choices" :key="index" class="flex gap-2">
-            <MyTextbox type="text" :value="choice" :on-change="v => updateChoice(index, v)" />
+            <div class="min-w-0 flex-1">
+              <MyTextbox type="text" :aria-label="`選択肢${index + 1}`" :value="choice" :on-change="v => updateChoice(index, v)" :error="choiceErrors?.[index]" />
+            </div>
             <MyButton color="red" variant="ghost" size="sm" @click="removeChoice(index)">
               <FontAwesomeIcon :icon="faMinus" />
             </MyButton>
@@ -87,6 +89,7 @@
     errorQuestion?: string
     errorDescription?: string
     errorChoices?: string
+    choiceErrors?: (string | undefined)[]
   }>()
 
   const hasChoices = computed(() =>

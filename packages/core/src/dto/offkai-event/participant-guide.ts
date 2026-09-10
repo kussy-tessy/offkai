@@ -17,7 +17,7 @@ export type ParticipantGuideResponse = z.infer<
 
 export const UpdateParticipantGuideRequestSchema = z.object({
 	eventId: OffkaiEventIdSchema,
-	description: z.string().max(1000),
+	description: z.string().max(10000),
 });
 export type UpdateParticipantGuideRequest = z.infer<
 	typeof UpdateParticipantGuideRequestSchema
