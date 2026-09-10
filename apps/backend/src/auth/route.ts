@@ -25,6 +25,7 @@ import {
 	getDiscordOAuthFrontendUrl,
 	getDiscordUserFromCode,
 } from "./discord-oauth";
+import { safeLoginRedirect } from "./login-redirect";
 import {
 	createRefreshToken,
 	hashRefreshToken,
@@ -34,6 +35,7 @@ import {
 
 const DISCORD_OAUTH_STATE_COOKIE = "offkai_discord_oauth_state";
 const DISCORD_OAUTH_FLOW_COOKIE = "offkai_discord_oauth_flow";
+const DISCORD_OAUTH_REDIRECT_COOKIE = "offkai_discord_oauth_redirect";
 const REFRESH_TOKEN_COOKIE = "offkai_refresh_token";
 const DISCORD_OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
 type DiscordOAuthFlow = "login" | "account" | "onboarding";
@@ -240,7 +242,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	);
 
 	app.get("/auth/discord", async (request, reply) => {
-		const query = request.query as { flow?: unknown };
+		const query = request.query as { flow?: unknown; redirect?: unknown };
 		const flow: DiscordOAuthFlow =
 			query.flow === "onboarding"
 				? "onboarding"
@@ -260,6 +262,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		};
 		reply.setCookie(DISCORD_OAUTH_STATE_COOKIE, state, cookieOptions);
 		reply.setCookie(DISCORD_OAUTH_FLOW_COOKIE, flow, cookieOptions);
+		reply.setCookie(
+			DISCORD_OAUTH_REDIRECT_COOKIE,
+			flow === "login" ? (safeLoginRedirect(query.redirect) ?? "") : "",
+			cookieOptions,
+		);
 		return reply.redirect(getDiscordAuthorizationUrl(state));
 	});
 
@@ -270,6 +277,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			state?: unknown;
 			error?: unknown;
 		};
+		const redirect = safeLoginRedirect(
+			request.cookies[DISCORD_OAUTH_REDIRECT_COOKIE],
+		);
 		const cookieState = request.cookies[DISCORD_OAUTH_STATE_COOKIE];
 		const rawFlow = request.cookies[DISCORD_OAUTH_FLOW_COOKIE];
 		const flow: DiscordOAuthFlow =
@@ -294,19 +304,28 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 			path: "/api/auth/discord",
 		});
 
+		reply.clearCookie(DISCORD_OAUTH_REDIRECT_COOKIE, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/api/auth/discord",
+		});
+
 		if (!statesMatch(cookieState, returnedState)) {
 			return reply.redirect(
-				discordOAuthResultUrl(frontendUrl, flow, "invalid_state"),
+				discordOAuthResultUrl(frontendUrl, flow, "invalid_state", redirect),
 			);
 		}
 
 		if (typeof query.error === "string") {
 			return reply.redirect(
-				discordOAuthResultUrl(frontendUrl, flow, "cancelled"),
+				discordOAuthResultUrl(frontendUrl, flow, "cancelled", redirect),
 			);
 		}
 		if (typeof query.code !== "string" || query.code.length === 0) {
-			return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+			return reply.redirect(
+				discordOAuthResultUrl(frontendUrl, flow, "failed", redirect),
+			);
 		}
 
 		try {
@@ -335,11 +354,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 					avatarHash: discordUser.avatarHash,
 				});
 				await issueSession(user.id, reply);
-				return reply.redirect(`${frontendUrl}/dashboard?discord=logged_in`);
+				return reply.redirect(
+					`${frontendUrl}${redirect ?? "/dashboard?discord=logged_in"}`,
+				);
 			}
 			if (!currentUserId) {
 				return reply.redirect(
-					discordOAuthResultUrl(frontendUrl, flow, "login_required"),
+					discordOAuthResultUrl(frontendUrl, flow, "login_required", redirect),
 				);
 			}
 			await connectDiscord(currentUserId, {
@@ -349,16 +370,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 				avatarHash: discordUser.avatarHash,
 			});
 			return reply.redirect(
-				discordOAuthResultUrl(frontendUrl, flow, "connected"),
+				discordOAuthResultUrl(frontendUrl, flow, "connected", redirect),
 			);
 		} catch (error) {
 			if (error instanceof AppError && error.code === "CONFLICT") {
 				return reply.redirect(
-					discordOAuthResultUrl(frontendUrl, flow, "conflict"),
+					discordOAuthResultUrl(frontendUrl, flow, "conflict", redirect),
 				);
 			}
 			request.log.error({ err: error }, "Discord OAuth callback failed");
-			return reply.redirect(discordOAuthResultUrl(frontendUrl, flow, "failed"));
+			return reply.redirect(
+				discordOAuthResultUrl(frontendUrl, flow, "failed", redirect),
+			);
 		}
 	});
 
@@ -423,12 +446,16 @@ function discordOAuthResultUrl(
 	frontendUrl: string,
 	flow: DiscordOAuthFlow,
 	result: string,
+	redirect?: string,
 ): string {
 	if (flow === "onboarding") {
 		const path = result === "connected" ? "/dashboard" : "/onboarding/discord";
 		return `${frontendUrl}${path}?discord=${encodeURIComponent(result)}`;
 	}
-	if (flow === "login")
-		return `${frontendUrl}/login?discord=${encodeURIComponent(result)}`;
+	if (flow === "login") {
+		const query = new URLSearchParams({ discord: result });
+		if (redirect) query.set("redirect", redirect);
+		return `${frontendUrl}/login?${query}`;
+	}
 	return `${frontendUrl}/account?discord=${encodeURIComponent(result)}`;
 }

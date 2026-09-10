@@ -1,5 +1,5 @@
 <template>
-  <Login :handleSubmit="handleSubmit" :handleDiscordLogin="loginWithDiscord" />
+  <Login :handleSubmit="handleSubmit" :handleDiscordLogin="handleDiscordLogin" />
 </template>
 
 <script setup lang="ts">
@@ -14,6 +14,10 @@
 	const route = useRoute()
   const { fetchMe, loginWithDiscord } = useAuth()
   const { error: showError } = useToast()
+
+  const handleDiscordLogin = () => {
+    loginWithDiscord(typeof route.query.redirect === "string" ? route.query.redirect : undefined)
+  }
 
   const handleSubmit = async (payload: any) => {
     try {

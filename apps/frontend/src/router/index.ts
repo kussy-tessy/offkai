@@ -234,7 +234,7 @@ router.beforeEach(async (to) => {
 			if (status === 401) {
 				user.value = null;
 				if (to.meta.requiresAuth) {
-					return "/login";
+					return { path: "/login", query: { redirect: to.fullPath } };
 				}
 			}
 		}

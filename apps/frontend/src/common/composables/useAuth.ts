@@ -50,8 +50,10 @@ async function setPasswordCredential(loginId: string, password: string) {
 	user.value = data;
 }
 
-function loginWithDiscord() {
-	window.location.assign(`${getApiBaseUrl()}/auth/discord?flow=login`);
+function loginWithDiscord(redirect?: string) {
+	const query = new URLSearchParams({ flow: "login" });
+	if (redirect) query.set("redirect", redirect);
+	window.location.assign(`${getApiBaseUrl()}/auth/discord?${query}`);
 }
 
 async function connectDiscord(flow: "account" | "onboarding" = "account") {
