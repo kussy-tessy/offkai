@@ -121,6 +121,16 @@ export async function getLedger(eventId: OffkaiEventId, userId: UserId) {
 		const state =
 			record?.state ?? buildLegacyLedger(await repository.legacy(eventId));
 		const page = projectLedger(state, record?.revision ?? 0, !!record, access);
+		// Current answer names are display-only; keep persisted names as a fallback.
+		const names = new Map(sources.people.map((person) => [person.id, person.name]));
+		page.state.people = page.state.people.map((person) => ({
+			...person,
+			name: names.get(person.id) ?? person.name,
+		}));
+		page.calculation.participants = page.calculation.participants.map((person) => ({
+			...person,
+			name: names.get(person.id) ?? person.name,
+		}));
 		page.state.categories = orderFinanceCategories(
 			page.state.categories,
 			sources.questions,

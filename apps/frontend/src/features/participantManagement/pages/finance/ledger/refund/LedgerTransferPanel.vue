@@ -18,11 +18,11 @@
     イベントの差額と別会計の未徴収を表示します。返金と別会計の集金はそれぞれ記録してください。
   </p>
   <div class="table-wrap">
-    <table aria-label="返金・追加徴収">
+    <table class="participant-table has-selection numeric-columns" aria-label="返金・追加徴収">
       <thead>
         <tr>
-          <th><span class="sr-only">返金</span></th>
-          <th>参加者</th>
+          <th class="selection-column"><span class="sr-only">返金</span></th>
+          <th class="person-column">参加者</th>
           <th>今の返金／追加徴収</th>
           <th>別会計</th>
           <th v-if="can('refund', 'read')">返金済み</th>
@@ -35,7 +35,7 @@
           v-for="p in people"
           :key="p.id"
         >
-          <td>
+          <td class="selection-column">
             <MyCheckbox
               :key="`${page.revision}:${editable}`"
               :value="
@@ -52,8 +52,8 @@
               :on-change="(checked) => checked && refund(p.id)"
             />
           </td>
-          <td class="whitespace-nowrap">
-            {{ p.name }}
+          <td class="person-column">
+            <span class="person-name" :title="p.name">{{ p.name }}</span>
           </td>
           <td
             class="whitespace-nowrap font-semibold"
@@ -73,7 +73,7 @@
           <td class="whitespace-nowrap">
             <div
               v-if="p.independentUncollected"
-              class="flex items-center gap-1 whitespace-nowrap"
+              class="flex items-center justify-end gap-1 whitespace-nowrap"
             >
               <span class="font-semibold text-amber-800">
                 未徴収 {{ yen(p.independentUncollected) }}
@@ -110,7 +110,7 @@
           <td v-if="can('refund', 'read')">{{ yen(p.refunded) }}</td>
           <td v-if="can('feeCollection', 'read')">{{ yen(p.recovered) }}</td>
           <td class="whitespace-nowrap">
-            <div class="flex flex-nowrap items-center gap-1">
+            <div class="flex flex-nowrap items-center justify-end gap-1">
               <MyButton
                 v-if="
                   p.remaining !== null &&

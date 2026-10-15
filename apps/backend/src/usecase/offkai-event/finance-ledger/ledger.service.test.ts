@@ -130,6 +130,36 @@ function staff(area: string, level: string) {
 	});
 }
 describe("テーブル台帳の保存と認可", () => {
+	it("回答名の変更は表示だけに反映し、台帳・版番号・履歴を更新しない", async () => {
+		stored!.state.people[0] = { id: "a", name: "旧名", settlementStarted: true };
+		stored!.state.charges = [charge];
+		const before = structuredClone(stored);
+		mocks.sources.mockResolvedValue({
+			people: [{ id: "a", name: "変更後の長い参加者名aaaaaaaa" }],
+			questions: [],
+		});
+		for (let i = 0; i < 2; i++) {
+			const page = await getLedger(eventId, userId);
+			expect(page.state.people[0].name).toBe("変更後の長い参加者名aaaaaaaa");
+			expect(page.calculation.participants[0].name).toBe("変更後の長い参加者名aaaaaaaa");
+			expect(page.revision).toBe(before!.revision);
+			expect(page.state.inputRevision).toBe(before!.state.inputRevision);
+		}
+		expect(stored).toEqual(before);
+		expect(mocks.write).not.toHaveBeenCalled();
+		expect(mocks.db.financeLedger.update).not.toHaveBeenCalled();
+		expect(mocks.db.financeLedger.updateMany).not.toHaveBeenCalled();
+		expect(mocks.db.financeLedgerHistory.create).not.toHaveBeenCalled();
+	});
+
+	it("回答がなくなった参加者は台帳の保存名を表示する", async () => {
+		const page = await getLedger(eventId, userId);
+		expect(page.state.people[0].name).toBe("A");
+		expect(page.calculation.participants[0].name).toBe("A");
+		expect(mocks.write).not.toHaveBeenCalled();
+		expect(mocks.db.financeLedgerHistory.create).not.toHaveBeenCalled();
+	});
+
 	it("返金直前に参加回答の変更が見つかった場合は再確認を要求する", async () => {
 		mocks.sources.mockResolvedValue({
 			people: [{ id: "a", name: "A" }],

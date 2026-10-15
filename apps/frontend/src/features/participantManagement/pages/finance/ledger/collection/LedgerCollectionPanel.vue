@@ -15,14 +15,14 @@
     </MyCheckbox>
   </div>
   <p class="caption">
-    左端のチェックで参加費を一括徴収します。個別請求は請求ごとに徴収します。
+    金額の単位：円。左端のチェックで参加費を一括徴収します。個別請求は請求ごとに徴収します。
   </p>
   <div class="table-wrap">
-    <table aria-label="参加費の徴収">
+    <table class="participant-table has-selection numeric-columns" aria-label="参加費の徴収">
       <thead>
         <tr>
-          <th></th>
-          <th>参加者</th>
+          <th class="selection-column"></th>
+          <th class="person-column">参加者</th>
           <th>参加費</th>
           <th>参加費未徴収額</th>
           <th v-if="can('feeCollection', 'record')">個別請求</th>
@@ -34,7 +34,7 @@
           v-for="person in filteredPeople"
           :key="person.id"
         >
-          <td>
+          <td class="selection-column">
             <MyCheckbox
               v-if="planned[person.id].hasCharges"
               :value="planned[person.id].complete"
@@ -47,24 +47,24 @@
               :on-change="(checked) => checked && requestCollection(person.id)"
             />
           </td>
-          <td class="whitespace-nowrap">
-            {{ person.name }}
+          <td class="person-column">
+            <span class="person-name" :title="person.name">{{ person.name }}</span>
             <p
               v-if="
                 planned[person.id].hasCharges &&
                 !planned[person.id].eligible &&
                 !planned[person.id].complete
               "
-              class="caption max-w-64 whitespace-normal"
+              class="caption whitespace-normal break-words"
             >
               {{ planned[person.id].reason }}
             </p>
           </td>
           <td class="whitespace-nowrap">
-            {{ yen(person.charged) }}
+            {{ formatAmount(person.charged) }}
           </td>
           <td class="whitespace-nowrap">
-            {{ yen(person.charged - person.received) }}
+            {{ formatAmount(person.charged - person.received) }}
             <p
               v-if="person.charged - person.received < 0"
               class="text-xs text-amber-700"
@@ -83,7 +83,7 @@
               <div
                 v-for="charge in independentCharges[person.id]"
                 :key="charge.id"
-                class="flex items-center gap-2 whitespace-nowrap"
+                class="flex items-center justify-end gap-2 whitespace-nowrap"
               >
                 <MyCheckbox
                   :value="charge.remaining <= 0"
@@ -101,17 +101,17 @@
                 <span
                   v-if="charge.remaining > 0"
                   class="text-sm"
-                  >{{ yen(charge.remaining) }}</span
+                  >{{ formatAmount(charge.remaining) }}</span
                 >
                 <span
                   v-else-if="charge.remaining < 0"
                   class="text-xs text-amber-700"
-                  >過徴収 {{ yen(-charge.remaining) }}</span
+                  >過徴収 {{ formatAmount(-charge.remaining) }}</span
                 >
                 <span
                   v-else
                   class="text-xs text-slate-500"
-                  >{{ yen(charge.amount) }}</span
+                  >{{ formatAmount(charge.amount) }}</span
                 >
               </div>
             </div>
@@ -165,7 +165,7 @@ import { computed, ref } from "vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyCheckbox from "@/common/components/MyCheckbox.vue";
-import { yen } from "../utils/ledger-display";
+import { formatAmount, yen } from "../utils/ledger-display";
 import { useLedgerSession } from "../composables/useLedgerSession";
 
 const props = defineProps<{ page: LedgerPage }>();

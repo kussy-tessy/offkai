@@ -1,9 +1,9 @@
 <template>
   <div class="table-wrap">
-    <table aria-label="個人別の返金額">
+    <table class="participant-table numeric-columns" aria-label="個人別の返金額">
       <thead>
         <tr>
-          <th>参加者名</th>
+          <th class="person-column">参加者</th>
           <th>返金総額</th>
           <th
             v-for="c in page.state.categories"
@@ -20,18 +20,18 @@
           v-for="p in page.calculation.participants"
           :key="p.id"
         >
-          <td>
+          <td class="person-column">
             <MyButton
-              class="!text-left !justify-start !border-0 !p-1"
+              class="person-button"
               size="sm"
               variant="ghost"
               :aria-expanded="selectedId === p.id"
               @click="selectedId = selectedId === p.id ? null : p.id"
-              >{{ p.name }}</MyButton
+              ><span class="person-name" :title="p.name">{{ p.name }}</span></MyButton
             >
           </td>
           <td class="text-right whitespace-nowrap font-semibold">
-            {{ formatAmount(p.proposedRefund) }}
+            {{ formatIntegerAmount(p.proposedRefund) }}
           </td>
           <td
             v-for="c in page.state.categories"
@@ -44,8 +44,8 @@
             {{ formatAmount(beforeRounding(p.id)) }}
           </td>
           <td class="min-w-28">
-            <div class="flex items-center gap-2">
-              <span>{{ formatAmount(p.proposedRefund - p.automatic) }}</span
+            <div class="flex items-center justify-end gap-2">
+              <span>{{ formatIntegerAmount(p.proposedRefund - p.automatic) }}</span
               ><MyButton
                 v-if="can('settlement', 'edit')"
                 size="sm"
@@ -63,7 +63,7 @@
                 class="caption"
                 v-if="adjustments[p.id].mode === 'fixed'"
               >
-                返金総額指定 {{ formatAmount(adjustments[p.id].amount) }}
+                返金総額指定 {{ formatIntegerAmount(adjustments[p.id].amount) }}
               </p>
               <p class="caption">{{ adjustments[p.id].note }}</p>
             </template>
@@ -77,7 +77,7 @@
     class="rounded-xl border border-teal-100 bg-slate-50 p-4 space-y-4"
     aria-label="個人別の精算内訳"
   >
-    <h4 class="font-bold">{{ selected.name }}の内訳</h4>
+    <h4 class="font-bold break-all">{{ selected.name }}の内訳</h4>
     <div class="grid grid-cols-2 gap-3 text-sm">
       <p>
         参加費（予定）<strong class="block">{{ yen(selected.charged) }}</strong>
@@ -191,9 +191,19 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { BadgeColor } from "@/common/components/MyBadge.colors";
 import MyBadge from "@/common/components/MyBadge.vue";
 import MyButton from "@/common/components/MyButton.vue";
-import { balanceText, formatAmount, yen } from "../utils/ledger-display";
+import { balanceText, yen } from "../utils/ledger-display";
 import type { LedgerPanelEvents } from "../types/ledger-panel-events";
 import { useLedgerSession } from "../composables/useLedgerSession";
+
+const formatIntegerAmount = (amount: number | null) =>
+  amount === null ? "—" : amount.toLocaleString("ja-JP");
+const formatAmount = (amount: number | null) =>
+  amount === null
+    ? "—"
+    : amount.toLocaleString("ja-JP", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 
 const props = defineProps<{ page: LedgerPage }>();
 const emit = defineEmits<{

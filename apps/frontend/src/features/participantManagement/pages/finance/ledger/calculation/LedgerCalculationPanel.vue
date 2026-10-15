@@ -88,7 +88,7 @@
     金額の単位：円。＊は個別指定（基本金額の変更には追従しません）。
   </p>
   <div class="table-wrap charge-matrix">
-    <table>
+    <table class="participant-table">
       <thead>
         <tr>
           <th class="person-column">参加者</th>
@@ -109,7 +109,7 @@
         >
           <td class="person-column">
             <MyButton
-              class="inline-flex items-center gap-2 text-teal-700 text-left !border-0 !p-1"
+              class="person-button text-teal-700"
               :disabled="busy"
               :aria-label="`${person.name}の請求を${can('feeCalculation', 'edit') && page.active ? '編集' : '確認'}`"
               @click="openParticipant(person.id)"
@@ -117,7 +117,7 @@
               size="sm"
               variant="ghost"
             >
-              {{ person.name }}
+              <span class="person-name" :title="person.name">{{ person.name }}</span>
               <FontAwesomeIcon
                 v-if="can('feeCalculation', 'edit') && page.active"
                 :icon="faPen"
@@ -223,28 +223,15 @@ const openParticipant = (id: string) => emit("participant", id);
 <style scoped>
 .category-table th,
 .category-table td {
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
-.charge-matrix .person-column {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 10rem;
-  white-space: nowrap;
-}
-.charge-matrix thead .person-column {
-  @apply bg-slate-50;
-}
-.charge-matrix tbody .person-column {
-  @apply bg-white;
-}
 .charge-matrix td:not(.person-column),
 .charge-matrix th:not(.person-column) {
   min-width: 4.5rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
   white-space: nowrap;
 }
 </style>

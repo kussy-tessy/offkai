@@ -89,7 +89,7 @@
       明細の配分を設定すると、返金・追加徴収を記録できます。
     </p>
   </div>
-  <div class="card space-y-3 !rounded-2xl !border-teal-100 shadow-sm">
+  <div class="card !px-1 sm:!px-4 space-y-3 !rounded-2xl !border-teal-100 shadow-sm">
     <div class="flex flex-wrap justify-between gap-2">
       <h3 class="font-bold">個人別の返金額</h3>
       <div

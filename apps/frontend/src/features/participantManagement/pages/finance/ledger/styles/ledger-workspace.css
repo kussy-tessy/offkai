@@ -11,7 +11,7 @@
 }
 
 .table-wrap {
-	@apply overflow-x-auto;
+	@apply min-w-0 max-w-full overflow-x-auto;
 }
 
 table {
@@ -19,9 +19,66 @@ table {
 }
 
 th {
-	@apply whitespace-nowrap bg-slate-50 px-3 py-2 font-semibold;
+	@apply whitespace-nowrap bg-slate-50 px-1 py-2 font-semibold;
 }
 
 td {
-	@apply border-t border-slate-100 px-3 py-3;
+	@apply border-t border-slate-100 px-1 py-3;
+}
+
+.participant-table {
+  --person-width: 8rem;
+  --selection-width: 2rem;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.person-column {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: var(--person-width);
+  min-width: var(--person-width);
+  max-width: var(--person-width);
+  background: white;
+  box-shadow: 1px 0 0 #e2e8f0;
+}
+
+.has-selection .person-column {
+  left: var(--selection-width);
+}
+
+.selection-column {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: var(--selection-width);
+  min-width: var(--selection-width);
+  max-width: var(--selection-width);
+  background: white;
+}
+
+th.person-column,
+th.selection-column {
+  @apply bg-slate-50;
+  z-index: 3;
+}
+
+.person-name {
+  @apply block min-w-0 truncate;
+  max-width: 100%;
+}
+
+.person-button {
+  @apply flex w-full min-w-0 items-center justify-start gap-1 !border-0 !p-0 text-left;
+}
+
+.person-button .person-name {
+  flex: 1;
+}
+
+.numeric-columns th:not(.person-column):not(.selection-column),
+.numeric-columns td:not(.person-column):not(.selection-column) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
