@@ -14,7 +14,8 @@
 
     <!-- free -->
     <div v-if="question.answerTemplate.type === 'free'">
-      <MyTextbox type="text" :value="value" :on-change="v => onChange(v)" />
+      <MyTextbox type="text" :value="value" :maxlength="PREFERENCE_ANSWER_MAX_LENGTH" :on-change="v => onChange(v)" />
+      <p class="mt-1 text-xs" :class="value.length > PREFERENCE_ANSWER_MAX_LENGTH ? 'text-red-600' : 'text-slate-500'">{{ value.length }} / {{ PREFERENCE_ANSWER_MAX_LENGTH }}文字</p>
     </div>
 
     <!-- choices / choicesIncludingOther -->
@@ -33,7 +34,9 @@
 
         <div v-if="isOtherSelected">
           <MyTextbox type="text" placeholder="内容を入力してください" :value="otherText"
+            :maxlength="PREFERENCE_ANSWER_MAX_LENGTH"
             :on-change="v => onChange(`${otherPrefix}${v}`)" />
+          <p class="mt-1 text-xs" :class="otherText.length > PREFERENCE_ANSWER_MAX_LENGTH ? 'text-red-600' : 'text-slate-500'">{{ otherText.length }} / {{ PREFERENCE_ANSWER_MAX_LENGTH }}文字</p>
         </div>
       </div>
 
@@ -51,6 +54,7 @@
 
 <script setup lang="ts">
   import type { PreferenceQuestionWithAnswer, Unbrand } from "@offkai/core"
+  import { PREFERENCE_ANSWER_MAX_LENGTH, PREFERENCE_ANSWER_OTHER_PREFIX } from "@offkai/core"
   import { computed } from "vue"
   import MyRadioButton from "@/common/components/MyRadioButton.vue"
   import MyTextbox from "@/common/components/MyTextbox.vue"
@@ -63,7 +67,7 @@
     allowEmpty?: boolean
   }>()
 
-  const otherPrefix = "その他: "
+  const otherPrefix = PREFERENCE_ANSWER_OTHER_PREFIX
 
   const isOtherSelected = computed(() =>
     props.value.startsWith(otherPrefix)

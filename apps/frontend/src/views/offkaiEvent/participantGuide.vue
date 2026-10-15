@@ -1,28 +1,61 @@
 <template>
-  <div v-if="loadError" class="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+  <div
+    v-if="loadError"
+    class="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+  >
     {{ loadError }}
   </div>
   <template v-else-if="detail && guide">
     <OffkaiDetailHeader
       :offkai="detail.offkai"
       :has-answered="detail.viewer.isParticipant"
-      :can-view-participant-guide="detail.viewer.permissions.canViewParticipantGuide"
-      :can-manage-participants="detail.viewer.permissions.canManageDiscordRole || detail.viewer.permissions.canManagePayments"
+      :can-view-participant-guide="
+        detail.viewer.permissions.canViewParticipantGuide
+      "
+      :can-manage-participants="
+        detail.viewer.permissions.canManageDiscordRole ||
+        detail.viewer.permissions.canManagePayments
+      "
     />
 
     <section class="space-y-6">
-      <div v-if="detail.viewer.permissions.canEditEvent" class="flex justify-center">
-        <MyButton color="secondary" variant="ghost" @click="router.push(`/offkai/${id}/participant-guide/edit`)">
-          <FontAwesomeIcon :icon="faPenToSquare" class="mr-2" />参加者向け情報を編集
+      <div
+        v-if="detail.viewer.isParticipant"
+        class="rounded-xl border border-teal-300 bg-teal-50 px-5 py-4 text-center text-teal-900"
+      >
+        <p class="text-sm font-medium">あなたの参加費</p>
+        <p class="mt-1 text-2xl font-bold">
+          {{
+            fee === null ? "読み込み中…" : `${fee.toLocaleString("ja-JP")}円`
+          }}
+        </p>
+      </div>
+      <div
+        v-if="detail.viewer.permissions.canEditEvent"
+        class="flex justify-center"
+      >
+        <MyButton
+          color="secondary"
+          variant="ghost"
+          @click="router.push(`/offkai/${id}/participant-guide/edit`)"
+        >
+          <FontAwesomeIcon
+            :icon="faPenToSquare"
+            class="mr-2"
+          />参加者向け情報を編集
         </MyButton>
       </div>
 
       <p v-if="guide.description" class="whitespace-pre-line text-gray-600">
         <LinkifiedText :text="guide.description" />
       </p>
-      <div v-else class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-8 text-center text-slate-500">
+      <div
+        v-else
+        class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-8 text-center text-slate-500"
+      >
         参加者向け情報はまだ登録されていません。
       </div>
+      <ParticipantGuideImages :key="id" :event-id="id" />
     </section>
   </template>
 </template>
@@ -30,19 +63,25 @@
 <script setup lang="ts">
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { OffkaiDetail, ParticipantGuideResponse, Unbrand } from "@offkai/core";
+import type {
+  OffkaiDetail,
+  ParticipantGuideResponse,
+  Unbrand,
+} from "@offkai/core";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import LinkifiedText from "@/common/components/LinkifiedText.vue";
 import MyButton from "@/common/components/MyButton.vue";
 import { getApiErrorMessage, useApi } from "@/common/composables";
 import OffkaiDetailHeader from "@/features/offkaiDetail/components/OffkaiDetailHeader.vue";
+import ParticipantGuideImages from "@/features/participantGuide/components/ParticipantGuideImages.vue";
 
 const { id } = defineProps<{ id: string }>();
 const router = useRouter();
 const { get } = useApi();
 const detail = ref<Unbrand<OffkaiDetail> | null>(null);
 const guide = ref<ParticipantGuideResponse | null>(null);
+const fee = ref<number | null>(null);
 const loadError = ref("");
 
 onMounted(async () => {
@@ -53,8 +92,21 @@ onMounted(async () => {
     ]);
     detail.value = loadedDetail;
     guide.value = loadedGuide;
+    if (loadedDetail?.viewer.isParticipant) {
+      try {
+        const ownFee = await get<{ amount: number }>(
+          `/offkai-event/${id}/participant-guide/my-fee`,
+        );
+        fee.value = ownFee?.amount ?? 0;
+      } catch {
+        fee.value = 0;
+      }
+    }
   } catch (cause) {
-    loadError.value = getApiErrorMessage(cause, "参加者向け情報の読み込みに失敗しました。");
+    loadError.value = getApiErrorMessage(
+      cause,
+      "参加者向け情報の読み込みに失敗しました。",
+    );
   }
 });
 </script>

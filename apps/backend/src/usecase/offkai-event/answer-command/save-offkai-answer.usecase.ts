@@ -1,3 +1,4 @@
+import { OffkaiAnswer } from "@offkai/core";
 import type {
 	SaveOffkaiAnswerRequest,
 	SaveOffkaiAnswerResponse,
@@ -21,7 +22,15 @@ export async function saveOffkaiAnswer(
 	);
 
 	const repository = new OffkaiAnswerRepository();
-	await repository.save(answer, userId);
+	await repository.save(
+		input.respondentName === undefined
+			? answer
+			: OffkaiAnswer.reconstruct({
+					...answer,
+					respondentName: input.respondentName,
+				}),
+		userId,
+	);
 
 	return { ok: true };
 }

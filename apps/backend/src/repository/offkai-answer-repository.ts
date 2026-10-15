@@ -1,3 +1,4 @@
+import { resolveBringingKigurumiImages } from "./kigurumi-images";
 import {
 	type AnswerId,
 	type AnswerRow,
@@ -188,7 +189,8 @@ export class OffkaiAnswerRepository {
 			event.preferenceQuestions as PreferenceQuestionHeader[];
 
 		const canViewPrivateAnswers = viewer.permissions.canViewPrivateAnswers;
-		const answerRows: Unbrand<AnswerRow>[] = event.answers.map((a) => ({
+		const bringingImages = canViewPrivateAnswers ? await resolveBringingKigurumiImages(event.answers) : [];
+		const answerRows: Unbrand<AnswerRow>[] = event.answers.map((a, index) => ({
 			user: {
 				id: a.userId ?? a.id,
 				displayName: a.respondentName,
@@ -205,7 +207,7 @@ export class OffkaiAnswerRepository {
 				? this.toPreferenceAnswerRecord(a.preferenceAnswers)
 				: null,
 			bringingKigurumis: canViewPrivateAnswers
-				? this.toBringingKigurumis(a.bringingKigurumis)
+				? bringingImages[index]
 				: null,
 		}));
 		const commitmentQuestionsWithCounts = commitmentQuestions.map(
@@ -280,24 +282,18 @@ export class OffkaiAnswerRepository {
 				});
 			}
 
-			const respondentName = existing
-				? props.userId
-					? existing.respondentName
-					: (answer.respondentName ?? existing.respondentName)
-				: (answer.respondentName ??
-					(
-						await tx.user.findUniqueOrThrow({
-							where: { id: props.userId! },
-							select: { name: true },
-						})
-					).name);
+			const respondentName = answer.respondentName ?? existing?.respondentName ??
+				(await tx.user.findUniqueOrThrow({
+					where: { id: props.userId! },
+					select: { name: true },
+				})).name;
 
 			await tx.offkaiAnswer.upsert({
 				where: { id: props.id },
 				create: { ...props, respondentName },
 				update: {
 					...props,
-					...(props.userId === null ? { respondentName } : {}),
+					respondentName,
 				},
 			});
 
@@ -337,6 +333,8 @@ export class OffkaiAnswerRepository {
 	}
 
 	async isCollectionStarted(eventId: OffkaiEventId): Promise<boolean> {
+  // Ledger identities and history are independent of answers; late participation stays editable.
+  if (await this.prisma.financeLedger.findUnique({ where: { eventId }, select: { eventId: true } })) return false;
 		const finance = await this.prisma.eventFinance.findUnique({
 			where: { eventId },
 			select: { collectionStartedAt: true },

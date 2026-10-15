@@ -10,8 +10,9 @@
       <div
         v-for="option in options"
         :key="option.id"
-        class="flex items-center justify-between gap-3 rounded-md border border-gray-200 px-3 py-2"
+        class="space-y-2 rounded-md border border-gray-200 px-3 py-2"
       >
+        <div class="flex items-center justify-between gap-3">
         <MyCheckbox :value="isSelected(option)" :on-change="(checked) => toggle(option, checked)">
           {{ formatKigurumi(option) }}
         </MyCheckbox>
@@ -27,10 +28,13 @@
         >
           <FontAwesomeIcon :icon="faTrash" />
         </MyIconButton>
+        </div>
+        <KigurumiImage v-if="canManage || isSelected(option)" :kigurumi-id="option.id" :label="formatKigurumi(option)" :has-image="option.hasImage" :event-id="eventId" :editable="canManage" thumbnail />
+
       </div>
     </div>
 
-    <form v-if="canManage" class="rounded-md border border-sky-100 bg-sky-50/40 p-4 space-y-3" @submit.prevent="add">
+    <div v-if="canManage" class="rounded-md border border-sky-100 bg-sky-50/40 p-4 space-y-3">
       <h3 class="font-semibold text-slate-800">未登録の着ぐるみさんを追加</h3>
       <div class="grid gap-3 md:grid-cols-2">
         <MyFormField v-slot="{ id }" label="作品名">
@@ -41,15 +45,16 @@
         </MyFormField>
       </div>
       <div class="flex justify-end">
-        <MyButton type="submit" color="secondary" size="sm" :loading="adding" :disabled="adding">
+        <MyButton type="button" @click="add" color="secondary" size="sm" :loading="adding" :disabled="adding">
           追加する
         </MyButton>
       </div>
-    </form>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
+  import KigurumiImage from "@/features/kigurumi/components/KigurumiImage.vue";
   import { faTrash } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import type { BringingKigurumi, Kigurumi, Unbrand } from "@offkai/core";
@@ -68,6 +73,7 @@
     options: KigurumiOption[];
     selected: BringingKigurumiValue[];
     canManage: boolean;
+    eventId: string;
     onChange: (selected: BringingKigurumiValue[]) => void;
     onOptionsChange: (options: KigurumiOption[]) => void;
   }>();
@@ -87,7 +93,8 @@
     attempted.value && newCharacter.value.trim().length === 0 ? "キャラクター名を入力してください" : undefined,
   );
 
-  const toSnapshot = (value: { title: string; character: string }): BringingKigurumiValue => ({
+  const toSnapshot = (value: { id?: string; title: string; character: string }): BringingKigurumiValue => ({
+    kigurumiId: value.id,
     title: value.title,
     character: value.character,
   });

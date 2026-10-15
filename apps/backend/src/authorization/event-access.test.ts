@@ -53,6 +53,27 @@ describe("シリーズ権限", () => {
 		});
 	});
 
+	it.each([
+		{ seriesRole: "owner" as const, isParticipant: false, expected: true },
+		{ seriesRole: "owner" as const, isParticipant: true, expected: true },
+		{ seriesRole: "staff" as const, isParticipant: false, expected: false },
+		{ seriesRole: "staff" as const, isParticipant: true, expected: true },
+		{ seriesRole: null, isParticipant: false, expected: false },
+		{ seriesRole: null, isParticipant: true, expected: true },
+	])("アンケート閲覧: role=$seriesRole, 回答済み=$isParticipant → $expected", ({
+		seriesRole,
+		isParticipant,
+		expected,
+	}) => {
+		const permissions = createEventViewerPermissions({
+			seriesRole,
+			isParticipant,
+			overviewAccess: { granted: true },
+			participantsAccess: { granted: true },
+		});
+		expect(permissions.canViewPrivateAnswers).toBe(expected);
+	});
+
 	it("参加者向け案内は参加表明者とownerだけが閲覧できる", () => {
 		const access = { granted: true } as const;
 		const permissions = (seriesRole: "staff" | null, isParticipant: boolean) =>

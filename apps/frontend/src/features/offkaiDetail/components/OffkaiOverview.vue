@@ -22,6 +22,23 @@
       <MyBadge :icon="faCalendar">開催日：{{ formatPeriodWithDay(data.offkai.eventPeriod) }}</MyBadge>
     </div>
 
+    <div v-if="data.commitmentQuestions.length" class="flex flex-wrap justify-center gap-2" aria-label="参加受付状況">
+      <MyBadge v-if="commitmentSummary.status"
+        :color="commitmentSummary.status === '締切済' ? 'gray' : 'yellow'">
+        {{ commitmentSummary.status }}
+      </MyBadge>
+      <MyBadge v-if="!commitmentSummary.status && commitmentSummary.deadline?.deadline"
+        :color="deadlineBadgeColor(commitmentSummary.deadline.deadline)"
+        :title="`${commitmentSummary.deadline.questionShort}：${formatWithDay(commitmentSummary.deadline.deadline, true)}`">
+        締切まで{{ deadlineLabel(commitmentSummary.deadline.deadline) }}
+      </MyBadge>
+      <MyBadge v-if="!commitmentSummary.status && commitmentSummary.capacity"
+        :color="capacityBadgeColor(commitmentSummary.capacity.yesCount, commitmentSummary.capacity.capacity)"
+        :title="`${commitmentSummary.capacity.questionShort}：${commitmentSummary.capacity.yesCount} / ${commitmentSummary.capacity.capacity}人`">
+        定員まであと{{ commitmentSummary.capacity.capacity! - commitmentSummary.capacity.yesCount }}人
+      </MyBadge>
+    </div>
+
     <p v-if="data.offkai.description" class="whitespace-pre-line text-gray-600">
       <LinkifiedText :text="data.offkai.description" />
     </p>
@@ -62,10 +79,14 @@ import MyBadge from "@/common/components/MyBadge.vue";
 import MyButton from "@/common/components/MyButton.vue";
 import MyConfirmDialog from "@/common/components/MyConfirmDialog.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import { useCommitmentStatusBadge } from "@/common/composables/useCommitmentStatusBadge";
+import { summarizeCommitments } from "@/common/utils/commitmentSummary";
 import OffkaiDetailHeader from "./OffkaiDetailHeader.vue";
 import OffkaiShare from "./OffkaiShare.vue";
 
 const props = defineProps<{ data: Unbrand<OffkaiDetail> }>();
+const { now, deadlineLabel, deadlineBadgeColor, capacityBadgeColor } = useCommitmentStatusBadge();
+const commitmentSummary = computed(() => summarizeCommitments(props.data.commitmentQuestions, now.value));
 const router = useRouter();
 const route = useRoute();
 const { del } = useApi();

@@ -28,7 +28,10 @@ export class EventFinanceRepository {
 	constructor(private readonly client: FinanceDbClient = prisma) {}
 
 	async existsByEventId(eventId: OffkaiEventId): Promise<boolean> {
-		return (await this.client.eventFinance.count({ where: { eventId } })) > 0;
+		return (
+			(await this.client.eventFinance.count({ where: { eventId } })) > 0 ||
+			(await this.client.financeLedger.count({ where: { eventId } })) > 0
+		);
 	}
 
 	async findByEventId(eventId: OffkaiEventId): Promise<EventFinance> {

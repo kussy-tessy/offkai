@@ -55,10 +55,9 @@
                 定員</th>
               <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 p-0">
                 <div v-if="q.capacity !== null" class="flex justify-center">
-                  <span class="px-1.5 py-0.5 rounded-full font-semibold text-xs whitespace-nowrap"
-                    :class="capacityBadgeClass(q.id, q.capacity)">
+                  <MyBadge size="sm" class="whitespace-nowrap" :color="capacityBadgeColor(countYes(q.id), q.capacity)">
                     {{ countYes(q.id) }}/{{ q.capacity }}
-                  </span>
+                  </MyBadge>
                 </div>
                 <div v-else class="text-[10px] text-slate-500 font-medium">なし</div>
               </th>
@@ -69,10 +68,9 @@
                 締切</th>
               <th v-for="q in data.commitmentQuestions" :key="q.id" class="w-20 border-b border-teal-100 p-0">
                 <div v-if="q.deadline" class="flex justify-center">
-                  <span class="px-1.5 py-0.5 rounded-full font-semibold text-xs whitespace-nowrap"
-                    :class="deadlineBadgeClass(q.deadline)">
+                  <MyBadge size="sm" class="whitespace-nowrap" :color="deadlineBadgeColor(q.deadline)">
                     {{ deadlineLabel(q.deadline) }}
-                  </span>
+                  </MyBadge>
                 </div>
               </th>
             </tr>
@@ -110,30 +108,59 @@
     <template v-if="data.viewer.permissions.canViewPrivateAnswers">
       <h2 class="text-xl font-semibold mb-2">アンケート</h2>
 
-      <MySelectBox v-model="selectedPreferenceId"
-        class="mb-3 border-sky-500 text-gray-600 font-medium shadow-sm focus:ring-sky-500"
-        :options="preferenceOptions" />
+      <div class="mb-3 flex items-center gap-2">
+        <MySelectBox v-model="selectedPreferenceId"
+          class="min-w-0 flex-1 border-sky-500 text-gray-600 font-medium shadow-sm focus:ring-sky-500"
+          :options="preferenceOptions" />
+        <button type="button" aria-label="前の質問" title="前の質問"
+          class="h-10 w-10 shrink-0 rounded border border-sky-200 text-sky-700 hover:bg-sky-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="selectedPreferenceIndex <= 0" @click="movePreference(-1)">
+          <span aria-hidden="true">▲</span>
+        </button>
+        <button type="button" aria-label="次の質問" title="次の質問"
+          class="h-10 w-10 shrink-0 rounded border border-sky-200 text-sky-700 hover:bg-sky-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="selectedPreferenceIndex < 0 || selectedPreferenceIndex >= preferenceOptions.length - 1" @click="movePreference(1)">
+          <span aria-hidden="true">▼</span>
+        </button>
+      </div>
 
       <div class="rounded-xl border border-teal-100 shadow-sm overflow-hidden">
         <table class="w-full border-collapse table-fixed">
           <thead class="bg-gradient-to-r from-teal-50 to-sky-50 border-b border-teal-100">
             <tr>
-              <th class="w-32 border-b border-teal-100 p-2 text-left">名前</th>
+              <th class="w-40 border-b border-teal-100 p-2 text-left">名前</th>
               <th class="border-b border-teal-100 p-2 text-left">回答</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in data.answers" :key="row.user.id"
               class="odd:bg-white even:bg-slate-50/70 hover:bg-sky-50/40 transition-colors">
-              <td class="w-32 border-b border-slate-100 p-2 font-medium text-slate-700">
+              <td class="w-40 border-b border-slate-100 p-2 font-medium text-slate-700">
                 <div class="flex min-w-0 items-center gap-1.5">
                   <DiscordAvatar :avatar-url="row.user.avatarUrl" :display-name="row.user.displayName" size="sm" />
-                  <span class="truncate">{{ row.user.displayName }}</span>
+                  <button
+                    type="button"
+                    data-name-popover-trigger
+                    class="min-w-0 truncate text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+                    aria-controls="participant-name-popover"
+                    :aria-expanded="namePopover?.id === row.user.id"
+                    @click="toggleNamePopover(row.user.id, row.user.displayName, $event)"
+                  >{{ row.user.displayName }}</button>
                 </div>
               </td>
               <td class="border-b border-slate-100 p-2 text-gray-700 whitespace-pre-line">
-                <MyBadge v-if="isChoiceQuestion && selectedAnswer(row) !== '―'" size="sm" variant="custom"
-                  :class="badgeClass(selectedAnswer(row))">
+                <div v-if="selectedPreferenceId === BRINGING_KIGURUMI_OPTION_ID" class="space-y-2">
+                  <template v-if="row.bringingKigurumis?.length">
+                    <div v-for="(item, index) in row.bringingKigurumis" :key="item.kigurumiId ?? index">
+                      <KigurumiImage v-if="item.kigurumiId && item.hasImage" :kigurumi-id="item.kigurumiId" :has-image="true"
+                        :event-id="data.offkai.id" :label="`${item.character}(${item.title})`" />
+                      <span v-else>{{ item.character }}({{ item.title }})</span>
+                    </div>
+                  </template>
+                  <span v-else>―</span>
+                </div>
+                <MyBadge v-else-if="isChoiceQuestion && selectedAnswer(row) !== '―'" size="sm"
+                  :color="badgeColor(selectedAnswer(row))">
                   {{ selectedAnswer(row) }}
                 </MyBadge>
                 <template v-else>{{ selectedAnswer(row) }}</template>
@@ -144,14 +171,29 @@
       </div>
     </template>
   </template>
+
+  <Teleport to="body">
+    <div
+      v-if="namePopover"
+      id="participant-name-popover"
+      data-name-popover-content
+      role="status"
+      class="fixed z-[100] max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-lg"
+      :style="{ top: `${namePopover.top}px`, left: `${namePopover.left}px` }"
+    >
+      {{ namePopover.name }}
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
+  import KigurumiImage from "@/features/kigurumi/components/KigurumiImage.vue";
   import { faCircle } from "@fortawesome/free-regular-svg-icons";
   import { faUserGroup, faXmark } from "@fortawesome/free-solid-svg-icons";
   import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
   import { formatWithSeconds, type OffkaiDetail, type Unbrand } from "@offkai/core";
-  import { computed, onMounted, onUnmounted, ref } from "vue";
+  import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+  import { useCommitmentStatusBadge } from "@/common/composables/useCommitmentStatusBadge";
   import DiscordAvatar from "@/common/components/DiscordAvatar.vue";
   import MyBadge from "@/common/components/MyBadge.vue";
   import MySelectBox, { type SelectOption } from "@/common/components/MySelectBox.vue";
@@ -161,6 +203,58 @@
   const { data } = defineProps<{
     data: Unbrand<OffkaiDetail>;
   }>();
+
+  const namePopover = ref<{
+    id: string;
+    name: string;
+    top: number;
+    left: number;
+  } | null>(null);
+  function toggleNamePopover(id: string, name: string, event: MouseEvent) {
+    if (namePopover.value?.id === id) {
+      namePopover.value = null;
+      return;
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 32);
+    const left = Math.min(
+      Math.max(16, rect.left),
+      window.innerWidth - width - 16,
+    );
+    const top =
+      rect.bottom + 8 + 48 < window.innerHeight
+        ? rect.bottom + 8
+        : Math.max(8, rect.top - 48);
+    namePopover.value = { id, name, top, left };
+  }
+  function closeNamePopover(event: Event) {
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      (target.closest("[data-name-popover-content]") ||
+        target.closest("[data-name-popover-trigger]"))
+    )
+      return;
+    namePopover.value = null;
+  }
+  function handlePopoverKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") namePopover.value = null;
+  }
+  function closePopoverOnViewportChange() {
+    namePopover.value = null;
+  }
+  onMounted(() => {
+    document.addEventListener("pointerdown", closeNamePopover);
+    window.addEventListener("keydown", handlePopoverKeydown);
+    window.addEventListener("scroll", closePopoverOnViewportChange, true);
+    window.addEventListener("resize", closePopoverOnViewportChange);
+  });
+  onBeforeUnmount(() => {
+    document.removeEventListener("pointerdown", closeNamePopover);
+    window.removeEventListener("keydown", handlePopoverKeydown);
+    window.removeEventListener("scroll", closePopoverOnViewportChange, true);
+    window.removeEventListener("resize", closePopoverOnViewportChange);
+  });
 
   const hasAnswered = computed(() => data.viewer.isParticipant);
   const canManageParticipants = computed(
@@ -206,13 +300,21 @@
     }
     return options;
   });
+  const selectedPreferenceIndex = computed(() =>
+    preferenceOptions.value.findIndex((option) => option.value === selectedPreferenceId.value),
+  );
+  const movePreference = (direction: -1 | 1) => {
+    if (selectedPreferenceIndex.value < 0) return;
+    const option = preferenceOptions.value[selectedPreferenceIndex.value + direction];
+    if (option) selectedPreferenceId.value = String(option.value);
+  };
   const selectedPreferenceQuestion = computed(
     () =>
       data.preferenceQuestions?.find(
         (question) => question.id === selectedPreferenceId.value,
       ) ?? null,
   );
-  const { isChoiceQuestion, badgeClass } = usePreferenceAnswerBadge(
+  const { isChoiceQuestion, badgeColor } = usePreferenceAnswerBadge(
     selectedPreferenceQuestion,
   );
 
@@ -233,57 +335,5 @@
       ?.yesCount ?? 0;
   };
 
-  const capacityBadgeClass = (questionId: string, capacity: number | null) => {
-    if (capacity === null || capacity <= 0) return "bg-slate-100 text-slate-600";
-    const yesCount = countYes(questionId);
-    if (yesCount >= capacity) return "bg-rose-100 text-rose-700";
-    if (yesCount / capacity >= 0.7) return "bg-amber-100 text-amber-700";
-    return "bg-emerald-100 text-emerald-700";
-  };
-
-  const HOUR_MS = 60 * 60 * 1000;
-  const DAY_MS = 24 * HOUR_MS;
-  const JST_OFFSET_MS = 9 * HOUR_MS;
-
-  const now = ref(Date.now());
-  let clockTimer: ReturnType<typeof setInterval> | undefined;
-
-  onMounted(() => {
-    clockTimer = setInterval(() => {
-      now.value = Date.now();
-    }, 60 * 1000);
-  });
-
-  onUnmounted(() => {
-    if (clockTimer !== undefined) clearInterval(clockTimer);
-  });
-
-  const calendarDaysUntil = (deadlineTime: number) => {
-    const todayInJst = Math.floor((now.value + JST_OFFSET_MS) / DAY_MS);
-    const deadlineDateInJst = Math.floor((deadlineTime + JST_OFFSET_MS) / DAY_MS);
-    return deadlineDateInJst - todayInJst;
-  };
-
-  const deadlineLabel = (deadline: string) => {
-    const deadlineTime = new Date(deadline).getTime();
-    const remainingMs = deadlineTime - now.value;
-    if (remainingMs < 0) return "締切済み";
-
-    const days = calendarDaysUntil(deadlineTime);
-    if (days === 0) {
-      if (remainingMs < HOUR_MS) return "まもなく";
-      return `あと${Math.ceil(remainingMs / HOUR_MS)}時間`;
-    }
-    return `あと${days}日`;
-  };
-
-  const deadlineBadgeClass = (deadline: string) => {
-    const deadlineTime = new Date(deadline).getTime();
-    if (deadlineTime < now.value) return "bg-slate-200 text-slate-600";
-
-    const days = calendarDaysUntil(deadlineTime);
-    if (days === 0) return "bg-rose-100 text-rose-700";
-    if (days <= 3) return "bg-amber-100 text-amber-700";
-    return "bg-sky-100 text-sky-700";
-  };
+  const { capacityBadgeColor, deadlineLabel, deadlineBadgeColor } = useCommitmentStatusBadge();
 </script>

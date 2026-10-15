@@ -219,12 +219,12 @@
     {
       value: "edit",
       label: "計算内容を編集する",
-      description: "精算区分、対象者、個別金額、追加請求、備考を編集できます。",
+      description: "精算区分、対象者、個別金額、追加請求、備考を編集できます。新方式では保存後すぐ徴収予定額に反映します。",
     },
     {
       value: "confirm",
-      label: "計算内容を編集・確定する",
-      description: "上記に加えて、参加費の確定・確定解除ができます。",
+      label: "計算内容を編集する（旧方式の確定を含む）",
+      description: "新方式では「編集」と同じ権限です。旧方式のイベントでは参加費の確定もできます。",
     },
   ];
   const feeCollectionOptions: Option[] = [
@@ -241,7 +241,7 @@
     {
       value: "record",
       label: "徴収状況を記録する",
-      description: "徴収済み・未徴収を更新できます。",
+      description: "参加費・独立請求の入金、精算による追加徴収を記録・訂正・削除できます。",
     },
   ];
   const settlementOptions: Option[] = [
@@ -253,17 +253,17 @@
     {
       value: "read",
       label: "内容を確認する",
-      description: "経費、収入、返金見込み、切り捨て単位を閲覧できます。",
+      description: "経費、収入、実費配分、精算見込み、資金残高、関連する入出金を閲覧できます。",
     },
     {
       value: "edit",
       label: "経費・収入を編集する",
-      description: "経費と収入を追加・編集・削除できます。",
+      description: "経費・収入・配分・立替・手動調整を編集し、業者への支払い・カンパ受領・別会計への送金を記録・訂正できます。参加者への精算金支払いは返金権限で扱います。",
     },
     {
       value: "confirm",
       label: "経費・収入を編集し、精算を確定する",
-      description: "切り捨て単位の変更と、経費精算の確定・確定解除ができます。",
+      description: "上記に加えて、切り捨て単位を変更し、精算結果を確定・再確定できます。",
     },
   ];
   const refundOptions: Option[] = [
@@ -280,7 +280,7 @@
     {
       value: "record",
       label: "返金を記録する",
-      description: "返金済み・未返金を更新できます。",
+      description: "参加者への精算金（立替返済・協力金を含む）の支払いを記録・訂正・削除できます。",
     },
   ];
 

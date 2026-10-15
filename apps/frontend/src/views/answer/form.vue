@@ -13,16 +13,19 @@
         </p>
       </div>
 
-      <div v-if="isGuestEdit" class="max-w-md">
-        <label for="guest-name" class="mb-1 block text-sm font-semibold text-slate-700">ゲスト名</label>
-        <MyTextbox id="guest-name" :value="guestName" :on-change="(value) => guestName = value" required />
+      <div class="max-w-md">
+        <label for="respondent-name" class="mb-1 block text-sm font-semibold text-slate-700">{{ isGuestEdit ? "ゲスト名" : "このイベントで使う名前" }}</label>
+        <MyTextbox id="respondent-name" :value="respondentName" :on-change="(value) => respondentName = value" required maxlength="50" />
+        <p v-if="!isGuestEdit" class="mt-1 text-sm text-slate-600">イベントの参加者として表示されます。名札などに使用することもあります。</p>
       </div>
 
-      <CommitmentAnswers :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
+      <p v-if="bypassRequiredAnswers" class="text-sm text-slate-600">主催者による編集では、必須質問を未回答のまま保存できます。</p>
+
+      <CommitmentAnswers :allow-empty="bypassRequiredAnswers" :questions="formData.commitmentQuestions" :answers="commitmentAnswers"
         :on-change="updateCommitmentAnswer" :validation-messages="commitmentValidationMessages" />
-      <PreferenceAnswers :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
+      <PreferenceAnswers :allow-empty="bypassRequiredAnswers" :questions="formData.preferenceQuestions" :answers="preferenceAnswers"
         :on-change="updatePreferenceAnswer" :validation-messages="preferenceValidationMessages" />
-      <BringingKigurumiAnswers v-if="formData.askBringingKigurumi" :options="kigurumiOptions"
+      <BringingKigurumiAnswers :event-id="id" v-if="formData.askBringingKigurumi" :options="kigurumiOptions"
         :selected="bringingKigurumis" :can-manage="!isOwnerEdit" :on-change="updateBringingKigurumis"
         :on-options-change="updateKigurumiOptions" />
 
@@ -65,7 +68,8 @@
   }>();
   const isGuestEdit = computed(() => Boolean(props.answerId || props.createGuest));
   const isOwnerEdit = computed(() => Boolean(props.userId) || isGuestEdit.value);
-  const guestName = ref("");
+  const bypassRequiredAnswers = computed(() => isOwnerEdit.value && !props.createGuest);
+  const respondentName = ref("");
   const formApiPath = computed(() =>
     props.answerId
       ? `/offkai-event/${props.id}/guest-answers/${props.answerId}/form`
@@ -108,7 +112,7 @@
 
   const commitmentValidationMessages = computed<Record<string, string>>(() => {
     const data = formData.value;
-    if (!data) return {};
+    if (!data || bypassRequiredAnswers.value) return {};
 
     const messages: Record<string, string> = {};
     for (const question of data.commitmentQuestions) {
@@ -123,7 +127,7 @@
 
   const preferenceValidationMessages = computed<Record<string, string>>(() => {
     const data = formData.value;
-    if (!data) return {};
+    if (!data || bypassRequiredAnswers.value) return {};
 
     const messages: Record<string, string> = {};
     for (const question of data.preferenceQuestions) {
@@ -182,7 +186,7 @@
         return;
       }
       formData.value = data;
-      guestName.value = data.respondent?.isGuest ? data.respondent.displayName : "";
+      respondentName.value = data.respondent?.displayName ?? "";
       hydrateAnswers(data);
     } catch (cause) {
       errorMessage.value = getApiErrorMessage(cause, "回答フォームの取得に失敗しました。");
@@ -206,6 +210,7 @@
     try {
       const payload: Unbrand<SaveOffkaiAnswerRequest> = {
         eventId: props.id,
+        respondentName: respondentName.value.trim(),
         commitmentAnswers: formData.value.commitmentQuestions.map((question) => ({
           questionId: question.id,
           answer: commitmentAnswers.value[question.id] ?? null,
@@ -221,12 +226,12 @@
           : [],
       };
 
-      if (isGuestEdit.value && !guestName.value.trim()) {
-        errorMessage.value = "ゲスト名を入力してください。";
+      if (!respondentName.value.trim() || respondentName.value.trim().length > 50) {
+        errorMessage.value = "名前を1〜50文字で入力してください。";
         return;
       }
       const requestPayload = isGuestEdit.value
-        ? { ...payload, respondentName: guestName.value.trim(), answerId: props.answerId }
+        ? { ...payload, respondentName: respondentName.value.trim(), answerId: props.answerId }
         : payload;
       if (props.createGuest) await post(saveApiPath.value, requestPayload);
       else await put(saveApiPath.value, requestPayload);

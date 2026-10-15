@@ -10,6 +10,7 @@ import { hasSeriesRole } from "../../../authorization/event-access";
 import { getEventAuthorizationContext } from "../../../authorization/staff-permissions";
 import {
 	KigurumiRepository,
+	UserRepository,
 	OffkaiAnswerRepository,
 	OffkaiEventRepository,
 } from "../../../repository";
@@ -80,7 +81,8 @@ export async function getAnswerForm(
 	}
 
 	const now = new Date();
-	const applicationStarted = isApplicationStarted(event, now) || canApplyBeforeStart;
+	const applicationStarted =
+		isApplicationStarted(event, now) || canApplyBeforeStart;
 
 	const commitmentQuestions = event.commitmentQuestions.map((q) => {
 		const currentCount = counts.get(q.id) ?? 0;
@@ -138,7 +140,20 @@ export async function getAnswerForm(
 		};
 	});
 
+	const respondentName =
+		myAnswer?.respondentName ??
+		(userId ? (await new UserRepository().findById(userId))?.name : undefined);
+
 	return {
+		...(userId && respondentName !== undefined
+			? {
+					respondent: {
+						id: userId,
+						displayName: respondentName,
+						isGuest: false,
+					},
+				}
+			: {}),
 		canBypassParticipationRestrictions,
 		event: {
 			id: event.id,

@@ -133,7 +133,7 @@ export function createEventViewerPermissions(input: {
 		canViewOverview: input.overviewAccess.granted,
 		canViewParticipantGuide: input.isParticipant || isOwner,
 		canViewParticipants: input.participantsAccess.granted,
-		canViewPrivateAnswers: input.isParticipant,
+		canViewPrivateAnswers: input.isParticipant || isOwner,
 		canEditEvent:
 			isOwner ||
 			(isParticipatingStaff && input.staffPermissions?.eventManagement === true),

@@ -1,3 +1,4 @@
+import { OffkaiAnswer } from "@offkai/core";
 import type {
 	GetMyAnswerFormResponse,
 	ManageGuestAnswerRequest,
@@ -124,10 +125,17 @@ export async function deleteManagedOffkaiAnswer(
 ): Promise<void> {
 	await requireAnswerPermission(input.eventId, viewerUserId, "delete");
 	const repository = new OffkaiAnswerRepository();
-	const answer = await repository.findByEventAndUser(input.eventId, input.userId);
-	if (!answer) throw new AppError("ANSWER_NOT_FOUND", "削除対象の回答が見つかりません。");
+	const answer = await repository.findByEventAndUser(
+		input.eventId,
+		input.userId,
+	);
+	if (!answer)
+		throw new AppError("ANSWER_NOT_FOUND", "削除対象の回答が見つかりません。");
 	if (await repository.isCollectionStarted(input.eventId)) {
-		throw new AppError("VALIDATION_ERROR", "参加費の徴収開始後は回答を削除できません。");
+		throw new AppError(
+			"VALIDATION_ERROR",
+			"参加費の徴収開始後は回答を削除できません。",
+		);
 	}
 	await repository.delete(answer.id);
 }
@@ -147,7 +155,15 @@ export async function saveManagedOffkaiAnswer(
 		input.bringingKigurumis,
 	);
 
-	await new OffkaiAnswerRepository().save(answer, ownerUserId);
+	await new OffkaiAnswerRepository().save(
+		input.respondentName === undefined
+			? answer
+			: OffkaiAnswer.reconstruct({
+					...answer,
+					respondentName: input.respondentName,
+				}),
+		ownerUserId,
+	);
 	return { ok: true };
 }
 
@@ -156,5 +172,8 @@ async function requireAnswerPermission(
 	viewerUserId: UserId,
 	level: "edit" | "delete",
 ) {
-	await requireEventPermission(eventId, viewerUserId, { area: "answerManagement", level });
+	await requireEventPermission(eventId, viewerUserId, {
+		area: "answerManagement",
+		level,
+	});
 }

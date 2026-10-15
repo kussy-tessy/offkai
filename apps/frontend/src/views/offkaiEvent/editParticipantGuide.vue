@@ -22,6 +22,7 @@
       <MyButton class="w-full" color="primary" :disabled="saving" @click="save">
         参加者向け情報を更新する
       </MyButton>
+      <ParticipantGuideImages :key="id" :event-id="id" editable />
     </template>
   </main>
 </template>
@@ -35,6 +36,7 @@ import MyButton from "@/common/components/MyButton.vue";
 import MyFormField from "@/common/components/MyFormField.vue";
 import MyTextarea from "@/common/components/MyTextarea.vue";
 import { getApiErrorMessage, useApi, useToast } from "@/common/composables";
+import ParticipantGuideImages from "@/features/participantGuide/components/ParticipantGuideImages.vue";
 
 const { id } = defineProps<{ id: string }>();
 const router = useRouter();

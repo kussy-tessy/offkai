@@ -8,12 +8,29 @@ import { AppError, appErrorStatusCodes } from "./app-error";
 import { authRoutes } from "./auth";
 import { authPlugin } from "./plugin";
 import { prisma } from "./repository/prisma";
-import { discordRoute, kigurumiRoute, offkaiEventRoute, seriesRoute } from "./usecase";
+import { cleanGuideImages } from "./service/guide-image-storage";
+import {
+	discordRoute,
+	kigurumiRoute,
+	offkaiEventRoute,
+	seriesRoute,
+} from "./usecase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = Fastify();
+let imageCleanupTimer: ReturnType<typeof setInterval> | undefined;
+app.addHook("onReady", async () => {
+	const cleanup = () =>
+		void cleanGuideImages().catch(() =>
+			console.warn("R2 cleanup will be retried"),
+		);
+	cleanup();
+	imageCleanupTimer = setInterval(cleanup, 60_000);
+	imageCleanupTimer.unref();
+});
+app.addHook("onClose", async () => clearInterval(imageCleanupTimer));
 
 app.register(fastifyCors, {
 	origin: ["http://localhost:5173", "https://off.kg-misskey.net"],

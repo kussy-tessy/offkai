@@ -12,6 +12,8 @@ import type {
 import {
 	BringingKigurumiSchema,
 	CommitmentAnswerSchema,
+	PREFERENCE_ANSWER_MAX_LENGTH,
+	PREFERENCE_ANSWER_OTHER_PREFIX,
 	PreferenceAnswerSchema,
 } from "../schema";
 
@@ -121,9 +123,11 @@ export class OffkaiAnswer {
 		);
 	}
 
-	forceEdit(params: Params) {
+	forceEdit(params: Params, options: { bypassRequiredAnswers?: boolean } = {}) {
 		OffkaiAnswer.validateAnswerStructure(params);
-		OffkaiAnswer.validateRequiredAnswers(params);
+		if (!options.bypassRequiredAnswers) {
+			OffkaiAnswer.validateRequiredAnswers(params);
+		}
 
 		return new OffkaiAnswer(
 			this.id,
@@ -140,6 +144,26 @@ export class OffkaiAnswer {
 		CommitmentAnswerSchema.array().parse(params.answer.commitmentAnswers);
 		PreferenceAnswerSchema.array().parse(params.answer.preferenceAnswers);
 		BringingKigurumiSchema.array().parse(params.answer.bringingKigurumis);
+
+		for (const question of params.question.preferenceQuestions) {
+			const value =
+				params.answer.preferenceAnswers.find(
+					(answer) => answer.questionId === question.id,
+				)?.answer ?? "";
+			const type = question.answerTemplate.type;
+			const text =
+				type === "free"
+					? value
+					: type === "choicesIncludingOther" &&
+							value.startsWith(PREFERENCE_ANSWER_OTHER_PREFIX)
+						? value.slice(PREFERENCE_ANSWER_OTHER_PREFIX.length)
+						: null;
+			if (text !== null && text.length > PREFERENCE_ANSWER_MAX_LENGTH) {
+				throw new Error(
+					`アンケートの自由回答・その他は${PREFERENCE_ANSWER_MAX_LENGTH}文字以内で入力してください。`,
+				);
+			}
+		}
 
 		const commitmentQuestionIds = new Set(
 			params.question.commitmentQuestions.map((question) => question.id),

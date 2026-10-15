@@ -24,8 +24,8 @@ export const createFinanceTabs = (eventId: string, permissions?: StaffPermission
     icon: faReceipt,
   },
   {
-    label: "返金",
+    label: "返金・追加徴収",
     to: `/offkai/${eventId}/participant-management/finance/refund`,
     icon: faMoneyBillTransfer,
   },
-].filter((_, index) => !permissions || [permissions.feeCalculation, permissions.feeCollection, permissions.settlement, permissions.refund][index] !== "none");
+].filter((_, index) => !permissions || (index === 3 && permissions.feeCollection !== "none") || [permissions.feeCalculation, permissions.feeCollection, permissions.settlement, permissions.refund][index] !== "none");

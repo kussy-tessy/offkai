@@ -16,11 +16,20 @@
     <div class="grid grid-cols-2 gap-4 mt-3 p-3 bg-white rounded border border-gray-200 text-sm">
       <div>
         <span class="font-semibold text-gray-700">締切</span>
-        <p class="text-gray-600">{{ formatWithDay(question.deadline, true) }}</p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+          <span class="text-gray-600">{{ formatWithDay(question.deadline, true) }}</span>
+          <MyBadge size="sm" class="whitespace-nowrap" :color="deadlineBadgeColor(question.deadline)">
+            {{ deadlineLabel(question.deadline) }}
+          </MyBadge>
+        </div>
       </div>
       <div>
         <span class="font-semibold text-gray-700">定員</span>
-        <p class="text-gray-600">{{ question.currentCount + (value === "yes" ? 1 : 0) }} / {{ question.capacity }}名</p>
+        <div class="mt-1">
+          <MyBadge size="sm" class="whitespace-nowrap" :color="capacityBadgeColor(currentCount, question.capacity)">
+            {{ currentCount }} / {{ question.capacity }}名
+          </MyBadge>
+        </div>
       </div>
     </div>
 
@@ -62,15 +71,21 @@
 </template>
 
 <script setup lang="ts">
+  import MyBadge from "@/common/components/MyBadge.vue";
   import type { CommitmentQuestionWithAnswer, Unbrand } from "@offkai/core"
   import { formatWithDay } from "@offkai/core"
+  import { computed } from "vue"
+  import { useCommitmentStatusBadge } from "@/common/composables/useCommitmentStatusBadge"
   import MyRadioButton from "@/common/components/MyRadioButton.vue"
 
-  defineProps<{
+  const props = defineProps<{
     question: Unbrand<CommitmentQuestionWithAnswer>
     value: "yes" | "no" | "" | null
     onChange: (value: "yes" | "no" | null) => void
     validationMessage?: string
     allowEmpty?: boolean
   }>()
+
+  const currentCount = computed(() => props.question.currentCount + (props.value === "yes" ? 1 : 0))
+  const { capacityBadgeColor, deadlineLabel, deadlineBadgeColor } = useCommitmentStatusBadge()
 </script>

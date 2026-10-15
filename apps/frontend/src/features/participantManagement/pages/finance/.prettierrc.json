@@ -1,0 +1,13 @@
+{
+  "useTabs": true,
+  "overrides": [
+    {
+      "files": "*.vue",
+      "options": {
+        "useTabs": false,
+        "vueIndentScriptAndStyle": false,
+        "singleAttributePerLine": true
+      }
+    }
+  ]
+}

@@ -5,11 +5,11 @@ import {
 } from "vue-router";
 import { useAuth } from "@/common/composables";
 import DiscordManagement from "@/features/participantManagement/pages/DiscordManagement.vue";
-import FeeCalculation from "@/features/participantManagement/pages/finance/calculation/FeeCalculation.vue";
-import FeeCollection from "@/features/participantManagement/pages/finance/collection/FeeCollection.vue";
+import FeeCalculation from "@/features/participantManagement/pages/finance/legacy/calculation/FeeCalculation.vue";
+import FeeCollection from "@/features/participantManagement/pages/finance/legacy/collection/FeeCollection.vue";
 import FinanceLayout from "@/features/participantManagement/pages/finance/FinanceLayout.vue";
-import Refund from "@/features/participantManagement/pages/finance/refund/Refund.vue";
-import Settlement from "@/features/participantManagement/pages/finance/settlement/Settlement.vue";
+import Refund from "@/features/participantManagement/pages/finance/legacy/refund/Refund.vue";
+import Settlement from "@/features/participantManagement/pages/finance/legacy/settlement/Settlement.vue";
 import PaymentManagement from "@/features/participantManagement/pages/legacy/PaymentManagement.vue";
 import ParticipantAnswerTable from "@/features/participantManagement/pages/ParticipantAnswerTable.vue";
 import Account from "../views/AccountPage.vue";

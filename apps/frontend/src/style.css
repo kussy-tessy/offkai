@@ -8,3 +8,14 @@ html {
 	font-weight: 400;
 	font-style: normal;
 }
+
+/* Keep number validation and numeric keyboards without browser spin controls. */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

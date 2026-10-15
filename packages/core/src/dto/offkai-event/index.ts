@@ -10,6 +10,7 @@ export * from "./discord-channel-role";
 export * from "./participant-payment";
 export * from "./participant-answer-table";
 export * from "./participant-guide";
+export * from "./finance-expense-image";
 export * from "./finance";
 export * from "./fee-collection";
 export * from "./settlement";

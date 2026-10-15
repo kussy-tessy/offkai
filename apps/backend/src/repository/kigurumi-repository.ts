@@ -18,11 +18,13 @@ export class KigurumiRepository {
 	async findManyByOwnerUserId(ownerUserId: UserId): Promise<Kigurumi[]> {
 		const records = await this.prisma.kigurumi.findMany({
 			where: { ownerUserId },
+			include: { image: { select: { kigurumiId: true } } },
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 		});
 
 		return records.map((record) => ({
 			id: record.id as KigurumiId,
+			hasImage: "image" in record && Boolean(record.image),
 			ownerUserId: record.ownerUserId as UserId,
 			title: record.title,
 			character: record.character,
@@ -43,6 +45,7 @@ export class KigurumiRepository {
 
 		return {
 			id: record.id as KigurumiId,
+			hasImage: "image" in record && Boolean(record.image),
 			ownerUserId: record.ownerUserId as UserId,
 			title: record.title,
 			character: record.character,

@@ -257,3 +257,83 @@ describe("業務ルールの強制迂回", () => {
 		);
 	});
 });
+
+describe("主催者による編集の必須チェック免除", () => {
+	const preferenceId = QuestionIdSchema.parse(
+		"00000000-0000-4000-8000-000000000020",
+	);
+	function fixture() {
+		const base = answerParams({
+			answer: null,
+			deadline: new Date(Date.now() + 60_000),
+			capacity: 10,
+			numberOfPeople: 0,
+		});
+		return {
+			answer: {
+				...base.answer,
+				preferenceAnswers: [
+					{ questionId: preferenceId, answer: null as string | null },
+				],
+			},
+			question: {
+				...base.question,
+				preferenceQuestions: [
+					{
+						id: preferenceId,
+						question: "必須質問",
+						questionShort: "必須",
+						description: "",
+						required: true,
+						answerTemplate: { type: "free" as const },
+					},
+				],
+			},
+		};
+	}
+	const existing = OffkaiAnswer.reconstruct({
+		id: AnswerIdSchema.parse("00000000-0000-4000-8000-000000000021"),
+		eventId,
+		userId,
+		commitmentAnswers: [{ questionId, answer: "yes" }],
+		preferenceAnswers: [],
+	});
+
+	it("参加可否とアンケートを未回答のまま保存できる（通常参加者・ゲスト）", () => {
+		for (const target of [
+			existing,
+			OffkaiAnswer.reconstruct({
+				...existing,
+				userId: null,
+				respondentName: "ゲスト",
+			}),
+		]) {
+			const saved = target.forceEdit(fixture(), {
+				bypassRequiredAnswers: true,
+			});
+			expect(saved.commitmentAnswers[0].answer).toBeNull();
+			expect(saved.preferenceAnswers[0].answer).toBeNull();
+		}
+	});
+
+	it("本人の通常編集と従来の強制編集では必須チェックを維持する", () => {
+		const params = fixture();
+		expect(() => existing.edit(params)).toThrow("必須の参加可否");
+		expect(() => existing.forceEdit(params)).toThrow("必須の参加可否");
+		params.answer.commitmentAnswers[0].answer = "yes";
+		expect(() => existing.edit(params)).toThrow("必須のアンケート");
+		expect(() => existing.forceEdit(params)).toThrow("必須のアンケート");
+	});
+
+	it("主催者の編集でも回答構造と文字数制限は維持する", () => {
+		const params = fixture();
+		params.answer.preferenceAnswers[0].answer = "あ".repeat(201);
+		expect(() =>
+			existing.forceEdit(params, { bypassRequiredAnswers: true }),
+		).toThrow("200文字以内");
+		params.answer.preferenceAnswers = [];
+		expect(() =>
+			existing.forceEdit(params, { bypassRequiredAnswers: true }),
+		).toThrow("アンケートと回答が対応していません");
+	});
+});

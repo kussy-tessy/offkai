@@ -1,0 +1,16 @@
+label {
+	display: block;
+	font-size: 0.875rem;
+}
+
+label > input:not([type="checkbox"]):not([type="radio"]),
+label > select,
+label > textarea {
+	display: block;
+	width: 100%;
+	border: 1px solid #cbd5e1;
+	border-radius: 0.375rem;
+	padding: 0.5rem;
+	margin-top: 0.25rem;
+	background: white;
+}

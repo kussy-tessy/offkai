@@ -8,7 +8,9 @@
 		"preview": "vite preview",
 		"lint": "biome lint .",
 		"typecheck": "vue-tsc --noEmit",
-		"format": "biome format . --write"
+		"format": "biome format . --write",
+		"format:finance": "prettier --write \"src/features/participantManagement/pages/finance/**/*.{vue,ts,css}\"",
+		"check:finance-format": "prettier --check \"src/features/participantManagement/pages/finance/**/*.{vue,ts,css}\""
 	},
 	"dependencies": {
 		"@fortawesome/fontawesome-svg-core": "^7.1.0",
@@ -20,6 +22,7 @@
 		"@vuepic/vue-datepicker": "^12.1.0",
 		"axios": "^1.12.2",
 		"date-fns": "^4.1.0",
+		"photoswipe": "^5.4.4",
 		"tailwind": "^4.0.0",
 		"vue": "^3.3.0",
 		"vue-router": "4"

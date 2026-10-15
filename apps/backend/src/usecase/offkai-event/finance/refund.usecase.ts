@@ -2,8 +2,8 @@ import type {
 	GetEventRefundRequest,
 	GetEventRefundResponse,
 	Unbrand,
-	UpdateParticipantRefundRequest,
 	UpdateParticipantRefundNoteRequest,
+	UpdateParticipantRefundRequest,
 	UserId,
 } from "@offkai/core";
 import { AppError, runBusinessRule } from "../../../app-error";
@@ -22,13 +22,16 @@ export class RefundUsecase {
 		private readonly financeRepository = new EventFinanceRepository(),
 		private readonly participantRepository = new ParticipantFinanceRepository(),
 		private readonly pageAssembler = new RefundPageAssembler(),
-	) {}
+	) { }
 
 	async getPage(
 		input: GetEventRefundRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventRefundResponse>> {
-		await requireEventPermission(input.eventId, viewerUserId, { area: "refund", level: "read" });
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "refund",
+			level: "read",
+		});
 		return this.pageAssembler.build(input.eventId);
 	}
 
@@ -36,7 +39,10 @@ export class RefundUsecase {
 		input: UpdateParticipantRefundRequest,
 		viewerUserId: UserId,
 	): Promise<Unbrand<GetEventRefundResponse>> {
-		await requireEventPermission(input.eventId, viewerUserId, { area: "refund", level: "record" });
+		await requireEventPermission(input.eventId, viewerUserId, {
+			area: "refund",
+			level: "record",
+		});
 		const finance = await this.financeRepository.findByEventId(input.eventId);
 		if (!finance.settlementLockedAt)
 			throw new AppError(
@@ -86,5 +92,4 @@ export class RefundUsecase {
 		);
 		return this.pageAssembler.build(input.eventId);
 	}
-
 }

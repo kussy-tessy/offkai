@@ -104,22 +104,27 @@ export class OffkaiAnswerService {
 		}
 
 		return runBusinessRule(() =>
-			existing.forceEdit({
-				answer: {
-					commitmentAnswers,
-					preferenceAnswers,
-					bringingKigurumis: event.askBringingKigurumi ? bringingKigurumis : [],
+			existing.forceEdit(
+				{
+					answer: {
+						commitmentAnswers,
+						preferenceAnswers,
+						bringingKigurumis: event.askBringingKigurumi
+							? bringingKigurumis
+							: [],
+					},
+					question: {
+						eventId: event.id,
+						askBringingKigurumi: event.askBringingKigurumi,
+						commitmentQuestions: event.commitmentQuestions.map((question) => ({
+							...question,
+							numberOfPeople: 0,
+						})),
+						preferenceQuestions: event.preferenceQuestions,
+					},
 				},
-				question: {
-					eventId: event.id,
-					askBringingKigurumi: event.askBringingKigurumi,
-					commitmentQuestions: event.commitmentQuestions.map((question) => ({
-						...question,
-						numberOfPeople: 0,
-					})),
-					preferenceQuestions: event.preferenceQuestions,
-				},
-			}),
+				{ bypassRequiredAnswers: true },
+			),
 		);
 	}
 
@@ -164,7 +169,7 @@ export class OffkaiAnswerService {
 				? OffkaiAnswer.reconstruct({
 						...existing,
 						respondentName: respondentName.trim(),
-					}).forceEdit(params)
+					}).forceEdit(params, { bypassRequiredAnswers: true })
 				: OffkaiAnswer.forceCreateGuest({ ...params, respondentName }),
 		);
 	}

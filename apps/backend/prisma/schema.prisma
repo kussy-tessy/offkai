@@ -143,7 +143,42 @@ model OffkaiEvent {
   answers             OffkaiAnswer[]
   commitmentQuestions CommitmentQuestion[]
   finance             EventFinance?
+  financeLedger       FinanceLedger?
   photoShares         OffkaiPhotoShare[]
+  guideImages         ParticipantGuideImage[]
+}
+
+model ParticipantGuideImage {
+  id String @id
+  eventId String
+  uploaderUserId String
+  objectKey String @unique
+  sha256 String
+  width Int
+  height Int
+  createdAt DateTime @default(now())
+  event OffkaiEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  @@index([eventId, createdAt])
+}
+
+model FinanceExpenseImage {
+  id String @id
+  eventId String
+  expenseId String
+  uploaderUserId String
+  objectKey String @unique
+  sha256 String
+  width Int
+  height Int
+  createdAt DateTime @default(now())
+  expense FinanceExpense @relation(fields: [eventId, expenseId], references: [eventId, id], onDelete: Cascade)
+  @@index([eventId, expenseId, createdAt])
+}
+
+// Durable cleanup queue, also populated by the image DELETE trigger.
+model R2PendingDeletion {
+  objectKey String @id
+  notBefore DateTime @default(now())
 }
 
 model CommitmentQuestion {
@@ -162,10 +197,12 @@ model CommitmentQuestion {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  event                OffkaiEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  answers              CommitmentAnswer[]
-  settlementCategories SettlementCategory[]
+  event                    OffkaiEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  answers                  CommitmentAnswer[]
+  settlementCategories     SettlementCategory[]
+  FinanceCategory_question FinanceCategory[]    @relation("FinanceCategory_question")
 
+  @@unique([eventId, id])
   @@index([eventId, archivedAt, sortOrder])
 }
 
@@ -380,6 +417,14 @@ model OffkaiAnswerHistory {
   answer OffkaiAnswer @relation(fields: [offkaiAnswerId], references: [id])
 }
 
+model KigurumiImage {
+  kigurumiId String @id
+  objectKey String @unique
+  width Int
+  height Int
+  kigurumi Kigurumi @relation(fields: [kigurumiId], references: [id], onDelete: Cascade)
+}
+
 model Kigurumi {
   id          String @id @default(uuid(7))
   ownerUserId String
@@ -389,6 +434,8 @@ model Kigurumi {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  image KigurumiImage?
 
   owner User @relation("KigurumiOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
 
@@ -426,4 +473,279 @@ model PhotoDownloadStatus {
   user       User             @relation(fields: [userId], references: [id])
 
   @@id([photoShareId, userId])
+}
+
+// Versioned event aggregate. Snapshots preserve removed participants and audit history.
+model FinanceLedger {
+  eventId                         String                     @id
+  revision                        Int                        @default(0)
+  inputRevision                   Int                        @default(0)
+  roundingUnit                    Int                        @default(10)
+  snapshotAt                      DateTime?
+  snapshotActorId                 String?
+  snapshotRevision                Int?
+  snapshotMigrated                Boolean                    @default(false)
+  updatedAt                       DateTime                   @default(now()) @updatedAt
+  event                           OffkaiEvent                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  history                         FinanceLedgerHistory[]
+  FinancePerson_ledger            FinancePerson[]            @relation("FinancePerson_ledger")
+  FinanceCategory_ledger          FinanceCategory[]          @relation("FinanceCategory_ledger")
+  FinanceCategoryMember_ledger    FinanceCategoryMember[]    @relation("FinanceCategoryMember_ledger")
+  FinanceItem_ledger              FinanceItem[]              @relation("FinanceItem_ledger")
+  FinanceCharge_ledger            FinanceCharge[]            @relation("FinanceCharge_ledger")
+  FinanceExpense_ledger           FinanceExpense[]           @relation("FinanceExpense_ledger")
+  FinanceIncome_ledger            FinanceIncome[]            @relation("FinanceIncome_ledger")
+  FinanceAdjustment_ledger        FinanceAdjustment[]        @relation("FinanceAdjustment_ledger")
+  FinancePayment_ledger           FinancePayment[]           @relation("FinancePayment_ledger")
+  FinanceItemAllocation_ledger    FinanceItemAllocation[]    @relation("FinanceItemAllocation_ledger")
+  FinanceExpenseAllocation_ledger FinanceExpenseAllocation[] @relation("FinanceExpenseAllocation_ledger")
+  FinanceIncomeAllocation_ledger  FinanceIncomeAllocation[]  @relation("FinanceIncomeAllocation_ledger")
+  FinanceExpenseRecipient_ledger  FinanceExpenseRecipient[]  @relation("FinanceExpenseRecipient_ledger")
+  FinanceSettlementTarget_ledger  FinanceSettlementTarget[]  @relation("FinanceSettlementTarget_ledger")
+  FinanceMigrationNote_ledger     FinanceMigrationNote[]     @relation("FinanceMigrationNote_ledger")
+}
+
+model FinanceLedgerHistory {
+  id        String        @id @default(uuid(7))
+  eventId   String
+  revision  Int
+  requestId String
+  actorId   String
+  action    String
+  resource  String
+  state     Json
+  createdAt DateTime      @default(now())
+  ledger    FinanceLedger @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+
+  @@unique([eventId, revision])
+  @@unique([eventId, requestId])
+}
+
+model FinancePerson {
+  settlementStarted              Boolean                    @default(false)
+  eventId                         String
+  id                              String
+  position                        Int                        @default(0)
+  name                            String
+  ledger                          FinanceLedger              @relation("FinancePerson_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  FinanceCategoryMember_person    FinanceCategoryMember[]    @relation("FinanceCategoryMember_person")
+  FinanceCharge_person            FinanceCharge[]            @relation("FinanceCharge_person")
+  FinanceExpense_payer            FinanceExpense[]           @relation("FinanceExpense_payer")
+  FinanceAdjustment_person        FinanceAdjustment[]        @relation("FinanceAdjustment_person")
+  FinancePayment_person           FinancePayment[]           @relation("FinancePayment_person")
+  FinanceExpenseRecipient_person  FinanceExpenseRecipient[]  @relation("FinanceExpenseRecipient_person")
+  FinanceSettlementTarget_person  FinanceSettlementTarget[]  @relation("FinanceSettlementTarget_person")
+  FinanceItemAllocation_person    FinanceItemAllocation[]    @relation("FinanceItemAllocation_person")
+  FinanceExpenseAllocation_person FinanceExpenseAllocation[] @relation("FinanceExpenseAllocation_person")
+  FinanceIncomeAllocation_person  FinanceIncomeAllocation[]  @relation("FinanceIncomeAllocation_person")
+
+  @@id([eventId, id])
+}
+
+model FinanceCategory {
+  eventId                        String
+  id                             String
+  position                       Int                     @default(0)
+  questionId                     String?
+  name                           String
+  baseAmount                     Int
+  ledger                         FinanceLedger           @relation("FinanceCategory_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  FinanceCategoryMember_category FinanceCategoryMember[] @relation("FinanceCategoryMember_category")
+  FinanceItem_category           FinanceItem[]           @relation("FinanceItem_category")
+  FinanceCharge_category         FinanceCharge[]         @relation("FinanceCharge_category")
+  FinanceExpense_category        FinanceExpense[]        @relation("FinanceExpense_category")
+  FinanceIncome_category         FinanceIncome[]         @relation("FinanceIncome_category")
+  question                       CommitmentQuestion?     @relation("FinanceCategory_question", fields: [eventId, questionId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, id])
+  @@unique([eventId, questionId])
+}
+
+model FinanceCategoryMember {
+  eventId    String
+  categoryId String
+  personId   String
+  ledger     FinanceLedger   @relation("FinanceCategoryMember_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  category   FinanceCategory @relation("FinanceCategoryMember_category", fields: [eventId, categoryId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person     FinancePerson   @relation("FinanceCategoryMember_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, categoryId, personId])
+}
+
+model FinanceItem {
+  eventId                    String
+  id                         String
+  position                   Int                     @default(0)
+  categoryId                 String
+  name                       String
+  allocationMode             String
+  ledger                     FinanceLedger           @relation("FinanceItem_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  category                   FinanceCategory         @relation("FinanceItem_category", fields: [eventId, categoryId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  FinanceExpense_item        FinanceExpense[]        @relation("FinanceExpense_item")
+  FinanceItemAllocation_item FinanceItemAllocation[] @relation("FinanceItemAllocation_item")
+
+  @@id([eventId, id])
+}
+
+model FinanceCharge {
+  eventId               String
+  id                    String
+  position              Int              @default(0)
+  isBase                Boolean          @default(false)
+  personId              String
+  categoryId            String?
+  title                 String
+  amountOverride        Int?
+  note                  String           @default("")
+  ledger                FinanceLedger    @relation("FinanceCharge_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  category              FinanceCategory? @relation("FinanceCharge_category", fields: [eventId, categoryId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person                FinancePerson    @relation("FinanceCharge_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  FinancePayment_charge FinancePayment[] @relation("FinancePayment_charge")
+
+  @@id([eventId, id])
+}
+
+model FinanceExpense {
+  eventId                          String
+  id                               String
+  position                         Int                        @default(0)
+  categoryId                       String?
+  itemId                           String?
+  title                            String
+  amount                           Int
+  kind                             String
+  allocationMode                   String
+  payerId                          String?
+  note                             String                     @default("")
+  ledger                           FinanceLedger              @relation("FinanceExpense_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  category                         FinanceCategory?           @relation("FinanceExpense_category", fields: [eventId, categoryId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  item                             FinanceItem?               @relation("FinanceExpense_item", fields: [eventId, itemId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  payer                            FinancePerson?             @relation("FinanceExpense_payer", fields: [eventId, payerId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  FinancePayment_expense           FinancePayment[]           @relation("FinancePayment_expense")
+  FinanceExpenseRecipient_expense  FinanceExpenseRecipient[]  @relation("FinanceExpenseRecipient_expense")
+  FinanceExpenseAllocation_expense FinanceExpenseAllocation[] @relation("FinanceExpenseAllocation_expense")
+  receiptImages                   FinanceExpenseImage[]
+
+  @@id([eventId, id])
+}
+
+model FinanceIncome {
+  eventId                        String
+  id                             String
+  position                       Int                       @default(0)
+  categoryId                     String
+  title                          String
+  amount                         Int
+  allocationMode                 String
+  note                           String                    @default("")
+  ledger                         FinanceLedger             @relation("FinanceIncome_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  category                       FinanceCategory           @relation("FinanceIncome_category", fields: [eventId, categoryId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  FinancePayment_income          FinancePayment[]          @relation("FinancePayment_income")
+  FinanceIncomeAllocation_income FinanceIncomeAllocation[] @relation("FinanceIncomeAllocation_income")
+
+  @@id([eventId, id])
+}
+
+model FinanceAdjustment {
+  eventId  String
+  id       String
+  position Int           @default(0)
+  personId String
+  mode     String
+  amount   Int
+  note     String        @default("")
+  ledger   FinanceLedger @relation("FinanceAdjustment_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  person   FinancePerson @relation("FinanceAdjustment_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, id])
+  @@unique([eventId, personId])
+}
+
+model FinancePayment {
+  eventId   String
+  id        String
+  position  Int             @default(0)
+  kind      String
+  chargeId  String?
+  personId  String?
+  expenseId String?
+  incomeId  String?
+  amount    Int
+  at        DateTime
+  note      String          @default("")
+  migrated  Boolean         @default(false)
+  ledger    FinanceLedger   @relation("FinancePayment_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  charge    FinanceCharge?  @relation("FinancePayment_charge", fields: [eventId, chargeId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person    FinancePerson?  @relation("FinancePayment_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  expense   FinanceExpense? @relation("FinancePayment_expense", fields: [eventId, expenseId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  income    FinanceIncome?  @relation("FinancePayment_income", fields: [eventId, incomeId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, id])
+}
+
+model FinanceItemAllocation {
+  eventId  String
+  itemId   String
+  personId String
+  value    Decimal       @db.Decimal(16, 3)
+  ledger   FinanceLedger @relation("FinanceItemAllocation_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  item     FinanceItem   @relation("FinanceItemAllocation_item", fields: [eventId, itemId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person   FinancePerson @relation("FinanceItemAllocation_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, itemId, personId])
+}
+
+model FinanceExpenseAllocation {
+  eventId   String
+  expenseId String
+  personId  String
+  value     Decimal        @db.Decimal(16, 3)
+  ledger    FinanceLedger  @relation("FinanceExpenseAllocation_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  expense   FinanceExpense @relation("FinanceExpenseAllocation_expense", fields: [eventId, expenseId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person    FinancePerson  @relation("FinanceExpenseAllocation_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, expenseId, personId])
+}
+
+model FinanceIncomeAllocation {
+  eventId  String
+  incomeId String
+  personId String
+  value    Decimal       @db.Decimal(16, 3)
+  ledger   FinanceLedger @relation("FinanceIncomeAllocation_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  income   FinanceIncome @relation("FinanceIncomeAllocation_income", fields: [eventId, incomeId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person   FinancePerson @relation("FinanceIncomeAllocation_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, incomeId, personId])
+}
+
+model FinanceExpenseRecipient {
+  eventId   String
+  expenseId String
+  personId  String
+  amount    Int
+  ledger    FinanceLedger  @relation("FinanceExpenseRecipient_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  expense   FinanceExpense @relation("FinanceExpenseRecipient_expense", fields: [eventId, expenseId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+  person    FinancePerson  @relation("FinanceExpenseRecipient_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, expenseId, personId])
+}
+
+model FinanceSettlementTarget {
+  eventId  String
+  personId String
+  amount   Int
+  ledger   FinanceLedger @relation("FinanceSettlementTarget_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+  person   FinancePerson @relation("FinanceSettlementTarget_person", fields: [eventId, personId], references: [eventId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([eventId, personId])
+}
+
+model FinanceMigrationNote {
+  eventId  String
+  position Int
+  message  String
+  ledger   FinanceLedger @relation("FinanceMigrationNote_ledger", fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([eventId, position])
 }

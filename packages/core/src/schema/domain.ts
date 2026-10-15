@@ -50,11 +50,30 @@ export type OffkaiSeriesId = z.infer<typeof OffkaiSeriesIdSchema>;
 export const SeriesRoleSchema = z.enum(["owner", "staff"]);
 export type SeriesRole = z.infer<typeof SeriesRoleSchema>;
 
-export const AnswerManagementPermissionSchema = z.enum(["read", "edit", "delete"]);
-export const DiscordRolePermissionSchema = z.enum(["none", "read", "assign", "manage"]);
-export const FeeCalculationPermissionSchema = z.enum(["none", "read", "edit", "confirm"]);
+export const AnswerManagementPermissionSchema = z.enum([
+	"read",
+	"edit",
+	"delete",
+]);
+export const DiscordRolePermissionSchema = z.enum([
+	"none",
+	"read",
+	"assign",
+	"manage",
+]);
+export const FeeCalculationPermissionSchema = z.enum([
+	"none",
+	"read",
+	"edit",
+	"confirm",
+]);
 export const FeeCollectionPermissionSchema = z.enum(["none", "read", "record"]);
-export const SettlementPermissionSchema = z.enum(["none", "read", "edit", "confirm"]);
+export const SettlementPermissionSchema = z.enum([
+	"none",
+	"read",
+	"edit",
+	"confirm",
+]);
 export const RefundPermissionSchema = z.enum(["none", "read", "record"]);
 
 export const StaffPermissionsSchema = z.object({
@@ -268,6 +287,9 @@ export const PreferenceQuestionSchema = z.object({
 });
 export type PreferenceQuestion = z.infer<typeof PreferenceQuestionSchema>;
 
+export const PREFERENCE_ANSWER_MAX_LENGTH = 200;
+export const PREFERENCE_ANSWER_OTHER_PREFIX = "その他: ";
+
 export const PreferenceAnswerSchema = z.object({
 	questionId: QuestionIdSchema,
 	answer: z.string().nullable(),
@@ -275,6 +297,7 @@ export const PreferenceAnswerSchema = z.object({
 export type PreferenceAnswer = z.infer<typeof PreferenceAnswerSchema>;
 
 export const KigurumiSchema = z.object({
+	hasImage: z.boolean().optional(),
 	id: KigurumiIdSchema,
 	ownerUserId: UserIdSchema,
 	title: z.string().min(1).max(100),
@@ -285,5 +308,8 @@ export type Kigurumi = z.infer<typeof KigurumiSchema>;
 export const BringingKigurumiSchema = KigurumiSchema.pick({
 	title: true,
 	character: true,
+}).extend({
+	kigurumiId: KigurumiIdSchema.optional(),
+	hasImage: z.boolean().optional(),
 });
 export type BringingKigurumi = z.infer<typeof BringingKigurumiSchema>;

@@ -1,6 +1,6 @@
 import {
-	CreateOffkaiEventRequestSchema,
 	CreateDiscordChannelRoleRequestSchema,
+	CreateOffkaiEventRequestSchema,
 	CreateParticipantExtraChargeRequestSchema,
 	CreatePhotoShareRequestSchema,
 	CreateSettlementCategoryRequestSchema,
@@ -11,11 +11,11 @@ import {
 	DeleteSettlementCategoryRequestSchema,
 	DeleteSettlementExpenseRequestSchema,
 	DeleteSettlementIncomeRequestSchema,
-	GetEventFinanceRequestSchema,
+	GetDiscordChannelConfigurationRequestSchema,
 	GetEventFeeCollectionRequestSchema,
+	GetEventFinanceRequestSchema,
 	GetEventRefundRequestSchema,
 	GetEventSettlementRequestSchema,
-	GetDiscordChannelConfigurationRequestSchema,
 	GetMyAnswerFormRequestSchema,
 	GetOffkaiDetailRequestSchema,
 	GetOffkaiEventDiscordRoleMembersRequestSchema,
@@ -24,9 +24,10 @@ import {
 	GetParticipantPaymentsRequestSchema,
 	ManageGuestAnswerRequestSchema,
 	ManageOffkaiAnswerRequestSchema,
+	OffkaiEventIdSchema,
+	ParticipantGuideRouteParamsSchema,
 	PhotoShareItemRouteParamsSchema,
 	PhotoShareRouteParamsSchema,
-	ParticipantGuideRouteParamsSchema,
 	SaveGuestAnswerRequestSchema,
 	SaveOffkaiAnswerRequestSchema,
 	SyncSettlementCategoryMembersRequestSchema,
@@ -34,25 +35,28 @@ import {
 	UpdateFinanceSettingsRequestSchema,
 	UpdateOffkaiEventDiscordRoleMemberRequestSchema,
 	UpdateOffkaiEventDiscordRoleRequestSchema,
-	UpdateParticipantCollectionRequestSchema,
 	UpdateParticipantCollectionNoteRequestSchema,
+	UpdateParticipantCollectionRequestSchema,
 	UpdateParticipantExtraChargeRequestSchema,
 	UpdateParticipantFinanceNoteRequestSchema,
+	UpdateParticipantGuideRequestSchema,
 	UpdateParticipantPaymentRequestSchema,
-	UpdateParticipantRefundRequestSchema,
 	UpdateParticipantRefundNoteRequestSchema,
+	UpdateParticipantRefundRequestSchema,
+	UpdateParticipantSettlementNoteRequestSchema,
 	UpdatePhotoDownloadStatusRequestSchema,
 	UpdatePhotoShareRequestSchema,
-	UpdateParticipantGuideRequestSchema,
 	UpdateSettlementCategoryMemberRequestSchema,
 	UpdateSettlementCategoryRequestSchema,
 	UpdateSettlementExpenseRequestSchema,
 	UpdateSettlementIncomeRequestSchema,
 	UpdateSettlementLockRequestSchema,
-	UpdateParticipantSettlementNoteRequestSchema,
 	UserIdSchema,
 } from "@offkai/core";
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import { AppError } from "../../app-error";
+import { requireAnyEventPermission } from "../../authorization/staff-permissions";
+import { prisma } from "../../repository/prisma";
 import { getMyAnswerForm } from "./answer-command/get-my-answer-form.usecase";
 import {
 	deleteGuestAnswer,
@@ -79,7 +83,13 @@ import { getMyOffkaiEvents } from "./event-management/get-my-offkai-events.useca
 import { getOffkaiEvent } from "./event-management/get-offkai-event.usecase";
 import { updateOffkaiEvent } from "./event-management/update-offkai-event.usecase";
 import { FinanceUsecase, RefundUsecase, SettlementUsecase } from "./finance";
+import { financeLedgerRoute } from "./finance-ledger/route";
+import { participantGuideImageRoute } from "./participant-guide/image-route";
 import { getParticipantAnswerTable } from "./participant-answer-table";
+import {
+	getParticipantGuide,
+	updateParticipantGuide,
+} from "./participant-guide";
 import {
 	getParticipantPayments,
 	updateParticipantPayment,
@@ -91,13 +101,46 @@ import {
 	updatePhotoDownloadStatus,
 	updatePhotoShare,
 } from "./photo-sharing";
-import {
-	getParticipantGuide,
-	updateParticipantGuide,
-} from "./participant-guide";
 
 export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
-	const requireUser = { preHandler: app.auth.requireUser };
+	await app.register(financeLedgerRoute);
+	await app.register(participantGuideImageRoute);
+	const requireUser = {
+		preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+			await app.auth.requireUser(request, reply);
+			if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
+			const route = request.routeOptions.url ?? "";
+			if (
+				!route.includes("/:eventId/finance/") &&
+				!route.includes("/:eventId/participant-payments/")
+			)
+				return;
+			const eventId = OffkaiEventIdSchema.parse(
+				(request.params as { eventId: string }).eventId,
+			);
+			await requireAnyEventPermission(
+				eventId,
+				UserIdSchema.parse(request.user.userId),
+				[
+					{ area: "feeCalculation", level: "read" },
+					{ area: "feeCollection", level: "read" },
+					{ area: "settlement", level: "read" },
+					{ area: "refund", level: "read" },
+				],
+			);
+			if (
+				await prisma.financeLedger.findUnique({
+					where: { eventId },
+					select: { eventId: true },
+				})
+			) {
+				throw new AppError(
+					"CONFLICT",
+					"新方式へ移行済みです。精算台帳から操作してください。",
+				);
+			}
+		},
+	};
 	const finance = new FinanceUsecase();
 	const settlement = new SettlementUsecase();
 	const refund = new RefundUsecase();
@@ -764,12 +807,16 @@ export const offkaiEventRoute: FastifyPluginAsync = async (app) => {
 		return saveManagedOffkaiAnswer(params, input, ownerUserId);
 	});
 
-	app.delete("/:eventId/answers/:userId", requireUser, async (request, reply) => {
-		const viewerUserId = UserIdSchema.parse(request.user.userId);
-		const input = ManageOffkaiAnswerRequestSchema.parse(request.params);
-		await deleteManagedOffkaiAnswer(input, viewerUserId);
-		return reply.code(204).send();
-	});
+	app.delete(
+		"/:eventId/answers/:userId",
+		requireUser,
+		async (request, reply) => {
+			const viewerUserId = UserIdSchema.parse(request.user.userId);
+			const input = ManageOffkaiAnswerRequestSchema.parse(request.params);
+			await deleteManagedOffkaiAnswer(input, viewerUserId);
+			return reply.code(204).send();
+		},
+	);
 
 	app.put("/:eventId/answers", requireUser, async (request) => {
 		const userId = UserIdSchema.parse(request.user.userId);

@@ -130,20 +130,20 @@
 
   const { error } = useToast()
   const formElement = ref<HTMLElement | null>(null)
-	const visibilityOptions: SelectOption[] = [
+	const visibilityOptions = computed<SelectOption[]>(() => [
 		{ value: "PUBLIC", label: "誰でも" },
 		{ value: "AUTHENTICATED", label: "ログインユーザー" },
 		{ value: "GUILD_MEMBERS", label: "Discordサーバー参加者", disabled: !hasDiscordGuild },
 		{ value: "PARTICIPANTS", label: "オフ会参加表明者" },
-	]
-	const participationEligibilityOptions: SelectOption[] = [
+	])
+	const participationEligibilityOptions = computed<SelectOption[]>(() => [
 		{ value: "AUTHENTICATED", label: "ログインユーザー" },
 		{ value: "GUILD_MEMBERS", label: "Discordサーバー参加者", disabled: !hasDiscordGuild },
-	]
+	])
 	const toParticipationEligibility = (value: string | number): ParticipationEligibility =>
 		String(value) as ParticipationEligibility
-	const overviewVisibilityOptions = visibilityOptions.filter(
-		(option) => option.value !== "PARTICIPANTS",
+	const overviewVisibilityOptions = computed(() =>
+		visibilityOptions.value.filter((option) => option.value !== "PARTICIPANTS"),
 	)
 	const toVisibility = (value: string | number): EventVisibility =>
 		String(value) as EventVisibility
