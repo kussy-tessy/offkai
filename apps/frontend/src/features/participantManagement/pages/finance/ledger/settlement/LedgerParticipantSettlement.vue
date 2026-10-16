@@ -1,6 +1,9 @@
 <template>
   <div class="table-wrap">
-    <table class="participant-table numeric-columns" aria-label="個人別の返金額">
+    <table
+      class="participant-table numeric-columns"
+      aria-label="個人別の返金額"
+    >
       <thead>
         <tr>
           <th class="person-column">参加者</th>
@@ -27,7 +30,11 @@
               variant="ghost"
               :aria-expanded="selectedId === p.id"
               @click="selectedId = selectedId === p.id ? null : p.id"
-              ><span class="person-name" :title="p.name">{{ p.name }}</span></MyButton
+              ><span
+                class="person-name"
+                :title="p.name"
+                >{{ p.name }}</span
+              ></MyButton
             >
           </td>
           <td class="text-right whitespace-nowrap font-semibold">
@@ -45,7 +52,9 @@
           </td>
           <td class="min-w-28">
             <div class="flex items-center justify-end gap-2">
-              <span>{{ formatIntegerAmount(p.proposedRefund - p.automatic) }}</span
+              <span>{{
+                formatIntegerAmount(p.proposedRefund - p.automatic)
+              }}</span
               ><MyButton
                 v-if="can('settlement', 'edit')"
                 size="sm"
@@ -115,6 +124,13 @@
               v-if="row.weight !== undefined && row.weight !== 1"
               class="ml-1 text-xs text-slate-400"
               >({{ row.weight }}口)</span
+            ><span
+              v-else-if="
+                row.weight === undefined &&
+                (row.kind === 'expense' || row.kind === 'income')
+              "
+              class="ml-1 text-xs text-slate-400"
+              >(金額指定)</span
             ></span
           ><span class="whitespace-nowrap">{{
             signed(row.kind === "expense" ? -row.amount : row.amount)
