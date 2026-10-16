@@ -23,7 +23,7 @@
         <tr>
           <th class="selection-column"><span class="sr-only">返金</span></th>
           <th class="person-column">参加者</th>
-          <th>今の返金／追加徴収</th>
+          <th>返金</th>
           <th>別会計</th>
           <th v-if="can('refund', 'read')">返金済み</th>
           <th v-if="can('feeCollection', 'read')">追加徴収済み</th>
@@ -67,7 +67,9 @@
                 : p.remaining === 0 &&
                     (p.independentUncollected || p.independentOvercollected)
                   ? "イベント分は精算済み"
-                  : balanceText(p.remaining)
+                  : p.remaining > 0
+                    ? yen(p.remaining)
+                    : balanceText(p.remaining)
             }}
           </td>
           <td class="whitespace-nowrap">

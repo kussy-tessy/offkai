@@ -18,13 +18,25 @@
     金額の単位：円。左端のチェックで参加費を一括徴収します。個別請求は請求ごとに徴収します。
   </p>
   <div class="table-wrap">
-    <table class="participant-table has-selection numeric-columns" aria-label="参加費の徴収">
+    <table
+      class="participant-table has-selection numeric-columns table-fixed"
+      :class="can('feeCollection', 'record') ? 'min-w-[37rem]' : 'min-w-[24rem]'"
+      aria-label="参加費の徴収"
+    >
+      <colgroup>
+        <col class="w-8" />
+        <col class="w-32" />
+        <col />
+        <col />
+        <col v-if="can('feeCollection', 'record')" />
+        <col v-if="can('feeCollection', 'record')" class="w-24" />
+      </colgroup>
       <thead>
         <tr>
           <th class="selection-column"></th>
           <th class="person-column">参加者</th>
           <th>参加費</th>
-          <th>参加費未徴収額</th>
+          <th>未徴収額</th>
           <th v-if="can('feeCollection', 'record')">個別請求</th>
           <th v-if="can('feeCollection', 'record')">操作</th>
         </tr>
@@ -83,7 +95,7 @@
               <div
                 v-for="charge in independentCharges[person.id]"
                 :key="charge.id"
-                class="flex items-center justify-end gap-2 whitespace-nowrap"
+                class="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap"
               >
                 <MyCheckbox
                   :value="charge.remaining <= 0"
@@ -97,7 +109,7 @@
                     (checked) => checked && collectIndependent(charge)
                   "
                 />
-                <span>{{ charge.title }}</span>
+                <span class="min-w-0 max-w-full whitespace-normal break-words">{{ charge.title }}</span>
                 <span
                   v-if="charge.remaining > 0"
                   class="text-sm"
@@ -117,7 +129,7 @@
             </div>
             <span v-else>—</span>
           </td>
-          <td v-if="can('feeCollection', 'record')">
+          <td v-if="can('feeCollection', 'record')" class="whitespace-nowrap">
             <MyButton
               v-if="canSpecify(person.id)"
               type="button"

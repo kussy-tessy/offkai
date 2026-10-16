@@ -15,9 +15,9 @@ test("参加費を一覧と部分徴収から記録できる", async ({ page }) 
 		"",
 		"参加者",
 		"参加費",
-		"参加費未徴収額",
+		"未徴収額",
 		"個別請求",
-		"",
+		"操作",
 	]);
 	const firstRow = table.locator("tbody tr").first();
 	await expect(firstRow.locator("td").nth(0).getByRole("checkbox")).toHaveCount(
@@ -44,8 +44,8 @@ test("参加費を一覧と部分徴収から記録できる", async ({ page }) 
 	await drawer.getByLabel("今回徴収した金額").fill("500");
 	await drawer.getByRole("button", { name: "保存", exact: true }).click();
 	await expect(drawer).toBeHidden();
-	await expect(firstRow.locator("td").nth(2)).toHaveText("14,000円");
-	await expect(firstRow.locator("td").nth(3)).toHaveText("13,500円");
+	await expect(firstRow.locator("td").nth(2)).toHaveText("14,000");
+	await expect(firstRow.locator("td").nth(3)).toHaveText("13,500");
 
 	await page.getByRole("checkbox", { name: /通常参加B.*一括徴収/ }).click();
 	await page
@@ -232,10 +232,10 @@ test("イベント収支は別会計を除外し、各欄の末尾に合計を�
 	const summary = page.getByLabel("イベントの収支");
 	const cards = summary.locator(".card");
 	await expect(cards.nth(0)).toContainText("見込 32,000円");
-	await expect(cards.nth(0)).toContainText("受領済み 14,000円");
+	await expect(cards.nth(0)).toContainText("実績 14,000円");
 	await expect(cards.nth(1)).toContainText("6,000円");
 	await expect(cards.nth(2)).toContainText("見込 26,000円");
-	await expect(cards.nth(2)).toContainText("受領済み収入 − 支出 8,000円");
+	await expect(cards.nth(2)).toContainText("実績 8,000円");
 	const day = page.locator("section.card").filter({
 		has: page.getByRole("heading", { name: "日ロケ", exact: true }),
 	});
@@ -378,12 +378,12 @@ test("過徴収と区分別の精算案・調整額を表示する", async ({ pa
 		.getByRole("table", { name: "参加費の徴収" })
 		.locator("tbody tr")
 		.first();
-	await expect(first.locator("td").nth(3)).toContainText("-1,000円");
+	await expect(first.locator("td").nth(3)).toContainText("-1,000");
 	await expect(first).toContainText("過徴収");
 	await page.goto("/settlement");
 	const table = page.getByRole("table", { name: "個人別の返金額" });
 	await expect(table.locator("thead th")).toHaveText([
-		"参加者名",
+		"参加者",
 		"返金総額",
 		"土泊",
 		"日ロケ",
@@ -437,14 +437,14 @@ test("確定なしで返金し、カンパ保存後は差額を即反映する",
 	await expect(table.locator("thead th")).toHaveText([
 		"返金",
 		"参加者",
-		"今の返金／追加徴収",
+		"返金",
 		"別会計",
 		"返金済み",
 		"追加徴収済み",
 		"操作",
 	]);
 	const row = table.locator("tbody tr").first();
-	await expect(row.locator("td").nth(2)).toHaveText("返金 11,000円");
+	await expect(row.locator("td").nth(2)).toHaveText("11,000円");
 	await row.getByRole("checkbox").click();
 	await expect(row.locator("td").nth(2)).toHaveText("精算済み");
 	await expect(row.locator("td").nth(4)).toHaveText("11,000円");
@@ -470,7 +470,7 @@ test("確定なしで返金し、カンパ保存後は差額を即反映する",
 	});
 	expect(saved.ok(), await saved.text()).toBe(true);
 	await page.reload();
-	await expect(row.locator("td").nth(2)).toHaveText("返金 300円");
+	await expect(row.locator("td").nth(2)).toHaveText("300円");
 	await expect(row.locator("td").nth(4)).toHaveText("11,000円");
 	await page.goto("/settlement");
 	await expect(
@@ -526,7 +526,7 @@ test("参加者を固定した手動調整を保存・解除できる", async ({
 	await expect(row.getByRole("button", { name: /解除/ })).toHaveCount(0);
 });
 
-test("未徴収を残して返金した人は予定参加費を再徴収しない", async ({
+test("未徴収を残して返金した後も参加費を徴収し、再返金で差額をゼロにできる", async ({
 	page,
 	request,
 }) => {
@@ -558,7 +558,7 @@ test("未徴収を残して返金した人は予定参加費を再徴収しな�
 		.getByRole("table", { name: "返金・追加徴収" })
 		.locator("tbody tr")
 		.first();
-	await expect(row).toContainText("返金 2,000円");
+	await expect(row.locator("td").nth(2)).toHaveText("2,000円");
 	await row.getByRole("checkbox").click();
 	await expect(row).toContainText("精算済み");
 	await page.goto("/collection");
@@ -566,24 +566,32 @@ test("未徴収を残して返金した人は予定参加費を再徴収しな�
 		.getByRole("table", { name: "参加費の徴収" })
 		.locator("tbody tr")
 		.first();
-	await expect(collection.getByRole("checkbox")).toHaveCount(0);
-	await expect(collection).toContainText("差額で精算済み");
+	const collect = collection.getByRole("checkbox", {
+		name: /通常参加A.*一括徴収/,
+	});
+	await expect(collect).toBeEnabled();
 	await expect(
 		collection.getByRole("button", { name: "通常参加Aの部分徴収" }),
-	).toHaveCount(0);
+	).toBeEnabled();
+	await collect.click();
+	await page
+		.getByRole("dialog")
+		.getByRole("button", { name: "徴収する", exact: true })
+		.click();
+	await expect(collect).toBeChecked();
+	await expect(collect).toBeDisabled();
+	await page.goto("/refund");
+	await expect(row.locator("td").nth(2)).toHaveText("10,000円");
+	await row.getByRole("checkbox").click();
+	await expect(row.locator("td").nth(2)).toHaveText("精算済み");
 	const saved = await (await request.get("/api/ledger")).json();
-	const blocked = await request.post("/api/ledger", {
-		data: {
-			action: "collectPlanned",
-			personId: "a",
-			revision: saved.revision,
-			requestId: crypto.randomUUID(),
-		},
-	});
-	expect(blocked.ok()).toBe(false);
+	expect(
+		saved.calculation.participants.find((p: { id: string }) => p.id === "a")
+			.remaining,
+	).toBe(0);
 });
 
-test("未徴収から最終負担だけ追加徴収し、内部状態や切替操作は表示しない", async ({
+test("追加徴収で精算した後も参加費を徴収し、返金で差額をゼロにできる", async ({
 	page,
 }) => {
 	await page.goto("/refund");
@@ -611,10 +619,24 @@ test("未徴収から最終負担だけ追加徴収し、内部状態や切替�
 	const collection = page
 		.getByRole("table", { name: "参加費の徴収" })
 		.locator("tbody tr");
-	await expect(collection.first().getByRole("checkbox")).toHaveCount(0);
-	await expect(collection.first().locator("td").first()).toHaveText(
-		"差額で精算済み",
-	);
+	const collect = collection
+		.first()
+		.getByRole("checkbox", { name: /通常参加A.*一括徴収/ });
+	await expect(collect).toBeEnabled();
+	await expect(collection.first().locator("td").nth(3)).toHaveText("14,000");
+	await collect.click();
+	await page
+		.getByRole("dialog")
+		.getByRole("button", { name: "徴収する", exact: true })
+		.click();
+	await expect(collect).toBeChecked();
+	await expect(collect).toBeDisabled();
+	await page.goto("/refund");
+	await expect(rows.first().locator("td").nth(2)).toHaveText("14,000円");
+	await rows.first().getByRole("checkbox").click();
+	await expect(rows.first().locator("td").nth(2)).toHaveText("精算済み");
+	await page.reload();
+	await expect(rows.first().locator("td").nth(2)).toHaveText("精算済み");
 });
 
 test("返金後も別会計の未徴収を表示し、その画面で集金できる", async ({
@@ -651,7 +673,7 @@ test("返金後も別会計の未徴収を表示し、その画面で集金で�
 		.getByRole("table", { name: "返金・追加徴収" })
 		.locator("tbody tr")
 		.first();
-	await expect(row).toContainText("返金 11,000円");
+	await expect(row.locator("td").nth(2)).toHaveText("11,000円");
 	await expect(row).toContainText("未徴収 1,000円");
 	await row.getByRole("checkbox").click();
 	await expect(row).toContainText("イベント分は精算済み");
@@ -661,9 +683,19 @@ test("返金後も別会計の未徴収を表示し、その画面で集金で�
 		.getByRole("table", { name: "参加費の徴収" })
 		.locator("tbody tr")
 		.first();
-	await expect(collection.getByRole("checkbox")).toBeChecked();
-	await expect(collection.getByRole("checkbox")).toBeDisabled();
-	await expect(collection).toContainText("別会計 1,000円 が未収");
+	const participation = collection.getByRole("checkbox", {
+		name: /通常参加A.*一括徴収/,
+	});
+	await expect(participation).toBeChecked();
+	await expect(participation).toBeDisabled();
+	const independent = collection.getByRole("checkbox", {
+		name: "通常参加Aの帽子代の残り1,000円を徴収",
+		exact: true,
+	});
+	await expect(independent).not.toBeChecked();
+	await expect(independent).toBeEnabled();
+	await expect(collection.locator("td").nth(4)).toContainText("帽子代");
+	await expect(collection.locator("td").nth(4)).toContainText("1,000");
 	await page.goto("/refund");
 	await row
 		.getByRole("button", { name: "通常参加Aの別会計を集金", exact: true })
